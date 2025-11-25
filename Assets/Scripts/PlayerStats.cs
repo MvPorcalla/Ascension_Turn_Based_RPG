@@ -1,5 +1,5 @@
 // -------------------------------
-// PlayerStats.cs
+// PlayerStats.cs (Reworked with Defense, Penetration, Lifesteal)
 // -------------------------------
 
 using UnityEngine;
@@ -34,31 +34,29 @@ public class PlayerStats
     public float AD;
     public float AP;
     public float HP;
-    public float Armor;
-    public float MR;
+    public float Defense; // Merged from Armor + MR
     public float CritRate;
     public float CritDamage;
     public float Evasion;
     public float Tenacity;
     
     // Item-only stats (cannot be increased through attributes or leveling)
-    public float Lethality;
-    public float PhysicalPenetration;
-    public float MagicPenetration;
+    public float Lethality; // Flat penetration
+    public float Penetration; // Percentage penetration (merged from Physical + Magic)
+    public float Lifesteal; // NEW: Percentage lifesteal
     
     [Header("Item Bonuses")]
     public float ItemAD = 0;
     public float ItemAP = 0;
     public float ItemHP = 0;
-    public float ItemArmor = 0;
-    public float ItemMR = 0;
+    public float ItemDefense = 0; // Merged from ItemArmor + ItemMR
     public float ItemCritRate = 0;
     public float ItemCritDamage = 0; // Only way to increase crit damage
     public float ItemEvasion = 0;
     public float ItemTenacity = 0;
     public float ItemLethality = 0; // Item-only
-    public float ItemPhysicalPen = 0; // Item-only
-    public float ItemMagicPen = 0; // Item-only
+    public float ItemPenetration = 0; // Item-only (merged from Physical + Magic Pen)
+    public float ItemLifesteal = 0; // Item-only (NEW)
     
     public void Initialize(CharacterBaseStatsSO baseStats)
     {
@@ -161,50 +159,44 @@ public class PlayerStats
         int levelBonus = level - 1;
         
         float levelHP = baseStats.HPPerLevel * levelBonus;
-        // float levelAD =  0;                                                 // remove automatic AD growth
-        // float levelAP =  0;                                                 // remove automatic AP growth
-        float levelArmor = baseStats.ArmorPerLevel * levelBonus;
-        float levelMR = baseStats.MRPerLevel * levelBonus;
-        // float levelCritRate =  0;                                           // remove automatic Crit Rate growth
+        float levelDefense = baseStats.DefensePerLevel * levelBonus;
         float levelEvasion = baseStats.EvasionPerLevel * levelBonus;
         float levelTenacity = baseStats.TenacityPerLevel * levelBonus;
         
-        // Attack Damage = (Base + Level Bonus) * (1 + STR scaling) + Items
+        // Attack Damage = (Base) * (1 + STR scaling) + Items
         AD = baseStats.BaseAD * (1 + STR * 0.02f) + ItemAD;
         
-        // Ability Power = (Base + Level Bonus) * (1 + INT scaling) + Items
+        // Ability Power = (Base) * (1 + INT scaling) + Items
         AP = baseStats.BaseAP * (1 + INT * 0.02f) + ItemAP;
         
         // Health Points = (Base + Level Bonus) * (1 + END scaling) + Items
         HP = (baseStats.BaseHP + levelHP) * (1 + END * 0.05f) + ItemHP;
         
-        // Armor = (Base + Level Bonus) + END additive + Items
-        Armor = (baseStats.BaseArmor + levelArmor) + END * 0.5f + ItemArmor;
+        // Defense = (Base + Level Bonus) + END additive + WIS additive + Items
+        // Combines the old Armor and MR into a single stat
+        Defense = (baseStats.BaseDefense + levelDefense) + (END * 0.5f) + (WIS * 0.5f) + ItemDefense;
         
-        // Magic Resistance = (Base + Level Bonus) + WIS additive + Items
-        MR = (baseStats.BaseMR + levelMR) + WIS * 0.5f + ItemMR;
-        
-        // Critical Rate = (Base + Level Bonus) + AGI additive + Items
-        CritRate = baseStats.BaseCritRate + AGI * 0.5f + ItemCritRate;
+        // Critical Rate = Base + AGI additive + Items
+        CritRate = baseStats.BaseCritRate + (AGI * 0.5f) + ItemCritRate;
         
         // Critical Damage = Base + Items ONLY (no attribute scaling)
         CritDamage = baseStats.BaseCritDamage + ItemCritDamage;
         
         // Evasion = (Base + Level Bonus) + AGI additive + Items
-        Evasion = (baseStats.BaseEvasion + levelEvasion) + AGI * 0.2f + ItemEvasion;
+        Evasion = (baseStats.BaseEvasion + levelEvasion) + (AGI * 0.2f) + ItemEvasion;
         
         // Tenacity = (Base + Level Bonus) + WIS additive + Items
-        Tenacity = (baseStats.BaseTenacity + levelTenacity) + WIS * 0.5f + ItemTenacity;
+        Tenacity = (baseStats.BaseTenacity + levelTenacity) + (WIS * 0.5f) + ItemTenacity;
         
         // Item-only stats (no base, no level, no attributes)
-        Lethality = ItemLethality;
-        PhysicalPenetration = ItemPhysicalPen;
-        MagicPenetration = ItemMagicPen;
+        Lethality = ItemLethality; // Flat penetration
+        Penetration = ItemPenetration; // % penetration (merged from Physical + Magic)
+        Lifesteal = ItemLifesteal; // % lifesteal (NEW)
 
         // Apply caps to percentage-based stats
         CritRate = Mathf.Min(CritRate, MAX_CRIT_RATE);
         Evasion = Mathf.Min(Evasion, MAX_EVASION);
         Tenacity = Mathf.Min(Tenacity, MAX_TENACITY);
-
+        // No caps on Defense, Penetration, Lethality, Lifesteal
     }
 }

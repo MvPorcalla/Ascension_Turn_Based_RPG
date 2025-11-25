@@ -183,19 +183,24 @@ public class LevelUpManager : MonoBehaviour
             ItemAD = playerStats.ItemAD,
             ItemAP = playerStats.ItemAP,
             ItemHP = playerStats.ItemHP,
-            ItemArmor = playerStats.ItemArmor,
-            ItemMR = playerStats.ItemMR,
+            ItemDefense = playerStats.ItemDefense,          // <- updated
             ItemCritRate = playerStats.ItemCritRate,
+            ItemCritDamage = playerStats.ItemCritDamage,
+            ItemEvasion = playerStats.ItemEvasion,
+            ItemTenacity = playerStats.ItemTenacity,
+            ItemLethality = playerStats.ItemLethality,
+            ItemPenetration = playerStats.ItemPenetration,
+            ItemLifesteal = playerStats.ItemLifesteal
         };
-        
+
         previewStats.CalculateCombatStats(baseStats);
         
         // Display preview
         if (adText) adText.text = $"AD: {previewStats.AD:F1}";
         if (apText) apText.text = $"AP: {previewStats.AP:F1}";
         if (hpText) hpText.text = $"HP: {previewStats.HP:F0}";
-        if (armorText) armorText.text = $"Armor: {previewStats.Armor:F1}";
-        if (mrText) mrText.text = $"MR: {previewStats.MR:F1}";
+        if (armorText) armorText.text = $"Defense: {previewStats.Defense:F1}"; // <- updated
+        if (mrText) mrText.text = $"Defense: {previewStats.Defense:F1}";      // <- updated
         if (critRateText) critRateText.text = $"Crit: {previewStats.CritRate:F1}%";
     }
     

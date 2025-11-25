@@ -1,5 +1,5 @@
 // -------------------------------
-// PlayerData.cs
+// PlayerData.cs (Reworked with Defense, Penetration, Lifesteal)
 // -------------------------------
 
 using System;
@@ -23,7 +23,6 @@ public class PlayerData
     public int unallocatedPoints;
 
     // Runtime state
-    // public float currentHP;
     public float hpPercent; // Store as ratio instead of raw value
     
     // Attributes (the core stats we need to save)
@@ -37,15 +36,14 @@ public class PlayerData
     public float itemAD;
     public float itemAP;
     public float itemHP;
-    public float itemArmor;
-    public float itemMR;
+    public float itemDefense; // Merged from itemArmor + itemMR
     public float itemCritRate;
     public float itemCritDamage;
     public float itemEvasion;
     public float itemTenacity;
     public float itemLethality;
-    public float itemPhysicalPen;
-    public float itemMagicPen;
+    public float itemPenetration; // Merged from itemPhysicalPen + itemMagicPen
+    public float itemLifesteal; // NEW
     
     public PlayerData() { }
     
@@ -58,7 +56,6 @@ public class PlayerData
         {
             playerName = stats.playerName,
             className = stats.className,
-            // currentHP = stats.currentHP,
             hpPercent = (stats.HP > 0) ? stats.currentHP / stats.HP : 1f,
             level = stats.level,
             currentEXP = stats.currentEXP,
@@ -74,15 +71,14 @@ public class PlayerData
             itemAD = stats.ItemAD,
             itemAP = stats.ItemAP,
             itemHP = stats.ItemHP,
-            itemArmor = stats.ItemArmor,
-            itemMR = stats.ItemMR,
+            itemDefense = stats.ItemDefense,
             itemCritRate = stats.ItemCritRate,
             itemCritDamage = stats.ItemCritDamage,
             itemEvasion = stats.ItemEvasion,
             itemTenacity = stats.ItemTenacity,
             itemLethality = stats.ItemLethality,
-            itemPhysicalPen = stats.ItemPhysicalPen,
-            itemMagicPen = stats.ItemMagicPen
+            itemPenetration = stats.ItemPenetration,
+            itemLifesteal = stats.ItemLifesteal
         };
     }
     
@@ -109,15 +105,14 @@ public class PlayerData
             ItemAD = this.itemAD,
             ItemAP = this.itemAP,
             ItemHP = this.itemHP,
-            ItemArmor = this.itemArmor,
-            ItemMR = this.itemMR,
+            ItemDefense = this.itemDefense,
             ItemCritRate = this.itemCritRate,
             ItemCritDamage = this.itemCritDamage,
             ItemEvasion = this.itemEvasion,
             ItemTenacity = this.itemTenacity,
             ItemLethality = this.itemLethality,
-            ItemPhysicalPen = this.itemPhysicalPen,
-            ItemMagicPen = this.itemMagicPen
+            ItemPenetration = this.itemPenetration,
+            ItemLifesteal = this.itemLifesteal
         };
         
         // First calculate stats so HP is set

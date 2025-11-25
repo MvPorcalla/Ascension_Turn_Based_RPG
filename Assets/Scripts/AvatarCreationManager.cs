@@ -1,5 +1,5 @@
 // -------------------------------
-// AvatarCreationManager.cs
+// AvatarCreationManager.cs (Updated for Defense, Penetration, Lifesteal)
 // -------------------------------
 
 using UnityEngine;
@@ -41,11 +41,10 @@ public class AvatarCreationManager : MonoBehaviour
     [SerializeField] private TMP_Text critDamageValueText;
     [SerializeField] private TMP_Text critRateValueText;
     [SerializeField] private TMP_Text lethalityValueText;
-    [SerializeField] private TMP_Text physicalPenValueText;
-    [SerializeField] private TMP_Text magicPenValueText;
+    [SerializeField] private TMP_Text penetrationValueText; // Merged
+    [SerializeField] private TMP_Text lifestealValueText; // NEW
     [SerializeField] private TMP_Text hpValueText;
-    [SerializeField] private TMP_Text armorValueText;
-    [SerializeField] private TMP_Text mrValueText;
+    [SerializeField] private TMP_Text defenseValueText; // Merged
     [SerializeField] private TMP_Text evasionValueText;
     [SerializeField] private TMP_Text tenacityValueText;
     
@@ -162,11 +161,10 @@ public class AvatarCreationManager : MonoBehaviour
         if (critDamageValueText) critDamageValueText.text = currentStats.CritDamage.ToString("F1") + "%";
         if (critRateValueText) critRateValueText.text = currentStats.CritRate.ToString("F1") + "%";
         if (lethalityValueText) lethalityValueText.text = currentStats.Lethality.ToString("F0");
-        if (physicalPenValueText) physicalPenValueText.text = currentStats.PhysicalPenetration.ToString("F1") + "%";
-        if (magicPenValueText) magicPenValueText.text = currentStats.MagicPenetration.ToString("F1") + "%";
+        if (penetrationValueText) penetrationValueText.text = currentStats.Penetration.ToString("F1") + "%";
+        if (lifestealValueText) lifestealValueText.text = currentStats.Lifesteal.ToString("F1") + "%";
         if (hpValueText) hpValueText.text = currentStats.HP.ToString("F0");
-        if (armorValueText) armorValueText.text = currentStats.Armor.ToString("F1");
-        if (mrValueText) mrValueText.text = currentStats.MR.ToString("F1");
+        if (defenseValueText) defenseValueText.text = currentStats.Defense.ToString("F1");
         if (evasionValueText) evasionValueText.text = currentStats.Evasion.ToString("F1") + "%";
         if (tenacityValueText) tenacityValueText.text = currentStats.Tenacity.ToString("F1") + "%";
     }
