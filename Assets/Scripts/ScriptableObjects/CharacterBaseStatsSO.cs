@@ -1,5 +1,5 @@
 // -------------------------------
-// CharacterBaseStatsSO.cs
+// CharacterBaseStatsSO.cs (Reworked with Defense)
 // -------------------------------
 
 using UnityEngine;
@@ -23,8 +23,7 @@ public class CharacterBaseStatsSO : ScriptableObject
     public float BaseAD = 5f;
     public float BaseAP = 5f;
     public float BaseHP = 100f;
-    public float BaseArmor = 5f;
-    public float BaseMR = 5f;
+    public float BaseDefense = 10f; // Merged from BaseArmor (5) + BaseMR (5)
     public float BaseCritRate = 5f;
     public float BaseCritDamage = 150f; // Item-only, not scaled by attributes
     public float BaseEvasion = 2f;
@@ -32,11 +31,17 @@ public class CharacterBaseStatsSO : ScriptableObject
     
     [Header("Per Level Increases")]
     public float HPPerLevel = 15f;
-    public float ADPerLevel = 2f;
-    public float APPerLevel = 2f;
-    public float ArmorPerLevel = 1f;
-    public float MRPerLevel = 1f;
-    public float CritRatePerLevel = 0.2f;
+    public float DefensePerLevel = 2f; // Merged from ArmorPerLevel (1) + MRPerLevel (1)
     public float EvasionPerLevel = 0.1f;
     public float TenacityPerLevel = 0.1f;
+    
+    [Header("Notes")]
+    [TextArea(3, 5)]
+    public string designNotes = 
+        "Defense: Merged Armor + MR into single stat.\n" +
+        "Penetration: Merged Physical Pen + Magic Pen into single %.\n" +
+        "Lifesteal: New item-only stat for healing on damage dealt.\n" +
+        "Lethality: Flat penetration (item-only).\n" +
+        "AD/AP: Unchanged, scaled by STR/INT.\n" +
+        "Crit Damage: Item-only, no attribute scaling.";
 }
