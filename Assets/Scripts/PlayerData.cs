@@ -1,14 +1,9 @@
 // -------------------------------
-// PlayerData.cs (Reworked with Defense, Penetration, Lifesteal)
+// PlayerData.cs (Updated for Attack Speed & Transcendence)
 // -------------------------------
 
 using System;
 
-/// <summary>
-/// Data model for player stats serialization.
-/// Only contains data that needs to be saved.
-/// Combat stats are recalculated on load.
-/// </summary>
 [Serializable]
 public class PlayerData
 {
@@ -21,35 +16,37 @@ public class PlayerData
     public int currentEXP;
     public int expToNextLevel;
     public int unallocatedPoints;
+    
+    // Transcendence
+    public int transcendenceLevel;
+    public bool isTranscended;
 
     // Runtime state
-    public float hpPercent; // Store as ratio instead of raw value
+    public float hpPercent;
     
-    // Attributes (the core stats we need to save)
+    // Attributes
     public int STR;
     public int INT;
     public int AGI;
     public int END;
     public int WIS;
     
-    // Item Bonuses (saved because they come from equipped items)
+    // Item Bonuses
     public float itemAD;
     public float itemAP;
     public float itemHP;
-    public float itemDefense; // Merged from itemArmor + itemMR
+    public float itemDefense;
+    public float itemAttackSpeed; // NEW
     public float itemCritRate;
     public float itemCritDamage;
     public float itemEvasion;
     public float itemTenacity;
     public float itemLethality;
-    public float itemPenetration; // Merged from itemPhysicalPen + itemMagicPen
-    public float itemLifesteal; // NEW
+    public float itemPenetration;
+    public float itemLifesteal;
     
     public PlayerData() { }
     
-    /// <summary>
-    /// Create PlayerData from PlayerStats (for saving)
-    /// </summary>
     public static PlayerData FromPlayerStats(PlayerStats stats)
     {
         return new PlayerData
@@ -61,6 +58,8 @@ public class PlayerData
             currentEXP = stats.currentEXP,
             expToNextLevel = stats.expToNextLevel,
             unallocatedPoints = stats.unallocatedPoints,
+            transcendenceLevel = stats.transcendenceLevel,
+            isTranscended = stats.isTranscended,
             
             STR = stats.STR,
             INT = stats.INT,
@@ -72,6 +71,7 @@ public class PlayerData
             itemAP = stats.ItemAP,
             itemHP = stats.ItemHP,
             itemDefense = stats.ItemDefense,
+            itemAttackSpeed = stats.ItemAttackSpeed, // NEW
             itemCritRate = stats.ItemCritRate,
             itemCritDamage = stats.ItemCritDamage,
             itemEvasion = stats.ItemEvasion,
@@ -82,9 +82,6 @@ public class PlayerData
         };
     }
     
-    /// <summary>
-    /// Convert PlayerData back to PlayerStats (for loading)
-    /// </summary>
     public PlayerStats ToPlayerStats(CharacterBaseStatsSO baseStats)
     {
         PlayerStats stats = new PlayerStats
@@ -95,6 +92,8 @@ public class PlayerData
             currentEXP = this.currentEXP,
             expToNextLevel = this.expToNextLevel,
             unallocatedPoints = this.unallocatedPoints,
+            transcendenceLevel = this.transcendenceLevel,
+            isTranscended = this.isTranscended,
             
             STR = this.STR,
             INT = this.INT,
@@ -106,6 +105,7 @@ public class PlayerData
             ItemAP = this.itemAP,
             ItemHP = this.itemHP,
             ItemDefense = this.itemDefense,
+            ItemAttackSpeed = this.itemAttackSpeed, // NEW
             ItemCritRate = this.itemCritRate,
             ItemCritDamage = this.itemCritDamage,
             ItemEvasion = this.itemEvasion,
@@ -115,19 +115,23 @@ public class PlayerData
             ItemLifesteal = this.itemLifesteal
         };
         
-        // First calculate stats so HP is set
+        // Calculate stats
         stats.CalculateCombatStats(baseStats);
         
-        // Then restore HP from saved percentage
+        // Restore HP from percentage
         stats.currentHP = stats.HP * this.hpPercent;
         
-        // Validate EXP without recalculating stats again
-        while (stats.currentEXP >= stats.expToNextLevel && stats.level < 9999)
+        // Validate EXP without recalculating again
+        int maxPossibleLevel = baseStats.maxLevel;
+        if (baseStats.enableTranscendence)
+            maxPossibleLevel += baseStats.maxTranscendenceLevel;
+        
+        while (stats.currentEXP >= stats.expToNextLevel && stats.level < maxPossibleLevel)
         {
             stats.currentEXP -= stats.expToNextLevel;
-            stats.LevelUp();
+            stats.LevelUp(baseStats);
             stats.CalculateCombatStats(baseStats);
-            stats.currentHP = stats.HP; // Full heal on any pending level ups
+            stats.currentHP = stats.HP; // Full heal on pending level ups
         }
         
         return stats;

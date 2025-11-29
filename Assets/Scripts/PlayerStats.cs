@@ -1,5 +1,5 @@
 // -------------------------------
-// PlayerStats.cs (Reworked with Defense, Penetration, Lifesteal)
+// PlayerStats.cs (Updated for Level 1000 + Attack Speed + Tiered Caps)
 // -------------------------------
 
 using UnityEngine;
@@ -13,15 +13,14 @@ public class PlayerStats
     public int level = 1;
     public int currentEXP = 0;
     public int expToNextLevel = 100;
-    public int unallocatedPoints = 0; // Points waiting to be spent
+    public int unallocatedPoints = 0;
+    
+    [Header("Transcendence (Future)")]
+    public int transcendenceLevel = 0; // 0 = normal, 1+ = transcended
+    public bool isTranscended = false;
 
     [Header("Runtime Combat")]
-    public float currentHP; // Current health (runtime + saved)
-
-    [Header("Stat Caps")]
-    private const float MAX_CRIT_RATE = 100f;
-    private const float MAX_EVASION = 75f;
-    private const float MAX_TENACITY = 80f;
+    public float currentHP;
     
     [Header("Attributes")]
     public int STR;
@@ -34,57 +33,102 @@ public class PlayerStats
     public float AD;
     public float AP;
     public float HP;
-    public float Defense; // Merged from Armor + MR
+    public float Defense;
+    public float AttackSpeed; // NEW
     public float CritRate;
     public float CritDamage;
     public float Evasion;
     public float Tenacity;
     
-    // Item-only stats (cannot be increased through attributes or leveling)
-    public float Lethality; // Flat penetration
-    public float Penetration; // Percentage penetration (merged from Physical + Magic)
-    public float Lifesteal; // NEW: Percentage lifesteal
+    // Item-only stats
+    public float Lethality;
+    public float Penetration;
+    public float Lifesteal;
     
     [Header("Item Bonuses")]
     public float ItemAD = 0;
     public float ItemAP = 0;
     public float ItemHP = 0;
-    public float ItemDefense = 0; // Merged from ItemArmor + ItemMR
+    public float ItemDefense = 0;
+    public float ItemAttackSpeed = 0; // NEW
     public float ItemCritRate = 0;
-    public float ItemCritDamage = 0; // Only way to increase crit damage
+    public float ItemCritDamage = 0;
     public float ItemEvasion = 0;
     public float ItemTenacity = 0;
-    public float ItemLethality = 0; // Item-only
-    public float ItemPenetration = 0; // Item-only (merged from Physical + Magic Pen)
-    public float ItemLifesteal = 0; // Item-only (NEW)
+    public float ItemLethality = 0;
+    public float ItemPenetration = 0;
+    public float ItemLifesteal = 0;
     
     public void Initialize(CharacterBaseStatsSO baseStats)
     {
         className = baseStats.className;
         level = 1;
         currentEXP = 0;
-        expToNextLevel = 100;
+        expToNextLevel = CalculateEXPForLevel(2, baseStats);
         unallocatedPoints = 0;
+        transcendenceLevel = 0;
+        isTranscended = false;
+        
         STR = baseStats.startingSTR;
         INT = baseStats.startingINT;
         AGI = baseStats.startingAGI;
         END = baseStats.startingEND;
         WIS = baseStats.startingWIS;
         
-        RecalculateStats(baseStats, fullHeal: true); // New character = full HP
+        RecalculateStats(baseStats, fullHeal: true);
+    }
+    
+    /// <summary>
+    /// Calculate EXP requirement for a specific level
+    /// Formula: base + (level * linear) + (level ^ exponent)
+    /// </summary>
+    private int CalculateEXPForLevel(int targetLevel, CharacterBaseStatsSO baseStats)
+    {
+        if (targetLevel <= 1) return 0;
+        
+        // Normal leveling
+        if (targetLevel <= baseStats.maxLevel)
+        {
+            return (int)(baseStats.baseEXPRequirement + 
+                        (targetLevel * baseStats.expLinearGrowth) + 
+                        Mathf.Pow(targetLevel, baseStats.expExponentGrowth));
+        }
+        
+        // Transcendence leveling (if enabled)
+        if (baseStats.enableTranscendence && targetLevel <= baseStats.maxLevel + baseStats.maxTranscendenceLevel)
+        {
+            int baseReq = CalculateEXPForLevel(baseStats.maxLevel, baseStats);
+            int transcendLevel = targetLevel - baseStats.maxLevel;
+            return (int)(baseReq * baseStats.transcendenceEXPMultiplier * transcendLevel);
+        }
+        
+        return int.MaxValue; // Cap reached
     }
     
     /// <summary>
     /// Call this when player gains a level
     /// </summary>
-    public void LevelUp()
+    public void LevelUp(CharacterBaseStatsSO baseStats)
     {
         level++;
-        unallocatedPoints += 5; // Give 5 points per level
+        unallocatedPoints += baseStats.pointsPerLevel;
         
-        // Gentle exponential curve - scales well up to level 9999
-        // Level 1→2: 151 EXP | Level 100→101: 6,100 EXP | Level 9999→max: ~1.35M EXP
-        expToNextLevel = (int)(100 + (level * 50) + Mathf.Pow(level, 1.5f));
+        // Check for transcendence
+        if (level > baseStats.maxLevel && baseStats.enableTranscendence)
+        {
+            if (!isTranscended)
+            {
+                isTranscended = true;
+                transcendenceLevel = 1;
+                Debug.Log($"[PlayerStats] TRANSCENDENCE UNLOCKED! Transcendence Level: {transcendenceLevel}");
+            }
+            else
+            {
+                transcendenceLevel++;
+            }
+        }
+        
+        expToNextLevel = CalculateEXPForLevel(level + 1, baseStats);
         currentEXP = 0;
     }
 
@@ -93,11 +137,15 @@ public class PlayerStats
     /// </summary>
     public void ValidateEXP(CharacterBaseStatsSO baseStats)
     {
+        int maxPossibleLevel = baseStats.maxLevel;
+        if (baseStats.enableTranscendence)
+            maxPossibleLevel += baseStats.maxTranscendenceLevel;
+        
         bool leveledUp = false;
-        while (currentEXP >= expToNextLevel && level < 9999)
+        while (currentEXP >= expToNextLevel && level < maxPossibleLevel)
         {
             currentEXP -= expToNextLevel;
-            LevelUp();
+            LevelUp(baseStats);
             leveledUp = true;
         }
         
@@ -112,30 +160,29 @@ public class PlayerStats
     {
         currentEXP += amount;
         
+        int maxPossibleLevel = baseStats.maxLevel;
+        if (baseStats.enableTranscendence)
+            maxPossibleLevel += baseStats.maxTranscendenceLevel;
+        
         bool leveledUp = false;
-        while (currentEXP >= expToNextLevel)
+        while (currentEXP >= expToNextLevel && level < maxPossibleLevel)
         {
-            LevelUp();
+            LevelUp(baseStats);
             leveledUp = true;
         }
         
         if (leveledUp)
-            RecalculateStats(baseStats, fullHeal: true); // Full heal on level up
+            RecalculateStats(baseStats, fullHeal: true);
         
         return leveledUp;
     }
 
     /// <summary>
     /// Recalculates stats and handles HP scaling properly.
-    /// fullHeal: true = restore to max HP
-    /// fullHeal: false = add/subtract the HP difference (intuitive for equipment)
     /// </summary>
     public void RecalculateStats(CharacterBaseStatsSO baseStats, bool fullHeal = false)
     {
-        // Store old max HP before recalculation
         float oldMaxHP = HP;
-        
-        // Recalculate all combat stats
         CalculateCombatStats(baseStats);
         
         if (fullHeal)
@@ -144,18 +191,15 @@ public class PlayerStats
         }
         else
         {
-            // Add/subtract the difference in max HP
             float hpDifference = HP - oldMaxHP;
             currentHP += hpDifference;
-            
-            // Clamp to valid range
             currentHP = Mathf.Clamp(currentHP, 0, HP);
         }
     }
     
     public void CalculateCombatStats(CharacterBaseStatsSO baseStats)
     {
-        // Calculate level bonuses (level - 1 because level 1 uses base stats)
+        // Calculate level bonuses
         int levelBonus = level - 1;
         
         float levelHP = baseStats.HPPerLevel * levelBonus;
@@ -163,40 +207,49 @@ public class PlayerStats
         float levelEvasion = baseStats.EvasionPerLevel * levelBonus;
         float levelTenacity = baseStats.TenacityPerLevel * levelBonus;
         
-        // Attack Damage = (Base) * (1 + STR scaling) + Items
-        AD = baseStats.BaseAD * (1 + STR * 0.02f) + ItemAD;
+        // === ATTACK DAMAGE ===
+        AD = baseStats.BaseAD * (1 + STR * baseStats.STRtoAD) + ItemAD;
         
-        // Ability Power = (Base) * (1 + INT scaling) + Items
-        AP = baseStats.BaseAP * (1 + INT * 0.02f) + ItemAP;
+        // === ABILITY POWER ===
+        AP = baseStats.BaseAP * (1 + INT * baseStats.INTtoAP) + ItemAP;
         
-        // Health Points = (Base + Level Bonus) * (1 + END scaling) + Items
-        HP = (baseStats.BaseHP + levelHP) * (1 + END * 0.05f) + ItemHP;
+        // === HEALTH POINTS ===
+        HP = (baseStats.BaseHP + levelHP) * (1 + END * baseStats.ENDtoHP) + ItemHP;
         
-        // Defense = (Base + Level Bonus) + END additive + WIS additive + Items
-        // Combines the old Armor and MR into a single stat
-        Defense = (baseStats.BaseDefense + levelDefense) + (END * 0.5f) + (WIS * 0.5f) + ItemDefense;
+        // === DEFENSE ===
+        Defense = (baseStats.BaseDefense + levelDefense) + 
+                  (END * baseStats.ENDtoDefense) + 
+                  (WIS * baseStats.WIStoDefense) + 
+                  ItemDefense;
         
-        // Critical Rate = Base + AGI additive + Items
-        CritRate = baseStats.BaseCritRate + (AGI * 0.5f) + ItemCritRate;
+        // === ATTACK SPEED (NEW) ===
+        AttackSpeed = baseStats.BaseAttackSpeed + (AGI * baseStats.AGItoAttackSpeed) + ItemAttackSpeed;
+        // No cap on attack speed
         
-        // Critical Damage = Base + Items ONLY (no attribute scaling)
+        // === CRITICAL RATE (Tiered Cap) ===
+        float baseCritRate = baseStats.BaseCritRate + (AGI * baseStats.AGItoCritRate);
+        baseCritRate = Mathf.Min(baseCritRate, baseStats.baseCritRateCap); // Cap base at 60%
+        
+        CritRate = baseCritRate + ItemCritRate;
+        CritRate = Mathf.Min(CritRate, baseStats.totalCritRateCap); // Cap total at 100%
+        
+        // === CRITICAL DAMAGE ===
         CritDamage = baseStats.BaseCritDamage + ItemCritDamage;
         
-        // Evasion = (Base + Level Bonus) + AGI additive + Items
-        Evasion = (baseStats.BaseEvasion + levelEvasion) + (AGI * 0.2f) + ItemEvasion;
+        // === EVASION (Tiered Cap) ===
+        float baseEvasion = baseStats.BaseEvasion + levelEvasion + (AGI * baseStats.AGItoEvasion);
+        baseEvasion = Mathf.Min(baseEvasion, baseStats.baseEvasionCap); // Cap base at 40%
         
-        // Tenacity = (Base + Level Bonus) + WIS additive + Items
-        Tenacity = (baseStats.BaseTenacity + levelTenacity) + (WIS * 0.5f) + ItemTenacity;
+        Evasion = baseEvasion + ItemEvasion;
+        Evasion = Mathf.Min(Evasion, baseStats.totalEvasionCap); // Cap total at 80%
         
-        // Item-only stats (no base, no level, no attributes)
-        Lethality = ItemLethality; // Flat penetration
-        Penetration = ItemPenetration; // % penetration (merged from Physical + Magic)
-        Lifesteal = ItemLifesteal; // % lifesteal (NEW)
-
-        // Apply caps to percentage-based stats
-        CritRate = Mathf.Min(CritRate, MAX_CRIT_RATE);
-        Evasion = Mathf.Min(Evasion, MAX_EVASION);
-        Tenacity = Mathf.Min(Tenacity, MAX_TENACITY);
-        // No caps on Defense, Penetration, Lethality, Lifesteal
+        // === TENACITY ===
+        Tenacity = (baseStats.BaseTenacity + levelTenacity) + (WIS * baseStats.WIStoTenacity) + ItemTenacity;
+        Tenacity = Mathf.Min(Tenacity, baseStats.maxTenacity); // Cap at 80%
+        
+        // === ITEM-ONLY STATS ===
+        Lethality = ItemLethality;
+        Penetration = Mathf.Min(ItemPenetration, baseStats.maxPenetration); // Cap at 100%
+        Lifesteal = ItemLifesteal; // No cap on lifesteal
     }
 }
