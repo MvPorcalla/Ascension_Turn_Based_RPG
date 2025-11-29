@@ -8,7 +8,7 @@ using UnityEngine;
 public class CharacterBaseStatsSO : ScriptableObject
 {
     [Header("Character Info")]
-    public string className = "Default";
+    public string className = "DefaultCharacterStats";
     public Sprite classIcon;
     
     [Header("Starting Attributes")]

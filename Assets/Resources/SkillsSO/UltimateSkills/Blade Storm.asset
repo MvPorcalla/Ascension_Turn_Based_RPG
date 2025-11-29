@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e2dc5a4fe93ba94a8847ded422fde61, type: 3}
+  m_Name: Blade Storm
+  m_EditorClassIdentifier: 
+  skillName: Blade Storm
+  icon: {fileID: 21300000, guid: 7968a69d3bac98b48b48248782eaa221, type: 3}
+  description: Hit all Enemies
+  category: 2
+  compatibleWeaponTypes: 0000000002000000
+  damageType: 0
+  baseDamage: 50
+  adRatio: 2.5
+  apRatio: 0
+  targetType: 2
+  maxTargets: 99
+  turnCooldown: 6
+  canCrit: 1

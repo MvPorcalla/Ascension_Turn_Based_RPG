@@ -3,9 +3,9 @@ Canvas (Screen Space - Overlay, 1920x1080)
 ├── Panel_BG (optional full-screen background)
 │   └── Image component (background color or sprite)
 │
-└── Panel_MainLayout (fills screen)
-     └── AvatarCreationLayout (800x1000, anchored middle center)
-          └── Panel (image component)
+└── ScreenAvatarCreation (fills screen)
+     └── LayoutAvatarCreation (800x1000, anchored middle center)
+          └── PanelAvatarCreation (image component)
                ├── HeaderGO
                │    └── Title_Attributes
                │

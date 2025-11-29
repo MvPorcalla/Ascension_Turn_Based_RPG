@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4809ec5d291187f4ebdcf0046e75de9f, type: 3}
+  m_Name: Apprentice Staff
+  m_EditorClassIdentifier: 
+  weaponName: Apprentice Staff
+  weaponType: 4
+  icon: {fileID: 21300000, guid: 05a5605da8af89c45a278dc633ac8bfa, type: 3}
+  rarity: 0
+  description: Apprentice Staff
+  attackRangeType: 2
+  bonusSTR: 0
+  bonusINT: 5
+  bonusAGI: 0
+  bonusWIS: 0
+  bonusEND: 0
+  bonusAD: 0
+  bonusAP: 20
+  bonusHP: 0
+  bonusArmor: 0
+  bonusMR: 0
+  bonusCritRate: 0
+  bonusEvasion: 0
+  bonusTenacity: 0
+  bonusCritDamage: 0
+  bonusLethality: 0
+  bonusPhysicalPen: 0
+  bonusMagicPen: 0
+  defaultWeaponSkill: {fileID: 11400000, guid: 93826072a9dc756459d0b203e6e67d8d, type: 2}
+  requiredLevel: 1

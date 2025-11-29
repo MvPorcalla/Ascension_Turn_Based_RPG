@@ -1,14 +1,8 @@
 // -------------------------------
-// SaveData.cs
+// SaveData.cs (Updated with BagInventoryData)
 // -------------------------------
-
 using System;
 
-/// <summary>
-/// Root save data container.
-/// Add more data sections here as your game grows
-/// (inventory, quests, world state, etc.)
-/// </summary>
 [Serializable]
 public class SaveData
 {
@@ -18,10 +12,8 @@ public class SaveData
     // Player information
     public PlayerData playerData;
     
-    // Future expansion:
-    // public InventoryData inventoryData;
-    // public QuestData questData;
-    // public WorldStateData worldStateData;
+    // Inventory (renamed from PlayerInventoryData)
+    public BagInventoryData inventoryData;
     
     public SaveData()
     {
@@ -30,13 +22,15 @@ public class SaveData
     
     /// <summary>
     /// Create a new save from current game state
+    /// NOTE: This is only called by SaveManager now
     /// </summary>
-    public static SaveData CreateSave(PlayerStats playerStats)
+    public static SaveData CreateSave(PlayerStats playerStats, BagInventoryData inventoryData)
     {
         SaveData save = new SaveData
         {
             metaData = SaveMetaData.CreateNew(),
-            playerData = PlayerData.FromPlayerStats(playerStats)
+            playerData = PlayerData.FromPlayerStats(playerStats),
+            inventoryData = inventoryData
         };
         
         return save;
@@ -52,9 +46,6 @@ public class SaveData
     }
 }
 
-/// <summary>
-/// Metadata about the save file itself
-/// </summary>
 [Serializable]
 public class SaveMetaData
 {

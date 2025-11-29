@@ -1,5 +1,5 @@
 // -------------------------------
-// SaveManager.cs (Organized Folder Structure)
+// SaveManager.cs (Updated for BagInventory)
 // -------------------------------
 
 using System;
@@ -14,14 +14,12 @@ public class SaveManager : MonoBehaviour
     [SerializeField] private bool prettyPrintJson = true;
     [SerializeField] private bool enableAutoBackup = true;
     [SerializeField] private bool enableDebugLogs = true;
-    [SerializeField] private int maxBackupCount = 3; // Rolling backups
+    [SerializeField] private int maxBackupCount = 3;
     
     // Folder structure
     private const string ROOT_SAVE_FOLDER = "Saves";
     private const string PLAYER_DATA_FOLDER = "PlayerData";
     private const string BACKUP_FOLDER = "Backups";
-    
-    // File names
     private const string PLAYER_DATA_FILE = "player_data.json";
     
     // Events
@@ -62,9 +60,12 @@ public class SaveManager : MonoBehaviour
             Directory.CreateDirectory(BackupPath);
     }
     
-    #region Public API
+    #region Public API - GameManager calls these
     
-    public bool Save(SaveData data)
+    /// <summary>
+    /// Save complete game state (player + inventory + metadata)
+    /// </summary>
+    public bool SaveGame(PlayerStats playerStats, float playTime)
     {
         try
         {
@@ -74,14 +75,17 @@ public class SaveManager : MonoBehaviour
                 CreateRollingBackup();
             }
             
+            // Build complete save data
+            SaveData saveData = BuildSaveData(playerStats, playTime);
+            
             // Update metadata
-            data.UpdateMetaData();
+            saveData.UpdateMetaData();
             
             // Serialize and write
-            string json = JsonUtility.ToJson(data, prettyPrintJson);
+            string json = JsonUtility.ToJson(saveData, prettyPrintJson);
             File.WriteAllText(PlayerDataFile, json);
             
-            Log("Game saved");
+            Log("Game saved successfully");
             OnSaveCompleted?.Invoke();
             return true;
         }
@@ -93,14 +97,17 @@ public class SaveManager : MonoBehaviour
         }
     }
     
-    public SaveData Load()
+    /// <summary>
+    /// Load complete game state
+    /// </summary>
+    public SaveData LoadGame()
     {
         // Try loading main save
         SaveData data = TryLoadFromPath(PlayerDataFile);
         
         if (data != null)
         {
-            Log("Game loaded");
+            Log("Game loaded successfully");
             OnLoadCompleted?.Invoke();
             return data;
         }
@@ -170,17 +177,54 @@ public class SaveManager : MonoBehaviour
     
     #endregion
     
-    #region Backup System
+    #region Save Data Building - SaveManager's Responsibility
     
     /// <summary>
-    /// Creates timestamped backup and removes old ones beyond maxBackupCount
-    /// Format: backup_player_20251121_1530.json
+    /// Build complete save data from all game systems
+    /// This is where ALL save logic is centralized
     /// </summary>
+    private SaveData BuildSaveData(PlayerStats playerStats, float playTime)
+    {
+        SaveData save = new SaveData
+        {
+            metaData = SaveMetaData.CreateNew(),
+            playerData = PlayerData.FromPlayerStats(playerStats),
+            inventoryData = GetInventoryData()
+        };
+        
+        // Add play time
+        save.metaData.totalPlayTimeSeconds += playTime;
+        
+        return save;
+    }
+    
+    /// <summary>
+    /// Safely get inventory data
+    /// </summary>
+    private BagInventoryData GetInventoryData()
+    {
+        if (InventoryManager.Instance != null)
+        {
+            return InventoryManager.Instance.SaveInventory();
+        }
+        
+        // If InventoryManager doesn't exist, create empty inventory
+        Log("InventoryManager not found, saving empty inventory");
+        return new BagInventoryData
+        {
+            items = new System.Collections.Generic.List<ItemInstance>(),
+            maxBagSlots = 12
+        };
+    }
+    
+    #endregion
+    
+    #region Backup System
+    
     private void CreateRollingBackup()
     {
         try
         {
-            // Create timestamped backup
             string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             string backupFileName = $"backup_player_{timestamp}.json";
             string backupFilePath = Path.Combine(BackupPath, backupFileName);
@@ -188,7 +232,6 @@ public class SaveManager : MonoBehaviour
             File.Copy(PlayerDataFile, backupFilePath, true);
             Log($"Backup created: {backupFileName}");
             
-            // Clean up old backups beyond maxBackupCount
             CleanupOldBackups();
         }
         catch (Exception e)
@@ -201,14 +244,11 @@ public class SaveManager : MonoBehaviour
     {
         try
         {
-            // Get all backup files sorted by creation time (newest first)
             DirectoryInfo backupDir = new DirectoryInfo(BackupPath);
             FileInfo[] backupFiles = backupDir.GetFiles("backup_player_*.json");
             
-            // Sort by creation time descending (newest first)
             System.Array.Sort(backupFiles, (a, b) => b.CreationTime.CompareTo(a.CreationTime));
             
-            // Delete files beyond maxBackupCount
             for (int i = maxBackupCount; i < backupFiles.Length; i++)
             {
                 backupFiles[i].Delete();
@@ -231,10 +271,8 @@ public class SaveManager : MonoBehaviour
             if (backupFiles.Length == 0)
                 return null;
             
-            // Sort by creation time descending (newest first)
             System.Array.Sort(backupFiles, (a, b) => b.CreationTime.CompareTo(a.CreationTime));
             
-            // Try loading from newest to oldest
             foreach (FileInfo file in backupFiles)
             {
                 SaveData data = TryLoadFromPath(file.FullName);

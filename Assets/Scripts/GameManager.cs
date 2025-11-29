@@ -1,15 +1,11 @@
 // -------------------------------
-// GameManager.cs
+// GameManager.cs (Clean - Delegates to SaveManager)
 // -------------------------------
 
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// Central game state manager. Single source of truth for runtime data.
-/// Singleton pattern - persists across scenes.
-/// </summary>
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
@@ -20,7 +16,6 @@ public class GameManager : MonoBehaviour
     [Header("Runtime Data (Read Only)")]
     [SerializeField] private float sessionPlayTime = 0f;
     
-    // Current player stats - the single source of truth
     public PlayerStats CurrentPlayer { get; private set; }
     public CharacterBaseStatsSO BaseStats => defaultBaseStats;
     public bool HasActivePlayer => CurrentPlayer != null;
@@ -44,7 +39,6 @@ public class GameManager : MonoBehaviour
     
     private void Update()
     {
-        // Track play time
         if (HasActivePlayer)
         {
             sessionPlayTime += Time.unscaledDeltaTime;
@@ -53,9 +47,6 @@ public class GameManager : MonoBehaviour
     
     #region Game Flow
     
-    /// <summary>
-    /// Start a new game with fresh stats
-    /// </summary>
     public void StartNewGame()
     {
         CurrentPlayer = new PlayerStats();
@@ -66,9 +57,6 @@ public class GameManager : MonoBehaviour
         OnNewGameStarted?.Invoke();
     }
     
-    /// <summary>
-    /// Set player stats (called from AvatarCreationManager after character creation)
-    /// </summary>
     public void SetPlayerStats(PlayerStats stats)
     {
         CurrentPlayer = stats;
@@ -76,7 +64,7 @@ public class GameManager : MonoBehaviour
     }
     
     /// <summary>
-    /// Save current game
+    /// Save game - delegates to SaveManager
     /// </summary>
     public bool SaveGame()
     {
@@ -86,10 +74,8 @@ public class GameManager : MonoBehaviour
             return false;
         }
         
-        SaveData saveData = SaveData.CreateSave(CurrentPlayer);
-        saveData.metaData.totalPlayTimeSeconds += sessionPlayTime;
-        
-        bool success = SaveManager.Instance.Save(saveData);
+        // SaveManager handles ALL save logic
+        bool success = SaveManager.Instance.SaveGame(CurrentPlayer, sessionPlayTime);
         
         if (success)
         {
@@ -98,13 +84,14 @@ public class GameManager : MonoBehaviour
         
         return success;
     }
-    
+
     /// <summary>
-    /// Load game
+    /// Load game - delegates to SaveManager
     /// </summary>
     public bool LoadGame()
     {
-        SaveData saveData = SaveManager.Instance.Load();
+        // SaveManager handles ALL load logic
+        SaveData saveData = SaveManager.Instance.LoadGame();
         
         if (saveData == null)
         {
@@ -112,9 +99,15 @@ public class GameManager : MonoBehaviour
             return false;
         }
         
-        // Convert to runtime PlayerStats
+        // Restore player stats
         CurrentPlayer = saveData.playerData.ToPlayerStats(defaultBaseStats);
         sessionPlayTime = 0f;
+        
+        // Restore inventory (if InventoryManager exists)
+        if (InventoryManager.Instance != null && saveData.inventoryData != null)
+        {
+            InventoryManager.Instance.LoadInventory(saveData.inventoryData);
+        }
         
         Debug.Log($"[GameManager] Loaded: {CurrentPlayer.playerName} (Lv.{CurrentPlayer.level})");
         OnPlayerLoaded?.Invoke(CurrentPlayer);
@@ -122,17 +115,11 @@ public class GameManager : MonoBehaviour
         return true;
     }
     
-    /// <summary>
-    /// Check if save exists
-    /// </summary>
     public bool SaveExists()
     {
         return SaveManager.Instance.SaveExists();
     }
     
-    /// <summary>
-    /// Delete save data
-    /// </summary>
     public bool DeleteSave()
     {
         bool success = SaveManager.Instance.DeleteSave();
@@ -149,9 +136,6 @@ public class GameManager : MonoBehaviour
     
     #region Quick Access Methods
     
-    /// <summary>
-    /// Add experience to player and auto-save if leveled up
-    /// </summary>
     public bool AddExperience(int amount)
     {
         if (!HasActivePlayer)
@@ -162,7 +146,7 @@ public class GameManager : MonoBehaviour
         if (leveledUp)
         {
             Debug.Log($"[GameManager] Level up! Now level {CurrentPlayer.level}");
-            SaveGame(); // Auto-save on level up
+            SaveGame();
         }
         
         return leveledUp;
@@ -170,7 +154,7 @@ public class GameManager : MonoBehaviour
     
     #endregion
     
-    #region Scene Management Helpers
+    #region Scene Management
     
     public void LoadScene(string sceneName)
     {
@@ -183,17 +167,11 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene(sceneName);
     }
     
-    /// <summary>
-    /// Go to main base (primary hub scene)
-    /// </summary>
     public void GoToMainBase()
     {
         LoadScene("03_MainBase");
     }
     
-    /// <summary>
-    /// Reset game and go back to avatar creation
-    /// </summary>
     public void ResetAndCreateNewCharacter()
     {
         DeleteSave();
@@ -201,35 +179,24 @@ public class GameManager : MonoBehaviour
         LoadScene("02_AvatarCreation");
     }
     
-    #endregion
-
-    #region Activity Management
-    
-    /// <summary>
-    /// Call when returning to main base from any activity
-    /// </summary>
     public void ReturnToMainBase()
     {
-        SaveGame(); // Auto-save before transition
+        SaveGame();
         LoadScene("03_MainBase");
     }
 
-    /// <summary>
-    /// Call after completing a battle/dungeon
-    /// </summary>
     public void OnActivityCompleted()
     {
         SaveGame();
         Debug.Log("[GameManager] Progress saved after activity");
     }
-
+    
     #endregion
     
     #region Application Lifecycle
     
     private void OnApplicationPause(bool pauseStatus)
     {
-        // Auto-save when app is paused (mobile)
         if (pauseStatus && HasActivePlayer)
         {
             SaveGame();
@@ -238,7 +205,6 @@ public class GameManager : MonoBehaviour
     
     private void OnApplicationQuit()
     {
-        // Auto-save on quit
         if (HasActivePlayer)
         {
             SaveGame();

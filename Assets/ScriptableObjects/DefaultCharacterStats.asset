@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ac948b3d91d5e7409b703dccdad58e0, type: 3}
+  m_Name: DefaultCharacterStats
+  m_EditorClassIdentifier: 
+  className: DefaultCharacterStats
+  classIcon: {fileID: 0}
+  startingSTR: 1
+  startingINT: 1
+  startingAGI: 1
+  startingEND: 1
+  startingWIS: 1
+  bonusPointsToAllocate: 50
+  BaseAD: 3
+  BaseAP: 3
+  BaseHP: 100
+  BaseDefense: 10
+  BaseCritRate: 5
+  BaseCritDamage: 150
+  BaseEvasion: 2
+  BaseTenacity: 0
+  HPPerLevel: 15
+  DefensePerLevel: 2
+  EvasionPerLevel: 0.1
+  TenacityPerLevel: 0.1
+  designNotes: 'Defense: Merged Armor + MR into single stat.
+
+    Penetration: Merged
+    Physical Pen + Magic Pen into single %.
+
+    Lifesteal: New item-only stat for
+    healing on damage dealt.
+
+    Lethality: Flat penetration (item-only).
+
+    AD/AP:
+    Unchanged, scaled by STR/INT.
+
+    Crit Damage: Item-only, no attribute scaling.'
