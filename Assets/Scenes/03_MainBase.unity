@@ -4325,7 +4325,7 @@ GameObject:
   - component: {fileID: 222692420}
   - component: {fileID: 222692419}
   m_Layer: 5
-  m_Name: Attribute_Int_Value
+  m_Name: Attribute_str_Value
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6269,7 +6269,7 @@ GameObject:
   - component: {fileID: 303010560}
   - component: {fileID: 303010559}
   m_Layer: 5
-  m_Name: Int_Button_minus
+  m_Name: str_Button_minus
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -13068,7 +13068,7 @@ GameObject:
   - component: {fileID: 756260781}
   - component: {fileID: 756260780}
   m_Layer: 5
-  m_Name: Int_Button_plus
+  m_Name: str_Button_plus
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -23021,6 +23021,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: PlayerPreview
       objectReference: {fileID: 0}
+    - target: {fileID: 9121247012535453008, guid: 89c533a0e4a0bab4896104b5b69ffeb5, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -23031,6 +23035,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 7265527280703458874, guid: 89c533a0e4a0bab4896104b5b69ffeb5, type: 3}
   m_PrefabInstance: {fileID: 1451326644}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1451326646 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1046891058244616414, guid: 89c533a0e4a0bab4896104b5b69ffeb5, type: 3}
+  m_PrefabInstance: {fileID: 1451326644}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48e146ed5e332d04dbc1a0ba78e83e4c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1474862824
 GameObject:
   m_ObjectHideFlags: 0
@@ -27207,7 +27222,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1835658924}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4ad2daa68f8031b49b66a51ba0069703, type: 3}
   m_Name: 
@@ -27215,34 +27230,29 @@ MonoBehaviour:
   playerNameText: {fileID: 1043166429}
   playerLevelText: {fileID: 198382759}
   guildRankText: {fileID: 2098490105}
-  adValueText: {fileID: 0}
-  apValueText: {fileID: 0}
-  critDamageValueText: {fileID: 0}
-  critRateValueText: {fileID: 0}
-  lethalityValueText: {fileID: 0}
-  penetrationValueText: {fileID: 0}
-  hpValueText: {fileID: 0}
-  defenseValueText: {fileID: 0}
-  lifestealValueText: {fileID: 0}
-  evasionValueText: {fileID: 0}
-  tenacityValueText: {fileID: 0}
-  strValueText: {fileID: 0}
-  intValueText: {fileID: 222692419}
-  agiValueText: {fileID: 672757928}
-  endValueText: {fileID: 1135317299}
-  wisValueText: {fileID: 442934003}
-  pointsValueText: {fileID: 0}
-  strMinusBtn: {fileID: 0}
-  strPlusBtn: {fileID: 0}
-  intMinusBtn: {fileID: 303010559}
-  intPlusBtn: {fileID: 756260780}
+  playerPreview: {fileID: 1451326646}
+  strMinusBtn: {fileID: 303010559}
+  strPlusBtn: {fileID: 756260780}
+  intMinusBtn: {fileID: 432918654}
+  intPlusBtn: {fileID: 561644986}
   agiMinusBtn: {fileID: 1590231905}
   agiPlusBtn: {fileID: 1560522524}
   endMinusBtn: {fileID: 505906231}
   endPlusBtn: {fileID: 2123487996}
   wisMinusBtn: {fileID: 215456691}
   wisPlusBtn: {fileID: 1092336937}
-  confirmButton: {fileID: 0}
+  strValueText: {fileID: 222692419}
+  intValueText: {fileID: 1980180640}
+  agiValueText: {fileID: 672757928}
+  endValueText: {fileID: 1135317299}
+  wisValueText: {fileID: 442934003}
+  pointsValueText: {fileID: 1046242032}
+  confirmButton: {fileID: 232381014}
+  backButton: {fileID: 1002383736}
+  pointsAvailableColor: {r: 0, g: 1, b: 0, a: 1}
+  pointsNormalColor: {r: 1, g: 1, b: 1, a: 1}
+  attributeIncreasedColor: {r: 0, g: 1, b: 0, a: 1}
+  debugMode: 1
 --- !u!1 &1836789841
 GameObject:
   m_ObjectHideFlags: 0

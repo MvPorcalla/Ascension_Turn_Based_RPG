@@ -4205,16 +4205,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 48e146ed5e332d04dbc1a0ba78e83e4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  autoFindElements: 1
-  adValue: {fileID: 6619818937635763161}
-  apValue: {fileID: 4265249180724278014}
-  critDamageValue: {fileID: 8951116768609248140}
-  critRateValue: {fileID: 6831993047866498084}
-  lethalityValue: {fileID: 8888973476634450285}
-  penetrationValue: {fileID: 2085312421015209849}
-  hpValue: {fileID: 2195935781190410670}
-  lifestealValue: {fileID: 4043826453171851381}
-  defenseValue: {fileID: 4949796681051016410}
-  evasionValue: {fileID: 8693439583733670960}
-  tenacityValue: {fileID: 7134373912044040897}
-  attackSpeedValue: {fileID: 6008459545414419388}
+  adValueText: {fileID: 6619818937635763161}
+  apValueText: {fileID: 4265249180724278014}
+  critDamageValueText: {fileID: 8951116768609248140}
+  critRateValueText: {fileID: 6831993047866498084}
+  lethalityValueText: {fileID: 8888973476634450285}
+  penetrationValueText: {fileID: 2085312421015209849}
+  hpValueText: {fileID: 2195935781190410670}
+  lifestealValueText: {fileID: 4043826453171851381}
+  attackSpeedValueText: {fileID: 6008459545414419388}
+  defenseValueText: {fileID: 4949796681051016410}
+  evasionValueText: {fileID: 8693439583733670960}
+  tenacityValueText: {fileID: 7134373912044040897}
