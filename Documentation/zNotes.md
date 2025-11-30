@@ -66,3 +66,43 @@ TODO: How should i implement the rarity of the weapon like rarity affects the bo
 ------------------ Disclaimer and Boostrap --------------------
 
 TODO: add a loader on the 00_Disclaimer and 01_Boostrap scene 
+
+------------------ Disclaimer and Boostrap --------------------
+Rename the [CreateAssetMenu] entries as follows:
+
+Change the ones currently under Game to ItemSO/... (e.g., ItemSO/Weapon, ItemSO/Consumable, etc.).
+Change the ones currently under RPG to BaseStats/CharacterStats.
+
+separate the raritySO in its own menu
+
+This will make the asset creation menu more organized and consistent.
+
+
+========================================== TODO ==========================================
+
+- 
+
+TODO:  Should I make RaritySO a universal reference for all the items I’m creating, like SkillSO.cs, WeaponSO.cs, GearSO.cs, ItemSO.cs, PotionSO.cs, etc.?
+
+Also, can I add a new category for growth-type weapons? For example, normal weapons follow the current logic, while growth-type weapons:
+
+Always start as Common
+- Scale based on kills: The weapon’s rarity increases after a certain number of kills while the weapon is in equip so its the weapons counter. When the weapon is unequipped, it has no owner. The first time a player equips it, the weapon registers the player’s ID. From that point on, its rarity grows based on that player’s monster kills using that weapon.
+
+- Scale based on player level: Similarly, the weapon’s rarity can increase when the player reaches certain level thresholds. It ties to the player upon first equip, and then tracks level-based growth for that player.
+
+- Other growth-related effects can also be added do you have suggestion?.
+
+Is this feasible to implement?
+
+
+
+on weapon creation should i make a cap of 100 stats additional overall? for all common items? so all are baalnce?
+
+what is ideal for base stats cap? for
+
+- common = 
+- rare = 
+- epic = 
+- legendary = 
+- Mythic = 

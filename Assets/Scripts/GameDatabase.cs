@@ -203,7 +203,7 @@ public class GameDatabase : ScriptableObject
                     case ItemType.Material:
                         materials.Add(item);
                         break;
-                    case ItemType.Armor:
+                    case ItemType.Gear:
                         gear.Add(item);
                         break;
                     case ItemType.Misc:

@@ -1,7 +1,156 @@
-// Main weapon ScriptableObject
-
+// -------------------------------
+// WeaponSO.cs - Complete System (All In One File)
+// -------------------------------
 using UnityEngine;
+using System;
 using System.Collections.Generic;
+
+// ===============================================
+// ENUMS
+// ===============================================
+
+public enum WeaponType
+{
+    Sword,
+    Axe,
+    Dagger,
+    Bow,
+    Staff,
+    Wand,
+    Hammer,
+    Spear,
+    Shield
+}
+
+public enum AttackRangeType
+{
+    Melee,
+    Ranged,
+    Magic
+}
+
+public enum BonusStatType
+{
+    AttackDamage,
+    AbilityPower,
+    Health,
+    Defense,
+    AttackSpeed,
+    CritRate,
+    CritDamage,
+    Evasion,
+    Tenacity,
+    Lethality,
+    Penetration,
+    Lifesteal
+}
+
+public enum RarityTier
+{
+    Common = 0,
+    Rare = 1,
+    Epic = 2,
+    Legendary = 3,
+    Mythic = 4
+}
+
+// ===============================================
+// WEAPON BONUS STAT
+// ===============================================
+
+[Serializable]
+public class WeaponBonusStat
+{
+    public BonusStatType statType;
+    public float value;
+    
+    public WeaponBonusStat(BonusStatType type, float val)
+    {
+        statType = type;
+        value = val;
+    }
+    
+    public string GetDisplayText()
+    {
+        switch (statType)
+        {
+            case BonusStatType.AttackDamage:
+                return $"+{value:F1} Attack Damage";
+            case BonusStatType.AbilityPower:
+                return $"+{value:F1} Ability Power";
+            case BonusStatType.Health:
+                return $"+{value:F0} Health";
+            case BonusStatType.Defense:
+                return $"+{value:F1} Defense";
+            case BonusStatType.AttackSpeed:
+                return $"+{value:F1} Attack Speed";
+            case BonusStatType.CritRate:
+                return $"+{value:F1}% Crit Rate";
+            case BonusStatType.CritDamage:
+                return $"+{value:F1}% Crit Damage";
+            case BonusStatType.Evasion:
+                return $"+{value:F1}% Evasion";
+            case BonusStatType.Tenacity:
+                return $"+{value:F1}% Tenacity";
+            case BonusStatType.Lethality:
+                return $"+{value:F0} Lethality";
+            case BonusStatType.Penetration:
+                return $"+{value:F1}% Penetration";
+            case BonusStatType.Lifesteal:
+                return $"+{value:F1}% Lifesteal";
+            default:
+                return "";
+        }
+    }
+}
+
+// ===============================================
+// WEAPON RARITY SO
+// ===============================================
+
+[CreateAssetMenu(fileName = "New Weapon Rarity", menuName = "Game/Weapon Rarity")]
+public class WeaponRaritySO : ScriptableObject
+{
+    [Header("Rarity Info")]
+    public string rarityName;
+    public RarityTier tier;
+    public Color rarityColor = Color.white;
+    
+    [Header("Stat Multipliers")]
+    [Tooltip("Multiply all base weapon stats by this amount")]
+    [Range(0.5f, 5f)]
+    public float statMultiplier = 1f;
+    
+    [Header("Bonus Stat Slots")]
+    [Tooltip("Number of random bonus stats this rarity can roll")]
+    [Range(0, 6)]
+    public int bonusStatSlots = 0;
+    
+    [Tooltip("Min value for bonus stats (% of base stat)")]
+    [Range(0f, 1f)]
+    public float bonusStatMinRoll = 0.1f;
+    
+    [Tooltip("Max value for bonus stats (% of base stat)")]
+    [Range(0f, 2f)]
+    public float bonusStatMaxRoll = 0.5f;
+    
+    [Header("Visual Effects")]
+    public Sprite rarityIcon;
+    public GameObject rarityParticleEffect;
+    public AudioClip rarityDropSound;
+    
+    [Header("Crafting Requirements (Future)")]
+    [Tooltip("Minimum successful hits needed in blacksmith minigame")]
+    public int minCraftingHits = 0;
+    
+    [Tooltip("Perfect hits bonus: additional stat roll chance")]
+    [Range(0f, 1f)]
+    public float perfectHitBonusChance = 0f;
+}
+
+// ===============================================
+// WEAPON SO
+// ===============================================
 
 [CreateAssetMenu(fileName = "New Weapon", menuName = "Game/Weapon")]
 public class WeaponSO : ItemBaseSO
@@ -45,6 +194,8 @@ public class WeaponSO : ItemBaseSO
     public SkillSO defaultWeaponSkill;
 
     // === CALCULATED PROPERTIES (Read-Only) ===
+    // These apply the rarity multiplier to base stats
+    
     public float bonusAD => baseAD * GetRarityMultiplier() + GetBonusStat(BonusStatType.AttackDamage);
     public float bonusAP => baseAP * GetRarityMultiplier() + GetBonusStat(BonusStatType.AbilityPower);
     public float bonusHP => baseHP * GetRarityMultiplier() + GetBonusStat(BonusStatType.Health);
@@ -74,6 +225,9 @@ public class WeaponSO : ItemBaseSO
         return total;
     }
 
+    /// <summary>
+    /// Roll random bonus stats based on rarity (called when weapon is crafted/dropped)
+    /// </summary>
     public void RollBonusStats()
     {
         if (rarityConfig == null || rarityConfig.bonusStatSlots <= 0)
@@ -84,16 +238,20 @@ public class WeaponSO : ItemBaseSO
         
         bonusStats.Clear();
         
+        // Get all possible stat types
         var availableStats = new List<BonusStatType>((BonusStatType[])System.Enum.GetValues(typeof(BonusStatType)));
         
+        // Roll bonus stats
         for (int i = 0; i < rarityConfig.bonusStatSlots && availableStats.Count > 0; i++)
         {
-            int randomIndex = Random.Range(0, availableStats.Count);
+            // Pick random stat type
+            int randomIndex = UnityEngine.Random.Range(0, availableStats.Count);
             BonusStatType statType = availableStats[randomIndex];
-            availableStats.RemoveAt(randomIndex);
+            availableStats.RemoveAt(randomIndex); // No duplicate stats
             
+            // Roll value based on base stat
             float baseValue = GetBaseStatValue(statType);
-            float rollPercent = Random.Range(rarityConfig.bonusStatMinRoll, rarityConfig.bonusStatMaxRoll);
+            float rollPercent = UnityEngine.Random.Range(rarityConfig.bonusStatMinRoll, rarityConfig.bonusStatMaxRoll);
             float rolledValue = baseValue * rollPercent;
             
             bonusStats.Add(new WeaponBonusStat(statType, rolledValue));
@@ -118,7 +276,7 @@ public class WeaponSO : ItemBaseSO
             case BonusStatType.Lethality: return baseLethality;
             case BonusStatType.Penetration: return basePenetration;
             case BonusStatType.Lifesteal: return baseLifesteal;
-            default: return 10f;
+            default: return 10f; // Fallback
         }
     }
 
@@ -128,6 +286,7 @@ public class WeaponSO : ItemBaseSO
         itemType = ItemType.Weapon;
         isStackable = false;
         
+        // Sync rarity with ItemBaseSO (cast RarityTier to Rarity)
         if (rarityConfig != null)
         {
             rarity = (Rarity)((int)rarityConfig.tier);
@@ -147,8 +306,10 @@ public class WeaponSO : ItemBaseSO
         string info = $"<b>{weaponName}</b>\n";
         info += $"<color=#{rarityColorHex}>{rarityName} {weaponType}</color> ({attackRangeType})\n\n";
         
+        // Base stats (with rarity multiplier)
         if (bonusAD > 0) info += $"<color=#ff6b6b>+{bonusAD:F1} Attack Damage</color>\n";
         if (bonusAP > 0) info += $"<color=#4ecdc4>+{bonusAP:F1} Ability Power</color>\n";
+        
         if (bonusHP > 0) info += $"+{bonusHP:F0} HP\n";
         if (bonusDefense > 0) info += $"+{bonusDefense:F1} Defense\n";
         if (bonusAttackSpeed > 0) info += $"+{bonusAttackSpeed:F1} Attack Speed\n";
@@ -160,6 +321,7 @@ public class WeaponSO : ItemBaseSO
         if (bonusPenetration > 0) info += $"+{bonusPenetration:F1}% Penetration\n";
         if (bonusLifesteal > 0) info += $"+{bonusLifesteal:F1}% Lifesteal\n";
         
+        // Bonus stats (highlighted)
         if (bonusStats.Count > 0)
         {
             info += $"\n<color=#{rarityColorHex}><b>Bonus Stats:</b></color>\n";

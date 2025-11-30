@@ -32,7 +32,7 @@ public abstract class ItemBaseSO : ScriptableObject
 public enum ItemType
 {
     Weapon,
-    Armor,
+    Gear,
     Skill,
     Consumable,
     Material,

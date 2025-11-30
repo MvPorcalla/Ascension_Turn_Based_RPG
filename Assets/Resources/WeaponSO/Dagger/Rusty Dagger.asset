@@ -24,20 +24,18 @@ MonoBehaviour:
   weaponName: Rusty Dagger
   weaponType: 2
   attackRangeType: 0
-  bonusSTR: 0
-  bonusINT: 0
-  bonusAGI: 7
-  bonusWIS: 0
-  bonusEND: 0
-  bonusAD: 6
-  bonusAP: 0
-  bonusHP: 0
-  bonusDefense: 0
-  bonusCritRate: 0
-  bonusEvasion: 0
-  bonusTenacity: 0
-  bonusCritDamage: 10
-  bonusLethality: 0
-  bonusPenetration: 0
-  bonusLifesteal: 0
+  rarityConfig: {fileID: 11400000, guid: ef3ee926371c1dd44a560545113296e5, type: 2}
+  bonusStats: []
+  baseAD: 70
+  baseAP: 0
+  baseHP: 0
+  baseDefense: 0
+  baseAttackSpeed: 10
+  baseCritRate: 10
+  baseCritDamage: 10
+  baseEvasion: 0
+  baseTenacity: 0
+  baseLethality: 0
+  basePenetration: 0
+  baseLifesteal: 0
   defaultWeaponSkill: {fileID: 11400000, guid: 3709e6aa2e3765a45991b00b3139629f, type: 2}

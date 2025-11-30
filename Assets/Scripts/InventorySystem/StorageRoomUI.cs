@@ -26,7 +26,7 @@ public class StorageRoomUI : MonoBehaviour
     [Header("Popups")]
     [SerializeField] private ItemPopupUI itemPopup; // For stackable items (materials, misc)
     [SerializeField] private PotionPopupUI potionPopup; // For potions
-    [SerializeField] private GearPopupUI gearPopup; // For weapons, armor
+    [SerializeField] private GearPopupUI gearPopup; // For weapons, Gear
 
     [Header("Quick Actions")]
     [SerializeField] private Button storeAllButton;
@@ -47,7 +47,7 @@ public class StorageRoomUI : MonoBehaviour
         // Filter buttons
         allItemsButton.onClick.AddListener(() => SetFilter(null));
         weaponButton.onClick.AddListener(() => SetFilter(ItemType.Weapon));
-        gearButton.onClick.AddListener(() => SetFilter(ItemType.Armor));
+        gearButton.onClick.AddListener(() => SetFilter(ItemType.Gear));
         potionButton.onClick.AddListener(() => SetFilter(ItemType.Consumable));
         materialsButton.onClick.AddListener(() => SetFilter(ItemType.Material));
         miscButton.onClick.AddListener(() => SetFilter(ItemType.Misc));
@@ -193,7 +193,7 @@ public class StorageRoomUI : MonoBehaviour
         }
         else
         {
-            // Use gear popup for non-stackable items (weapons, armor)
+            // Use gear popup for non-stackable items (weapons, Gear)
             gearPopup.ShowGear(itemData, item, fromLocation);
         }
     }

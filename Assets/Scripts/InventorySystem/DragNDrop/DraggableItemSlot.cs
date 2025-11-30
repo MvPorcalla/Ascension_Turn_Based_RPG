@@ -333,7 +333,7 @@ public class DraggableItemSlot : MonoBehaviour, IPointerDownHandler, IPointerUpH
         if (targetLocation == ItemLocation.Pocket)
         {
             bool isWeaponOrGear = itemData.itemType == ItemType.Weapon || 
-                                  itemData.itemType == ItemType.Armor;
+                                  itemData.itemType == ItemType.Gear;
             
             if (isWeaponOrGear)
             {

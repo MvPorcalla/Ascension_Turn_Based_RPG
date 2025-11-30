@@ -24,16 +24,18 @@ MonoBehaviour:
   weaponName: Wooden Bow
   weaponType: 3
   attackRangeType: 1
-  bonusAD: 10
-  bonusAP: 0
-  bonusHP: 0
-  bonusDefense: 0
-  bonusAttackSpeed: 0
-  bonusCritRate: 2
-  bonusCritDamage: 5
-  bonusEvasion: 0
-  bonusTenacity: 0
-  bonusLethality: 0
-  bonusPenetration: 0
-  bonusLifesteal: 0
+  rarityConfig: {fileID: 11400000, guid: ef3ee926371c1dd44a560545113296e5, type: 2}
+  bonusStats: []
+  baseAD: 80
+  baseAP: 0
+  baseHP: 0
+  baseDefense: 0
+  baseAttackSpeed: 20
+  baseCritRate: 0
+  baseCritDamage: 0
+  baseEvasion: 0
+  baseTenacity: 0
+  baseLethality: 0
+  basePenetration: 0
+  baseLifesteal: 0
   defaultWeaponSkill: {fileID: 11400000, guid: 9543a0a54380d8840939f0e583176d03, type: 2}

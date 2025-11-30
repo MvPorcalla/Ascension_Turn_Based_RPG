@@ -24,20 +24,18 @@ MonoBehaviour:
   weaponName: Apprentice Wand
   weaponType: 5
   attackRangeType: 2
-  bonusSTR: 0
-  bonusINT: 5
-  bonusAGI: 0
-  bonusWIS: 0
-  bonusEND: 0
-  bonusAD: 0
-  bonusAP: 10
-  bonusHP: 0
-  bonusDefense: 0
-  bonusCritRate: 0
-  bonusEvasion: 0
-  bonusTenacity: 0
-  bonusCritDamage: 0
-  bonusLethality: 0
-  bonusPenetration: 0
-  bonusLifesteal: 0
+  rarityConfig: {fileID: 11400000, guid: ef3ee926371c1dd44a560545113296e5, type: 2}
+  bonusStats: []
+  baseAD: 0
+  baseAP: 70
+  baseHP: 0
+  baseDefense: 0
+  baseAttackSpeed: 30
+  baseCritRate: 0
+  baseCritDamage: 0
+  baseEvasion: 0
+  baseTenacity: 0
+  baseLethality: 0
+  basePenetration: 0
+  baseLifesteal: 0
   defaultWeaponSkill: {fileID: 11400000, guid: 93826072a9dc756459d0b203e6e67d8d, type: 2}

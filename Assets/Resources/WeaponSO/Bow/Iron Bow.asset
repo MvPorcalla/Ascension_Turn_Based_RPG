@@ -24,20 +24,18 @@ MonoBehaviour:
   weaponName: Iron Bow
   weaponType: 3
   attackRangeType: 1
-  bonusSTR: 0
-  bonusINT: 0
-  bonusAGI: 10
-  bonusWIS: 0
-  bonusEND: 0
-  bonusAD: 20
-  bonusAP: 0
-  bonusHP: 0
-  bonusDefense: 0
-  bonusCritRate: 3
-  bonusEvasion: 0
-  bonusTenacity: 0
-  bonusCritDamage: 0
-  bonusLethality: 0
-  bonusPenetration: 5
-  bonusLifesteal: 0
+  rarityConfig: {fileID: 11400000, guid: 67c9c17c58a26084b918ecf05f1db453, type: 2}
+  bonusStats: []
+  baseAD: 100
+  baseAP: 0
+  baseHP: 0
+  baseDefense: 0
+  baseAttackSpeed: 10
+  baseCritRate: 10
+  baseCritDamage: 20
+  baseEvasion: 0
+  baseTenacity: 0
+  baseLethality: 0
+  basePenetration: 0.1
+  baseLifesteal: 0
   defaultWeaponSkill: {fileID: 11400000, guid: 9543a0a54380d8840939f0e583176d03, type: 2}
