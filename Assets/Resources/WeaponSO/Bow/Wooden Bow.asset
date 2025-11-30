@@ -24,19 +24,15 @@ MonoBehaviour:
   weaponName: Wooden Bow
   weaponType: 3
   attackRangeType: 1
-  bonusSTR: 0
-  bonusINT: 0
-  bonusAGI: 5
-  bonusWIS: 0
-  bonusEND: 0
   bonusAD: 10
   bonusAP: 0
   bonusHP: 0
   bonusDefense: 0
+  bonusAttackSpeed: 0
   bonusCritRate: 2
+  bonusCritDamage: 5
   bonusEvasion: 0
   bonusTenacity: 0
-  bonusCritDamage: 5
   bonusLethality: 0
   bonusPenetration: 0
   bonusLifesteal: 0

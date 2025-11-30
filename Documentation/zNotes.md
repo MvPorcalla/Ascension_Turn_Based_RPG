@@ -58,6 +58,16 @@ TODO: make a separate script called EWqupmentPopupUI.cs but reiusing the GearPop
 
 
 
+------------------ WeaponSO --------------------
+
+TODO: How should i implement the rarity of the weapon like rarity affects the bonus stats of the weapon like maybe a multiplier?
+
+
+------------------ Disclaimer and Boostrap --------------------
+
+TODO: add a loader on the 00_Disclaimer and 01_Boostrap scene 
+
+
 ------------------ PlayerSystem --------------------
 
 TODO: Fix
