@@ -210,7 +210,7 @@ public class AvatarCreationManager : MonoBehaviour
         endMinusBtn.interactable = canReduce && tempAttributes.END > baseStats.startingEND;
         wisMinusBtn.interactable = canReduce && tempAttributes.WIS > baseStats.startingWIS;
     }
-    
+
     private void OnConfirmClicked()
     {
         if (string.IsNullOrWhiteSpace(nameInput.text))
@@ -232,8 +232,16 @@ public class AvatarCreationManager : MonoBehaviour
         // Recalculate with full heal
         currentStats.RecalculateStats(baseStats, fullHeal: true);
         
+        // Set the player stats in GameManager
         GameManager.Instance.SetPlayerStats(currentStats);
+        
+        // Mark avatar creation as complete BEFORE saving
+        GameManager.Instance.CompleteAvatarCreation();
+        
+        // Now save is allowed
         GameManager.Instance.SaveGame();
+        
+        // Proceed to main base
         GameManager.Instance.GoToMainBase();
     }
     

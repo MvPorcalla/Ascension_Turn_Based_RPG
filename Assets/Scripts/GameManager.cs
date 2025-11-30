@@ -1,5 +1,5 @@
 // -------------------------------
-// GameManager.cs (Fixed for Refactored PlayerStats)
+// GameManager.cs (CORRECTED - removed duplicate)
 // -------------------------------
 
 using System;
@@ -15,6 +15,7 @@ public class GameManager : MonoBehaviour
     
     [Header("Runtime Data (Read Only)")]
     [SerializeField] private float sessionPlayTime = 0f;
+    [SerializeField] private bool isAvatarCreationComplete = false;
     
     public PlayerStats CurrentPlayer { get; private set; }
     public CharacterBaseStatsSO BaseStats => defaultBaseStats;
@@ -52,6 +53,7 @@ public class GameManager : MonoBehaviour
         CurrentPlayer = new PlayerStats();
         CurrentPlayer.Initialize(defaultBaseStats);
         sessionPlayTime = 0f;
+        isAvatarCreationComplete = false;
         
         Debug.Log("[GameManager] New game started");
         OnNewGameStarted?.Invoke();
@@ -62,9 +64,19 @@ public class GameManager : MonoBehaviour
         CurrentPlayer = stats;
         Debug.Log($"[GameManager] Player set: {stats.playerName}");
     }
+
+    /// <summary>
+    /// Call this when avatar creation is confirmed
+    /// </summary>
+    public void CompleteAvatarCreation()
+    {
+        isAvatarCreationComplete = true;
+        Debug.Log("[GameManager] Avatar creation completed - saves now enabled");
+    }
     
     /// <summary>
     /// Save game - delegates to SaveManager
+    /// ONLY saves if avatar creation is complete
     /// </summary>
     public bool SaveGame()
     {
@@ -74,7 +86,13 @@ public class GameManager : MonoBehaviour
             return false;
         }
         
-        // SaveManager handles ALL save logic
+        // CRITICAL: Don't save during avatar creation
+        if (!isAvatarCreationComplete)
+        {
+            Debug.LogWarning("[GameManager] Save blocked: Avatar creation not complete");
+            return false;
+        }
+        
         bool success = SaveManager.Instance.SaveGame(CurrentPlayer, sessionPlayTime);
         
         if (success)
@@ -90,7 +108,6 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public bool LoadGame()
     {
-        // SaveManager handles ALL load logic
         SaveData saveData = SaveManager.Instance.LoadGame();
         
         if (saveData == null)
@@ -99,11 +116,10 @@ public class GameManager : MonoBehaviour
             return false;
         }
         
-        // Restore player stats
         CurrentPlayer = saveData.playerData.ToPlayerStats(defaultBaseStats);
         sessionPlayTime = 0f;
+        isAvatarCreationComplete = true; // Loaded characters are always complete
         
-        // Restore inventory (if InventoryManager exists)
         if (InventoryManager.Instance != null && saveData.inventoryData != null)
         {
             InventoryManager.Instance.LoadInventory(saveData.inventoryData);
@@ -197,7 +213,8 @@ public class GameManager : MonoBehaviour
     
     private void OnApplicationPause(bool pauseStatus)
     {
-        if (pauseStatus && HasActivePlayer)
+        // Only save if avatar creation is complete
+        if (pauseStatus && HasActivePlayer && isAvatarCreationComplete)
         {
             SaveGame();
         }
@@ -205,7 +222,8 @@ public class GameManager : MonoBehaviour
     
     private void OnApplicationQuit()
     {
-        if (HasActivePlayer)
+        // Only save if avatar creation is complete
+        if (HasActivePlayer && isAvatarCreationComplete)
         {
             SaveGame();
         }
