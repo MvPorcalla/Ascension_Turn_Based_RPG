@@ -1,5 +1,5 @@
 // -------------------------------
-// GameManager.cs (Clean - Delegates to SaveManager)
+// GameManager.cs (Fixed for Refactored PlayerStats)
 // -------------------------------
 
 using System;
@@ -109,7 +109,7 @@ public class GameManager : MonoBehaviour
             InventoryManager.Instance.LoadInventory(saveData.inventoryData);
         }
         
-        Debug.Log($"[GameManager] Loaded: {CurrentPlayer.playerName} (Lv.{CurrentPlayer.level})");
+        Debug.Log($"[GameManager] Loaded: {CurrentPlayer.playerName} (Lv.{CurrentPlayer.Level})");
         OnPlayerLoaded?.Invoke(CurrentPlayer);
         
         return true;
@@ -145,7 +145,7 @@ public class GameManager : MonoBehaviour
         
         if (leveledUp)
         {
-            Debug.Log($"[GameManager] Level up! Now level {CurrentPlayer.level}");
+            Debug.Log($"[GameManager] Level up! Now level {CurrentPlayer.Level}");
             SaveGame();
         }
         

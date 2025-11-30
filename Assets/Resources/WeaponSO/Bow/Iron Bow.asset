@@ -40,4 +40,4 @@ MonoBehaviour:
   bonusLethality: 0
   bonusPenetration: 5
   bonusLifesteal: 0
-  defaultWeaponSkill: {fileID: 11400000, guid: 93826072a9dc756459d0b203e6e67d8d, type: 2}
+  defaultWeaponSkill: {fileID: 11400000, guid: 9543a0a54380d8840939f0e583176d03, type: 2}

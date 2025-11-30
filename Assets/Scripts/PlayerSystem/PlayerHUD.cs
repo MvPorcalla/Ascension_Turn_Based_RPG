@@ -83,7 +83,7 @@ public class PlayerHUD : MonoBehaviour
             return;
 
         PlayerStats player = GameManager.Instance.CurrentPlayer;
-        player.currentHP = Mathf.Max(0, player.currentHP - damage);
+        player.combatRuntime.TakeDamage(damage, player.MaxHP);
         UpdateHealthBar(player);
     }
 
@@ -93,7 +93,7 @@ public class PlayerHUD : MonoBehaviour
             return;
 
         PlayerStats player = GameManager.Instance.CurrentPlayer;
-        player.currentHP = Mathf.Min(player.HP, player.currentHP + amount);
+        player.combatRuntime.Heal(amount, player.MaxHP);
         UpdateHealthBar(player);
     }
 
@@ -103,7 +103,7 @@ public class PlayerHUD : MonoBehaviour
             return;
 
         PlayerStats player = GameManager.Instance.CurrentPlayer;
-        player.currentHP = player.HP;
+        player.combatRuntime.currentHP = player.MaxHP;
         UpdateHealthBar(player);
     }
 
@@ -117,35 +117,40 @@ public class PlayerHUD : MonoBehaviour
             playerNameText.text = player.playerName;
 
         if (levelText != null)
-            levelText.text = $"Lv.{player.level}";
+        {
+            if (player.IsTranscended)
+                levelText.text = $"Lv.{player.Level} ★";
+            else
+                levelText.text = $"Lv.{player.Level}";
+        }
     }
 
     private void UpdateHealthBar(PlayerStats player)
     {
-        if (player.HP <= 0) return;
+        if (player.MaxHP <= 0) return;
 
-        float ratio = player.currentHP / player.HP;
+        float ratio = player.CurrentHP / player.MaxHP;
         targetHealthFill = ratio;
 
-        if (!smoothBars)
+        if (!smoothBars && healthFill != null)
             healthFill.fillAmount = ratio;
 
         if (healthText != null)
-            healthText.text = $"{Mathf.CeilToInt(player.currentHP)}/{Mathf.CeilToInt(player.HP)}";
+            healthText.text = $"{Mathf.CeilToInt(player.CurrentHP)}/{Mathf.CeilToInt(player.MaxHP)}";
     }
 
     private void UpdateExpBar(PlayerStats player)
     {
-        if (player.expToNextLevel <= 0) return;
+        if (player.levelSystem.expToNextLevel <= 0) return;
 
-        float ratio = (float)player.currentEXP / player.expToNextLevel;
+        float ratio = (float)player.CurrentEXP / player.levelSystem.expToNextLevel;
         targetExpFill = ratio;
 
-        if (!smoothBars)
+        if (!smoothBars && expFill != null)
             expFill.fillAmount = ratio;
 
         if (expText != null)
-            expText.text = $"{player.currentEXP}/{player.expToNextLevel}";
+            expText.text = $"{player.CurrentEXP}/{player.levelSystem.expToNextLevel}";
     }
 
     #endregion

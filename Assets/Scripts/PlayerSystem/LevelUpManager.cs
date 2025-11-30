@@ -1,5 +1,5 @@
 // -------------------------------
-// LevelUpManager.cs (Updated for Attack Speed)
+// LevelUpManager.cs
 // -------------------------------
 
 using UnityEngine;
@@ -14,7 +14,7 @@ public class LevelUpManager : MonoBehaviour
     [Header("UI - Level Info")]
     [SerializeField] private TMP_Text levelText;
     [SerializeField] private TMP_Text pointsRemainingText;
-    [SerializeField] private TMP_Text transcendenceText; // NEW
+    [SerializeField] private TMP_Text transcendenceText;
     
     [Header("UI - Attribute Buttons")]
     [SerializeField] private Button strPlusBtn;
@@ -34,7 +34,7 @@ public class LevelUpManager : MonoBehaviour
     [SerializeField] private TMP_Text adText;
     [SerializeField] private TMP_Text apText;
     [SerializeField] private TMP_Text hpText;
-    [SerializeField] private TMP_Text attackSpeedText; // NEW
+    [SerializeField] private TMP_Text attackSpeedText;
     [SerializeField] private TMP_Text defenseText;
     [SerializeField] private TMP_Text critRateText;
     [SerializeField] private TMP_Text evasionText;
@@ -45,8 +45,13 @@ public class LevelUpManager : MonoBehaviour
 
     private CharacterBaseStatsSO baseStats => GameManager.Instance.BaseStats;
     private PlayerStats playerStats;
-    private int tempSTR, tempINT, tempAGI, tempEND, tempWIS;
+    
+    // Temp allocation state
+    private PlayerAttributes tempAttributes;
     private int tempPointsSpent = 0;
+    
+    // Preview cache (reused to avoid allocations)
+    private PlayerDerivedStats previewStats = new PlayerDerivedStats();
     
     private void Start()
     {
@@ -58,11 +63,11 @@ public class LevelUpManager : MonoBehaviour
     
     private void SetupButtons()
     {
-        strPlusBtn.onClick.AddListener(() => AddPoint(ref tempSTR));
-        intPlusBtn.onClick.AddListener(() => AddPoint(ref tempINT));
-        agiPlusBtn.onClick.AddListener(() => AddPoint(ref tempAGI));
-        endPlusBtn.onClick.AddListener(() => AddPoint(ref tempEND));
-        wisPlusBtn.onClick.AddListener(() => AddPoint(ref tempWIS));
+        strPlusBtn.onClick.AddListener(() => AddPoint("STR"));
+        intPlusBtn.onClick.AddListener(() => AddPoint("INT"));
+        agiPlusBtn.onClick.AddListener(() => AddPoint("AGI"));
+        endPlusBtn.onClick.AddListener(() => AddPoint("END"));
+        wisPlusBtn.onClick.AddListener(() => AddPoint("WIS"));
         
         confirmButton.onClick.AddListener(OnConfirmClicked);
         
@@ -72,7 +77,7 @@ public class LevelUpManager : MonoBehaviour
     
     public void OpenLevelUpPanel(PlayerStats stats)
     {
-        if (stats.unallocatedPoints <= 0)
+        if (stats.UnallocatedPoints <= 0)
         {
             Debug.Log("No points to allocate!");
             return;
@@ -80,11 +85,8 @@ public class LevelUpManager : MonoBehaviour
         
         playerStats = stats;
         
-        tempSTR = playerStats.STR;
-        tempINT = playerStats.INT;
-        tempAGI = playerStats.AGI;
-        tempEND = playerStats.END;
-        tempWIS = playerStats.WIS;
+        // Clone current attributes for temporary modification
+        tempAttributes = playerStats.attributes.Clone();
         tempPointsSpent = 0;
         
         if (levelUpPanel != null)
@@ -93,12 +95,20 @@ public class LevelUpManager : MonoBehaviour
         UpdateUI();
     }
     
-    private void AddPoint(ref int attribute)
+    private void AddPoint(string attributeName)
     {
-        if (tempPointsSpent >= playerStats.unallocatedPoints)
+        if (tempPointsSpent >= playerStats.UnallocatedPoints)
             return;
         
-        attribute++;
+        switch (attributeName)
+        {
+            case "STR": tempAttributes.STR++; break;
+            case "INT": tempAttributes.INT++; break;
+            case "AGI": tempAttributes.AGI++; break;
+            case "END": tempAttributes.END++; break;
+            case "WIS": tempAttributes.WIS++; break;
+        }
+        
         tempPointsSpent++;
         UpdateUI();
     }
@@ -108,19 +118,19 @@ public class LevelUpManager : MonoBehaviour
         // Level display with transcendence
         if (levelText)
         {
-            if (playerStats.isTranscended)
-                levelText.text = $"Level {playerStats.level} ★";
+            if (playerStats.IsTranscended)
+                levelText.text = $"Level {playerStats.Level} ★";
             else
-                levelText.text = $"Level {playerStats.level}";
+                levelText.text = $"Level {playerStats.Level}";
         }
         
         // Transcendence display
         if (transcendenceText != null)
         {
-            if (playerStats.isTranscended)
+            if (playerStats.IsTranscended)
             {
                 transcendenceText.gameObject.SetActive(true);
-                transcendenceText.text = $"<color=gold>Transcendence Lv.{playerStats.transcendenceLevel}</color>";
+                transcendenceText.text = $"<color=gold>Transcendence Lv.{playerStats.TranscendenceLevel}</color>";
             }
             else
             {
@@ -129,7 +139,7 @@ public class LevelUpManager : MonoBehaviour
         }
         
         // Points remaining
-        int pointsRemaining = playerStats.unallocatedPoints - tempPointsSpent;
+        int pointsRemaining = playerStats.UnallocatedPoints - tempPointsSpent;
         if (pointsRemainingText) 
         { 
             pointsRemainingText.text = $"Points: {pointsRemaining}"; 
@@ -137,14 +147,14 @@ public class LevelUpManager : MonoBehaviour
         }
         
         // Attributes with changes
-        UpdateAttributeText(strText, tempSTR, playerStats.STR, "STR");
-        UpdateAttributeText(intText, tempINT, playerStats.INT, "INT");
-        UpdateAttributeText(agiText, tempAGI, playerStats.AGI, "AGI");
-        UpdateAttributeText(endText, tempEND, playerStats.END, "END");
-        UpdateAttributeText(wisText, tempWIS, playerStats.WIS, "WIS");
+        UpdateAttributeText(strText, tempAttributes.STR, playerStats.attributes.STR, "STR");
+        UpdateAttributeText(intText, tempAttributes.INT, playerStats.attributes.INT, "INT");
+        UpdateAttributeText(agiText, tempAttributes.AGI, playerStats.attributes.AGI, "AGI");
+        UpdateAttributeText(endText, tempAttributes.END, playerStats.attributes.END, "END");
+        UpdateAttributeText(wisText, tempAttributes.WIS, playerStats.attributes.WIS, "WIS");
         
         // Button states
-        bool hasPoints = tempPointsSpent < playerStats.unallocatedPoints;
+        bool hasPoints = tempPointsSpent < playerStats.UnallocatedPoints;
         strPlusBtn.interactable = hasPoints;
         intPlusBtn.interactable = hasPoints;
         agiPlusBtn.interactable = hasPoints;
@@ -164,34 +174,14 @@ public class LevelUpManager : MonoBehaviour
     
     private void PreviewCombatStats()
     {
-        PlayerStats previewStats = new PlayerStats
-        {
-            level = playerStats.level,
-            STR = tempSTR,
-            INT = tempINT,
-            AGI = tempAGI,
-            END = tempEND,
-            WIS = tempWIS,
-            ItemAD = playerStats.ItemAD,
-            ItemAP = playerStats.ItemAP,
-            ItemHP = playerStats.ItemHP,
-            ItemDefense = playerStats.ItemDefense,
-            ItemAttackSpeed = playerStats.ItemAttackSpeed, // NEW
-            ItemCritRate = playerStats.ItemCritRate,
-            ItemCritDamage = playerStats.ItemCritDamage,
-            ItemEvasion = playerStats.ItemEvasion,
-            ItemTenacity = playerStats.ItemTenacity,
-            ItemLethality = playerStats.ItemLethality,
-            ItemPenetration = playerStats.ItemPenetration,
-            ItemLifesteal = playerStats.ItemLifesteal
-        };
-
-        previewStats.CalculateCombatStats(baseStats);
+        // Reuse previewStats (no new allocation!)
+        // Pass player's equipped weapon for accurate preview
+        previewStats.Recalculate(baseStats, playerStats.Level, tempAttributes, playerStats.itemStats, playerStats.equippedWeapon);
         
         if (adText) adText.text = $"AD: {previewStats.AD:F1}";
         if (apText) apText.text = $"AP: {previewStats.AP:F1}";
-        if (hpText) hpText.text = $"HP: {previewStats.HP:F0}";
-        if (attackSpeedText) attackSpeedText.text = $"Speed: {previewStats.AttackSpeed:F1}"; // NEW
+        if (hpText) hpText.text = $"HP: {previewStats.MaxHP:F0}";
+        if (attackSpeedText) attackSpeedText.text = $"Speed: {previewStats.AttackSpeed:F1}";
         if (defenseText) defenseText.text = $"Defense: {previewStats.Defense:F1}";
         if (critRateText) critRateText.text = $"Crit: {previewStats.CritRate:F1}%";
         if (evasionText) evasionText.text = $"Evasion: {previewStats.Evasion:F1}%";
@@ -199,20 +189,18 @@ public class LevelUpManager : MonoBehaviour
     
     private void OnConfirmClicked()
     {
-        if (tempPointsSpent < playerStats.unallocatedPoints)
+        if (tempPointsSpent < playerStats.UnallocatedPoints)
         {
-            Debug.LogWarning($"You still have {playerStats.unallocatedPoints - tempPointsSpent} points to spend!");
+            Debug.LogWarning($"You still have {playerStats.UnallocatedPoints - tempPointsSpent} points to spend!");
             return;
         }
         
-        playerStats.STR = tempSTR;
-        playerStats.INT = tempINT;
-        playerStats.AGI = tempAGI;
-        playerStats.END = tempEND;
-        playerStats.WIS = tempWIS;
-        playerStats.unallocatedPoints = 0;
+        // Apply temp attributes to actual stats
+        playerStats.attributes.CopyFrom(tempAttributes);
+        playerStats.levelSystem.unallocatedPoints = 0;
         
-        playerStats.CalculateCombatStats(baseStats);
+        // Recalculate and save
+        playerStats.RecalculateStats(baseStats, fullHeal: false);
         GameManager.Instance.SaveGame();
         
         if (levelUpPanel != null)
@@ -223,7 +211,7 @@ public class LevelUpManager : MonoBehaviour
     
     private void OnCloseClicked()
     {
-        if (playerStats.unallocatedPoints > 0)
+        if (playerStats.UnallocatedPoints > 0)
         {
             Debug.LogWarning("You must allocate all points before closing!");
             return;
@@ -247,7 +235,7 @@ public class LevelUpManager : MonoBehaviour
         
         if (leveledUp)
         {
-            Debug.Log($"LEVEL UP! Now level {playerStats.level}");
+            Debug.Log($"LEVEL UP! Now level {playerStats.Level}");
             GameManager.Instance.SaveGame();
             OpenLevelUpPanel(playerStats);
         }

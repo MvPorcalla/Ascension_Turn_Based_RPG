@@ -55,3 +55,22 @@ TODO: Make a Skill Pop Up UI for SkillsSO
 ------------------ Equipment ROOM --------------------
 
 TODO: make a separate script called EWqupmentPopupUI.cs but reiusing the GearPopup Container
+
+
+
+------------------ PlayerSystem --------------------
+
+TODO: Fix
+
+is the script of PlayerStatsPreviewUI.cs similar logic script with the AvatarCreationManager.cs?
+
+
+Issue:
+
+When I'm in avatar creation and I exit, it still saves. Why is that?
+In the 02_AvatarCreation scene, it should only save once I confirm the avatar creation.
+
+The current problem is that when I'm creating an avatar and I exit the game, it auto-saves. So when I return, it loads the save system with null data, and the 50 unallocated points that I haven't assigned yet are gone.
+
+TODO: Next
+create a full profile script along with my script PlayerStatsPreviewUI.cs

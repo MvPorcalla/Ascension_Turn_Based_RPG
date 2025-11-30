@@ -294,7 +294,7 @@ Canvas (Screen Space - Overlay, 1920x1080)
 │
 
 │
-├── ProfilePanel (Prefab) (fills screen)
+├── ProfilePanel (fills screen)
 │    ├── ProfileHeader
 │    │    ├── backButton
 │    │    └── Title
@@ -307,7 +307,7 @@ Canvas (Screen Space - Overlay, 1920x1080)
 │    │    └── GuildRank
 │    │          ├── Text
 │    │          └── Rank
-│    ├── PlayerStatsection
+│    ├── PlayerPreview  (Prefab)
 │    │    ├── Background
 │    │    ├── Header
 │    │    │    ├── backButton
@@ -340,6 +340,9 @@ Canvas (Screen Space - Overlay, 1920x1080)
 │    │         ├── Base_Lifesteal
 │    │         │    ├── Text_Label
 │    │         │    └── Lifesteal_value
+│    │         ├── Base_AttackSpeed
+│    │         │    ├── Text_Label
+│    │         │    └── AttackSpeed_value
 │    │         ├── Base_Defense
 │    │         │    ├── Text_Label
 │    │         │    └── Defense_value
@@ -388,6 +391,9 @@ Canvas (Screen Space - Overlay, 1920x1080)
 │              ├── PointsText
 │              ├── PointsValue
 │              └── ConfirmButton
+
+
+
 │ 
 ├── InventoryPanel (Prefab) (fills screen)
 │    ├── InventoryHeader

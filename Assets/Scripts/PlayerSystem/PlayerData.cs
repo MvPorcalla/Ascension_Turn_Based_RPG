@@ -1,5 +1,5 @@
 // -------------------------------
-// PlayerData.cs (Updated for Attack Speed & Transcendence)
+// PlayerData.cs
 // -------------------------------
 
 using System;
@@ -11,13 +11,11 @@ public class PlayerData
     public string playerName;
     public string className;
     
-    // Progression
+    // Level System
     public int level;
     public int currentEXP;
     public int expToNextLevel;
     public int unallocatedPoints;
-    
-    // Transcendence
     public int transcendenceLevel;
     public bool isTranscended;
 
@@ -36,7 +34,7 @@ public class PlayerData
     public float itemAP;
     public float itemHP;
     public float itemDefense;
-    public float itemAttackSpeed; // NEW
+    public float itemAttackSpeed;
     public float itemCritRate;
     public float itemCritDamage;
     public float itemEvasion;
@@ -53,32 +51,36 @@ public class PlayerData
         {
             playerName = stats.playerName,
             className = stats.className,
-            hpPercent = (stats.HP > 0) ? stats.currentHP / stats.HP : 1f,
-            level = stats.level,
-            currentEXP = stats.currentEXP,
-            expToNextLevel = stats.expToNextLevel,
-            unallocatedPoints = stats.unallocatedPoints,
-            transcendenceLevel = stats.transcendenceLevel,
-            isTranscended = stats.isTranscended,
+            hpPercent = stats.combatRuntime.GetHPPercent(stats.derivedStats.MaxHP),
             
-            STR = stats.STR,
-            INT = stats.INT,
-            AGI = stats.AGI,
-            END = stats.END,
-            WIS = stats.WIS,
+            // Level system
+            level = stats.levelSystem.level,
+            currentEXP = stats.levelSystem.currentEXP,
+            expToNextLevel = stats.levelSystem.expToNextLevel,
+            unallocatedPoints = stats.levelSystem.unallocatedPoints,
+            transcendenceLevel = stats.levelSystem.transcendenceLevel,
+            isTranscended = stats.levelSystem.isTranscended,
             
-            itemAD = stats.ItemAD,
-            itemAP = stats.ItemAP,
-            itemHP = stats.ItemHP,
-            itemDefense = stats.ItemDefense,
-            itemAttackSpeed = stats.ItemAttackSpeed, // NEW
-            itemCritRate = stats.ItemCritRate,
-            itemCritDamage = stats.ItemCritDamage,
-            itemEvasion = stats.ItemEvasion,
-            itemTenacity = stats.ItemTenacity,
-            itemLethality = stats.ItemLethality,
-            itemPenetration = stats.ItemPenetration,
-            itemLifesteal = stats.ItemLifesteal
+            // Attributes
+            STR = stats.attributes.STR,
+            INT = stats.attributes.INT,
+            AGI = stats.attributes.AGI,
+            END = stats.attributes.END,
+            WIS = stats.attributes.WIS,
+            
+            // Item stats
+            itemAD = stats.itemStats.AD,
+            itemAP = stats.itemStats.AP,
+            itemHP = stats.itemStats.HP,
+            itemDefense = stats.itemStats.Defense,
+            itemAttackSpeed = stats.itemStats.AttackSpeed,
+            itemCritRate = stats.itemStats.CritRate,
+            itemCritDamage = stats.itemStats.CritDamage,
+            itemEvasion = stats.itemStats.Evasion,
+            itemTenacity = stats.itemStats.Tenacity,
+            itemLethality = stats.itemStats.Lethality,
+            itemPenetration = stats.itemStats.Penetration,
+            itemLifesteal = stats.itemStats.Lifesteal
         };
     }
     
@@ -87,51 +89,51 @@ public class PlayerData
         PlayerStats stats = new PlayerStats
         {
             playerName = this.playerName,
-            className = this.className,
-            level = this.level,
-            currentEXP = this.currentEXP,
-            expToNextLevel = this.expToNextLevel,
-            unallocatedPoints = this.unallocatedPoints,
-            transcendenceLevel = this.transcendenceLevel,
-            isTranscended = this.isTranscended,
-            
-            STR = this.STR,
-            INT = this.INT,
-            AGI = this.AGI,
-            END = this.END,
-            WIS = this.WIS,
-            
-            ItemAD = this.itemAD,
-            ItemAP = this.itemAP,
-            ItemHP = this.itemHP,
-            ItemDefense = this.itemDefense,
-            ItemAttackSpeed = this.itemAttackSpeed, // NEW
-            ItemCritRate = this.itemCritRate,
-            ItemCritDamage = this.itemCritDamage,
-            ItemEvasion = this.itemEvasion,
-            ItemTenacity = this.itemTenacity,
-            ItemLethality = this.itemLethality,
-            ItemPenetration = this.itemPenetration,
-            ItemLifesteal = this.itemLifesteal
+            className = this.className
         };
         
-        // Calculate stats
-        stats.CalculateCombatStats(baseStats);
+        // Restore level system
+        stats.levelSystem.level = this.level;
+        stats.levelSystem.currentEXP = this.currentEXP;
+        stats.levelSystem.expToNextLevel = this.expToNextLevel;
+        stats.levelSystem.unallocatedPoints = this.unallocatedPoints;
+        stats.levelSystem.transcendenceLevel = this.transcendenceLevel;
+        stats.levelSystem.isTranscended = this.isTranscended;
+        
+        // Restore attributes
+        stats.attributes.STR = this.STR;
+        stats.attributes.INT = this.INT;
+        stats.attributes.AGI = this.AGI;
+        stats.attributes.END = this.END;
+        stats.attributes.WIS = this.WIS;
+        
+        // Restore item stats
+        stats.itemStats.AD = this.itemAD;
+        stats.itemStats.AP = this.itemAP;
+        stats.itemStats.HP = this.itemHP;
+        stats.itemStats.Defense = this.itemDefense;
+        stats.itemStats.AttackSpeed = this.itemAttackSpeed;
+        stats.itemStats.CritRate = this.itemCritRate;
+        stats.itemStats.CritDamage = this.itemCritDamage;
+        stats.itemStats.Evasion = this.itemEvasion;
+        stats.itemStats.Tenacity = this.itemTenacity;
+        stats.itemStats.Lethality = this.itemLethality;
+        stats.itemStats.Penetration = this.itemPenetration;
+        stats.itemStats.Lifesteal = this.itemLifesteal;
+        
+        // Calculate derived stats
+        stats.RecalculateStats(baseStats, fullHeal: false);
         
         // Restore HP from percentage
-        stats.currentHP = stats.HP * this.hpPercent;
+        stats.combatRuntime.currentHP = stats.derivedStats.MaxHP * this.hpPercent;
         
-        // Validate EXP without recalculating again
-        int maxPossibleLevel = baseStats.maxLevel;
-        if (baseStats.enableTranscendence)
-            maxPossibleLevel += baseStats.maxTranscendenceLevel;
-        
-        while (stats.currentEXP >= stats.expToNextLevel && stats.level < maxPossibleLevel)
+        // Validate EXP (check for pending level ups)
+        int maxPossibleLevel = stats.levelSystem.GetMaxPossibleLevel(baseStats);
+        while (stats.levelSystem.currentEXP >= stats.levelSystem.expToNextLevel && 
+               stats.levelSystem.level < maxPossibleLevel)
         {
-            stats.currentEXP -= stats.expToNextLevel;
-            stats.LevelUp(baseStats);
-            stats.CalculateCombatStats(baseStats);
-            stats.currentHP = stats.HP; // Full heal on pending level ups
+            stats.levelSystem.AddExperience(0, baseStats); // Trigger level up without adding EXP
+            stats.RecalculateStats(baseStats, fullHeal: true);
         }
         
         return stats;

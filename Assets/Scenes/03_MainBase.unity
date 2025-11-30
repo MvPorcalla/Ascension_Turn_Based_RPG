@@ -23019,7 +23019,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9121247012535453008, guid: 89c533a0e4a0bab4896104b5b69ffeb5, type: 3}
       propertyPath: m_Name
-      value: PlayerStatsSection
+      value: PlayerPreview
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -33937,7 +33937,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9121247012535453008, guid: 89c533a0e4a0bab4896104b5b69ffeb5, type: 3}
       propertyPath: m_Name
-      value: PlayerStatsSection
+      value: PlayerPreview
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

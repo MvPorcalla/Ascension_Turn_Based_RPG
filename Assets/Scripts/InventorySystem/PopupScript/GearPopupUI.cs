@@ -92,26 +92,22 @@ public class GearPopupUI : MonoBehaviour
     {
         ClearStats();
 
-        // Display attribute bonuses
-        if (weapon.bonusSTR > 0) AddStatLine("Strength", $"+{weapon.bonusSTR}");
-        if (weapon.bonusINT > 0) AddStatLine("Intelligence", $"+{weapon.bonusINT}");
-        if (weapon.bonusAGI > 0) AddStatLine("Agility", $"+{weapon.bonusAGI}");
-        if (weapon.bonusWIS > 0) AddStatLine("Wisdom", $"+{weapon.bonusWIS}");
-        if (weapon.bonusEND > 0) AddStatLine("Endurance", $"+{weapon.bonusEND}");
+        // PRIMARY STATS - Displayed first with emphasis
+        if (weapon.bonusAD > 0) AddStatLine("Attack Damage", $"+{weapon.bonusAD}", "#ff6b6b");
+        if (weapon.bonusAP > 0) AddStatLine("Ability Power", $"+{weapon.bonusAP}", "#4ecdc4");
 
-        // Display derived stat bonuses
-        if (weapon.bonusAD > 0) AddStatLine("Attack Damage", $"+{weapon.bonusAD}");
-        if (weapon.bonusAP > 0) AddStatLine("Ability Power", $"+{weapon.bonusAP}");
+        // DEFENSIVE STATS
         if (weapon.bonusHP > 0) AddStatLine("Health", $"+{weapon.bonusHP}");
         if (weapon.bonusDefense > 0) AddStatLine("Defense", $"+{weapon.bonusDefense}");
 
-        // Display percentage stats
+        // OFFENSIVE STATS
+        if (weapon.bonusAttackSpeed > 0) AddStatLine("Attack Speed", $"+{weapon.bonusAttackSpeed}");
         if (weapon.bonusCritRate > 0) AddStatLine("Crit Rate", $"+{weapon.bonusCritRate}%");
+        if (weapon.bonusCritDamage > 0) AddStatLine("Crit Damage", $"+{weapon.bonusCritDamage}%");
+
+        // UTILITY STATS
         if (weapon.bonusEvasion > 0) AddStatLine("Evasion", $"+{weapon.bonusEvasion}%");
         if (weapon.bonusTenacity > 0) AddStatLine("Tenacity", $"+{weapon.bonusTenacity}%");
-
-        // Display item-only bonuses
-        if (weapon.bonusCritDamage > 0) AddStatLine("Crit Damage", $"+{weapon.bonusCritDamage}%");
         if (weapon.bonusLethality > 0) AddStatLine("Lethality", $"+{weapon.bonusLethality}");
         if (weapon.bonusPenetration > 0) AddStatLine("Penetration", $"+{weapon.bonusPenetration}%");
         if (weapon.bonusLifesteal > 0) AddStatLine("Lifesteal", $"+{weapon.bonusLifesteal}%");
@@ -119,7 +115,7 @@ public class GearPopupUI : MonoBehaviour
         // Display weapon skill if available
         if (weapon.defaultWeaponSkill != null)
         {
-            AddEffectLine($"Skill: {weapon.defaultWeaponSkill.skillName}");
+            AddEffectLine($"⚔ Skill: {weapon.defaultWeaponSkill.skillName}");
         }
     }
 
@@ -138,7 +134,7 @@ public class GearPopupUI : MonoBehaviour
         }
     }
 
-    private void AddStatLine(string label, string value)
+    private void AddStatLine(string label, string value, string hexColor = null)
     {
         if (itemBonusStatsPrefab == null)
         {
@@ -163,7 +159,18 @@ public class GearPopupUI : MonoBehaviour
         }
         
         if (labelText != null) labelText.text = label;
-        if (valueText != null) valueText.text = value;
+        if (valueText != null)
+        {
+            // Apply color if provided
+            if (!string.IsNullOrEmpty(hexColor))
+            {
+                valueText.text = $"<color={hexColor}>{value}</color>";
+            }
+            else
+            {
+                valueText.text = value;
+            }
+        }
     }
 
     private void AddEffectLine(string effectText)
