@@ -9,7 +9,7 @@ public class PlayerData
 {
     // Identity
     public string playerName;
-    public string className;
+    public string guildRank = "Unranked"; // Changed from className
     
     // Level System
     public int level;
@@ -50,7 +50,7 @@ public class PlayerData
         return new PlayerData
         {
             playerName = stats.playerName,
-            className = stats.className,
+            guildRank = string.IsNullOrEmpty(stats.guildRank) ? "Unranked" : stats.guildRank,
             hpPercent = stats.combatRuntime.GetHPPercent(stats.derivedStats.MaxHP),
             
             // Level system
@@ -89,7 +89,7 @@ public class PlayerData
         PlayerStats stats = new PlayerStats
         {
             playerName = this.playerName,
-            className = this.className
+            guildRank = string.IsNullOrEmpty(this.guildRank) ? "Unranked" : this.guildRank
         };
         
         // Restore level system

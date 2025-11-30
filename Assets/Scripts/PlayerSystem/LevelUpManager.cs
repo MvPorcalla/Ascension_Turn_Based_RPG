@@ -119,18 +119,22 @@ public class LevelUpManager : MonoBehaviour
         if (levelText)
         {
             if (playerStats.IsTranscended)
-                levelText.text = $"Level {playerStats.Level} ★";
+            {
+                levelText.text = $"Level {playerStats.Level} (T{playerStats.TranscendenceLevel})";
+            }
             else
+            {
                 levelText.text = $"Level {playerStats.Level}";
+            }
         }
         
-        // Transcendence display
+        // Transcendence display (optional separate field)
         if (transcendenceText != null)
         {
             if (playerStats.IsTranscended)
             {
                 transcendenceText.gameObject.SetActive(true);
-                transcendenceText.text = $"<color=gold>Transcendence Lv.{playerStats.TranscendenceLevel}</color>";
+                transcendenceText.text = $"<color=gold>Transcendence Level {playerStats.TranscendenceLevel}</color>";
             }
             else
             {

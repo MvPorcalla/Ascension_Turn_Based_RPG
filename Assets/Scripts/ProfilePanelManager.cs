@@ -167,14 +167,23 @@ public class ProfilePanelManager : MonoBehaviour
         if (playerNameText) 
             playerNameText.text = Player.playerName;
         
-        if (playerLevelText) 
-            playerLevelText.text = $"Lv.{Player.Level}";
+        if (playerLevelText)
+        {
+            // Display level with transcendence indicator if transcended
+            if (Player.IsTranscended)
+            {
+                playerLevelText.text = $"Lv.{Player.Level} (T{Player.TranscendenceLevel})";
+            }
+            else
+            {
+                playerLevelText.text = $"Lv.{Player.Level}";
+            }
+        }
         
         if (guildRankText)
         {
-            guildRankText.text = Player.IsTranscended 
-                ? $"Transcended (T{Player.TranscendenceLevel})" 
-                : "Adventurer";
+            // Just display guild rank (separate from transcendence)
+            guildRankText.text = Player.guildRank;
         }
     }
     

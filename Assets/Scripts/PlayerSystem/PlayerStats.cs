@@ -9,10 +9,10 @@ public class PlayerStats
 {
     [Header("Character Identity")]
     public string playerName;
-    public string className;
+    public string guildRank = "Unranked"; // Changed from className
 
-    [Header("Equipment")] // NEW
-    public WeaponSO equippedWeapon; // NEW: Reference to equipped weapon
+    [Header("Equipment")]
+    public WeaponSO equippedWeapon;
     
     [Header("Core Systems")]
     public PlayerLevelSystem levelSystem = new PlayerLevelSystem();
@@ -36,7 +36,7 @@ public class PlayerStats
     
     public void Initialize(CharacterBaseStatsSO baseStats)
     {
-        className = baseStats.className;
+        guildRank = "Unranked"; // Set default rank
         
         levelSystem.Initialize(baseStats);
         
@@ -107,6 +107,15 @@ public class PlayerStats
         equippedWeapon = null;
         RecalculateStats(baseStats, fullHeal: false);
         Debug.Log("[PlayerStats] Weapon unequipped");
+    }
+    
+    /// <summary>
+    /// Update guild rank
+    /// </summary>
+    public void SetGuildRank(string rank)
+    {
+        guildRank = string.IsNullOrEmpty(rank) ? "Unranked" : rank;
+        Debug.Log($"[PlayerStats] Guild rank updated to: {guildRank}");
     }
     
     /// <summary>
