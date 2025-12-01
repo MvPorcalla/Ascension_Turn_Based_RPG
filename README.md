@@ -3,6 +3,10 @@
 
 # Ascension: Turn-Based RPG
 
+Ascension is a turn-based RPG built in Unity 2022.3 LTS. Players manage a party of characters, plan strategies in tactical battles, and advance through engaging gameplay. The project currently focuses on core systems, targeting mobile platforms first, with PC support planned for the future.
+
+---
+
 ## Contact & Permissions
 
 Hi there! 👋  
