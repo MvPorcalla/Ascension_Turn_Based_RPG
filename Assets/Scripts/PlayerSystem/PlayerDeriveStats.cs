@@ -1,6 +1,7 @@
-// -------------------------------
-// PlayerDerivedStats.cs - CORRECTED
-// -------------------------------
+// ──────────────────────────────────────────────────
+// PlayerDeriveStats.cs
+// Calculates and holds the player's derived stats
+// ──────────────────────────────────────────────────
 
 using System;
 using UnityEngine;

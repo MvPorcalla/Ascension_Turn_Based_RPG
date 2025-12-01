@@ -1,7 +1,7 @@
-// -------------------------------
+// ──────────────────────────────────────────────────
 // ProfilePanelManager.cs
-// Main profile panel for viewing and allocating attributes
-// -------------------------------
+// Manages the player profile panel UI
+// ──────────────────────────────────────────────────
 
 using UnityEngine;
 using UnityEngine.UI;

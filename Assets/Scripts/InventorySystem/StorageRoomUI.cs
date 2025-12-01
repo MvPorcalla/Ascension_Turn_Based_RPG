@@ -1,6 +1,8 @@
-// -------------------------------
-// StorageRoomUI.cs - Main storage interface (delegates to popups)
-// -------------------------------
+// ──────────────────────────────────────────────────
+// StorageRoomUI.cs
+// Manages the Storage Room UI for item management
+// ──────────────────────────────────────────────────
+
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;

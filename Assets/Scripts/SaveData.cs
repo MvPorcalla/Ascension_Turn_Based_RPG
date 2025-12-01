@@ -1,6 +1,8 @@
-// -------------------------------
-// SaveData.cs (Updated with BagInventoryData)
-// -------------------------------
+// ──────────────────────────────────────────────────
+// SaveData.cs
+// Serializable save data structure for player and inventory
+// ──────────────────────────────────────────────────
+
 using System;
 
 [Serializable]

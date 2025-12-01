@@ -1,7 +1,7 @@
-// -------------------------------
+// ──────────────────────────────────────────────────
 // PlayerPreviewUI.cs
-// Reusable prefab component for displaying player stats preview
-// -------------------------------
+// Displays player derived stats in the UI preview panel
+// ──────────────────────────────────────────────────
 
 using UnityEngine;
 using TMPro;

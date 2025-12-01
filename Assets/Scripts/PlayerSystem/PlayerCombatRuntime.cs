@@ -1,7 +1,7 @@
-// -------------------------------
+// ──────────────────────────────────────────────────
 // PlayerCombatRuntime.cs
-// Runtime combat state (HP, buffs, etc.)
-// -------------------------------
+// Manages runtime combat state for the player
+// ──────────────────────────────────────────────────
 
 using System;
 using UnityEngine;

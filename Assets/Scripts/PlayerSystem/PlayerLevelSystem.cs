@@ -1,7 +1,7 @@
-// -------------------------------
+// ──────────────────────────────────────────────────
 // PlayerLevelSystem.cs
-// Handles leveling, EXP, and transcendence
-// -------------------------------
+// Manages player leveling, EXP, and transcendence
+// ──────────────────────────────────────────────────
 
 using System;
 using UnityEngine;

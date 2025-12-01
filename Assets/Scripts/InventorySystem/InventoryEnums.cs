@@ -1,6 +1,7 @@
-// -------------------------------
-// InventoryEnums.cs - Shared enums for inventory system
-// -------------------------------
+// ──────────────────────────────────────────────────
+// InventoryEnums.cs
+// Enums for inventory system locations and haptic feedback
+// ──────────────────────────────────────────────────
 
 /// <summary>
 /// Item location within the inventory system

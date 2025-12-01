@@ -1,6 +1,7 @@
-// -------------------------------
-// Bootstrap.cs (Direct in Scene Approach)
-// -------------------------------
+// ──────────────────────────────────────────────────
+// Bootstrap.cs - Entry point for game initialization
+// Determines which scene to load based on save state
+// ──────────────────────────────────────────────────
 
 using System.Collections;
 using UnityEngine;

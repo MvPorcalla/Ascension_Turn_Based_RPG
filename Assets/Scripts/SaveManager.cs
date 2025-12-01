@@ -1,6 +1,7 @@
-// -------------------------------
-// SaveManager.cs (Updated for BagInventory)
-// -------------------------------
+// ──────────────────────────────────────────────────
+// SaveManager.cs
+// Manages saving and loading of game state, including backups
+// ──────────────────────────────────────────────────
 
 using System;
 using System.IO;

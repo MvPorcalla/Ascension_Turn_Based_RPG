@@ -1,6 +1,8 @@
-// -------------------------------
-// BagInventory.cs - Manages player's bag and storage
-// -------------------------------
+// ──────────────────────────────────────────────────
+// BagInventory.cs
+// Manages the bag and storage inventory system
+// ──────────────────────────────────────────────────
+
 using System;
 using System.Collections.Generic;
 using System.Linq;

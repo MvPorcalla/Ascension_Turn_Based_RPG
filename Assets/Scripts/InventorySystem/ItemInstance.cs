@@ -1,6 +1,8 @@
-// -------------------------------
-// ItemInstance.cs - Runtime item data
-// -------------------------------
+// ──────────────────────────────────────────────────
+// ItemInstance.cs
+// Represents an instance of an item in inventory/storage
+// ──────────────────────────────────────────────────
+
 using System;
 
 [Serializable]

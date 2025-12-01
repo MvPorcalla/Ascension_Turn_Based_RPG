@@ -1,6 +1,8 @@
-// -------------------------------
-// GearPopupUI.cs - Dedicated popup for non-stackable items (Weapons, Armor, Skills)
-// -------------------------------
+// ──────────────────────────────────────────────────
+// GearPopupUI.cs
+// UI popup for displaying gear item details and actions
+// ──────────────────────────────────────────────────
+
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;

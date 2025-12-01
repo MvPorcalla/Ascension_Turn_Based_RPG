@@ -1,6 +1,8 @@
-// -------------------------------
+// ──────────────────────────────────────────────────
 // PlayerStats.cs
-// -------------------------------
+// Core player statistics and systems
+// Single source of truth for player data
+// ──────────────────────────────────────────────────
 
 using UnityEngine;
 

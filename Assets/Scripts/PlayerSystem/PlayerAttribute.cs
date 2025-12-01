@@ -1,7 +1,7 @@
-// -------------------------------
-// PlayerAttributes.cs
-// Pure data class for character attributes
-// -------------------------------
+// ──────────────────────────────────────────────────
+// PlayerAttribute.cs
+// Holds base player attributes (STR, INT, etc.)
+// ──────────────────────────────────────────────────
 
 using System;
 

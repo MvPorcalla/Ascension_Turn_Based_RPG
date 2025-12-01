@@ -1,6 +1,7 @@
-// -------------------------------
+// ──────────────────────────────────────────────────
 // CharacterBaseStatsSO.cs
-// -------------------------------
+// ScriptableObject holding base character stats and scaling
+// ──────────────────────────────────────────────────
 
 using UnityEngine;
 

@@ -1,6 +1,7 @@
-// -------------------------------
+// ──────────────────────────────────────────────────
 // DisclaimerController.cs
-// -------------------------------
+// Handles: User disclaimer acceptance before proceeding
+// ──────────────────────────────────────────────────
 
 using UnityEngine;
 using UnityEngine.UI;

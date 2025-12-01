@@ -1,6 +1,8 @@
-// -------------------------------
-// ItemSlotUI.cs - Clean rarity color with background image (FIXED)
-// -------------------------------
+// ──────────────────────────────────────────────────
+// ItemSlotUI.cs
+// UI component for displaying an item slot in inventory/storage
+// ──────────────────────────────────────────────────
+
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;

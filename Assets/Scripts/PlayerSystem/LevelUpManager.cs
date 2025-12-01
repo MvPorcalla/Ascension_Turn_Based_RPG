@@ -1,6 +1,7 @@
-// -------------------------------
+// ──────────────────────────────────────────────────
 // LevelUpManager.cs
-// -------------------------------
+// Manages the level-up UI and attribute allocation
+// ──────────────────────────────────────────────────
 
 using UnityEngine;
 using UnityEngine.UI;

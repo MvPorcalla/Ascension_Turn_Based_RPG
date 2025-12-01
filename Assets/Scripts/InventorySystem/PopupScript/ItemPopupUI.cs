@@ -1,6 +1,8 @@
-// -------------------------------
-// ItemPopupUI.cs - Dedicated popup for stackable items (Materials, Misc, Ingredients)
-// -------------------------------
+// ──────────────────────────────────────────────────
+// ItemPopupUI.cs
+// UI popup for displaying item details and actions
+// ──────────────────────────────────────────────────
+
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;

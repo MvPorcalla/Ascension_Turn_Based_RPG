@@ -1,6 +1,8 @@
-// -------------------------------
-// BuffLineUI.cs - Helper script for buff display prefab (Optional)
-// -------------------------------
+// ──────────────────────────────────────────────────
+// BuffLineUI.cs
+// Optional helper script to set up buff line UI elements
+// ──────────────────────────────────────────────────
+
 using UnityEngine;
 using TMPro;
 

@@ -1,6 +1,7 @@
-// -------------------------------
+// ──────────────────────────────────────────────────
 // AvatarCreationManager.cs
-// -------------------------------
+// Manages the avatar creation process and UI
+// ──────────────────────────────────────────────────
 
 using UnityEngine;
 using UnityEngine.UI;

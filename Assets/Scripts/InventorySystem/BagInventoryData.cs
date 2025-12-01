@@ -1,6 +1,8 @@
-// -------------------------------
-// BagInventoryData.cs - Serializable inventory data (renamed)
-// -------------------------------
+// ──────────────────────────────────────────────────
+// BagInventoryData.cs
+// Serializable data class for saving/loading BagInventory
+// ──────────────────────────────────────────────────
+
 using System;
 using System.Collections.Generic;
 

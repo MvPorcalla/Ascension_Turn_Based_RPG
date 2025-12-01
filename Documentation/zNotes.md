@@ -79,57 +79,19 @@ This will make the asset creation menu more organized and consistent.
 
 
 ========================================== TODO ==========================================
-
-TODO: Critical Issue
-Assets\Scripts\PotionManager.cs(168,39): error CS0070: The event 'CharacterManager.OnHealthChanged' can only appear on the left hand side of += or -= (except when used from within the type 'CharacterManager')
-
-affected CharacterManager.cs , PotionManager.cs
-
-is this the correct fix?
-Option 1: Expose a method in CharacterManager
-
-Instead of invoking the event from PotionManager, tell CharacterManager to apply health:
-
-// In CharacterManager
-public void ApplyHeal(float amount)
-{
-    if (!HasActivePlayer) return;
-    
-    float oldHP = currentPlayer.CurrentHP;
-    currentPlayer.combatRuntime.Heal(amount, currentPlayer.MaxHP);
-    OnHealthChanged?.Invoke(currentPlayer.CurrentHP, currentPlayer.MaxHP);
-
-    Debug.Log($"[CharacterManager] Healed {amount} HP ({oldHP:F0} → {currentPlayer.CurrentHP:F0})");
-}
-
-
-Then from PotionManager:
-
-if (CharacterManager.Instance != null)
-{
-    CharacterManager.Instance.ApplyHeal(amount);
-}
-
-
-This keeps the event invocation inside the owning class, which C# requires.
-
-
-
 TODO: 
-NullReferenceException: Object reference not set to an instance of an object
-StorageRoomUI.RefreshInventorySection () (at Assets/Scripts/InventorySystem/StorageRoomUI.cs:94)
-StorageRoomUI.RefreshUI () (at Assets/Scripts/InventorySystem/StorageRoomUI.cs:75)
-StorageRoomUI.Start () (at Assets/Scripts/InventorySystem/StorageRoomUI.cs:59)
-
-this error showup when i try to access the StorageRoomPanel
-
-the GameDatabase.cs have error like when i open it in unity it say 
-The referenced script (Unknown) on this Behaviour is missing! UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
-and in inspector its dont show the fields
-
----------------
 
 issue on debug for roll bonus stats it dont display anything when used
+
+--------------
+
+add rarity to the potionSO
+
+should i reuse the weaponraritySO.cs? to apply same multiplier here for potions?
+
+--------------
+
+TODO: do the equipmentRoom bext dont be a lazy ass bitch
 
 --------------
 

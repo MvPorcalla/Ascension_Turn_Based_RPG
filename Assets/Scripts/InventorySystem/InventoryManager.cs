@@ -1,6 +1,8 @@
-// -------------------------------
-// InventoryManager.cs - Updated singleton for BagInventory
-// -------------------------------
+// ──────────────────────────────────────────────────
+// InventoryManager.cs
+// Manages the player's inventory and storage system
+// ──────────────────────────────────────────────────
+
 using UnityEngine;
 
 public class InventoryManager : MonoBehaviour

@@ -1,7 +1,7 @@
-// -------------------------------
+// ──────────────────────────────────────────────────
 // PlayerItemStats.cs
-// Item bonuses (equipment-only stats)
-// -------------------------------
+// Holds item-based stat bonuses for the player
+// ──────────────────────────────────────────────────
 
 using System;
 
