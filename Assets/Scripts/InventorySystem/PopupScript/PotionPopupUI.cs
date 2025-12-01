@@ -42,10 +42,6 @@ public class PotionPopupUI : MonoBehaviour
     [SerializeField] private Button addToPocketButton;
     [SerializeField] private Button addToBagButton;
 
-    [Header("Cooldown Display (Optional)")]
-    [SerializeField] private TMP_Text cooldownText;
-    [SerializeField] private GameObject cooldownWarning;
-
     private PotionSO currentPotion;
     private ItemInstance currentItem;
     private ItemLocation currentLocation;
@@ -69,15 +65,6 @@ public class PotionPopupUI : MonoBehaviour
         addToBagButton.onClick.AddListener(OnAddToBagClicked);
 
         popupContainer.SetActive(false);
-    }
-
-    private void Update()
-    {
-        // Update cooldown display if needed
-        if (popupContainer.activeSelf && currentPotion != null)
-        {
-            UpdateCooldownDisplay();
-        }
     }
 
     public void ShowPotion(PotionSO potion, ItemInstance item, ItemLocation fromLocation)
@@ -122,43 +109,6 @@ public class PotionPopupUI : MonoBehaviour
 
         // Setup action buttons visibility
         SetupActionButtons(fromLocation, item);
-
-        // Update cooldown display
-        UpdateCooldownDisplay();
-    }
-
-    private void UpdateCooldownDisplay()
-    {
-        if (PotionManager.Instance == null) return;
-
-        float cooldown = PotionManager.Instance.GetCooldownRemaining();
-        bool isOnCooldown = PotionManager.Instance.IsOnCooldown();
-
-        // Update cooldown text
-        if (cooldownText != null)
-        {
-            if (isOnCooldown)
-            {
-                cooldownText.text = $"Cooldown: {cooldown:F1}s";
-                cooldownText.gameObject.SetActive(true);
-            }
-            else
-            {
-                cooldownText.gameObject.SetActive(false);
-            }
-        }
-
-        // Show/hide cooldown warning
-        if (cooldownWarning != null)
-        {
-            cooldownWarning.SetActive(isOnCooldown);
-        }
-
-        // Disable use button if on cooldown
-        if (useButton != null)
-        {
-            useButton.interactable = !isOnCooldown;
-        }
     }
 
     private void DisplayPotionType(PotionSO potion)
@@ -175,6 +125,7 @@ public class PotionPopupUI : MonoBehaviour
                 PotionType.BuffPotion => "Buff Potion",
                 PotionType.Elixir => "Elixir",
                 PotionType.Antidote => "Antidote",
+                PotionType.Rejuvenation => "Rejuvenation",
                 PotionType.Utility => "Utility",
                 _ => "Unknown"
             };
@@ -193,17 +144,15 @@ public class PotionPopupUI : MonoBehaviour
         switch (potion.potionType)
         {
             case PotionType.HealthPotion:
-                if (potion.restoreDuration > 0)
-                    AddBuffLine("HP Restore", $"+{potion.healthRestore}", $"{potion.restoreDuration}s (over time)");
-                else
-                    AddBuffLine("HP Restore", $"+{potion.healthRestore}", "Instant");
+                DisplayHealthPotionEffect(potion);
                 break;
 
             case PotionType.ManaPotion:
-                if (potion.restoreDuration > 0)
-                    AddBuffLine("Mana Restore", $"+{potion.manaRestore}", $"{potion.restoreDuration}s (over time)");
-                else
-                    AddBuffLine("Mana Restore", $"+{potion.manaRestore}", "Instant");
+                DisplayManaPotionEffect(potion);
+                break;
+
+            case PotionType.Rejuvenation:
+                DisplayRejuvenationEffect(potion);
                 break;
 
             case PotionType.BuffPotion:
@@ -228,13 +177,73 @@ public class PotionPopupUI : MonoBehaviour
         }
     }
 
+    private void DisplayHealthPotionEffect(PotionSO potion)
+    {
+        string valueText = GetRestoreValueText(potion.restoreType, potion.healthRestore);
+        string durationText = GetDurationText(potion.durationType, potion.restoreDuration);
+        AddBuffLine("HP Restore", valueText, durationText);
+    }
+
+    private void DisplayManaPotionEffect(PotionSO potion)
+    {
+        string valueText = GetRestoreValueText(potion.restoreType, potion.manaRestore);
+        string durationText = GetDurationText(potion.durationType, potion.restoreDuration);
+        AddBuffLine("Mana Restore", valueText, durationText);
+    }
+
+    private void DisplayRejuvenationEffect(PotionSO potion)
+    {
+        if (potion.IsTurnBased)
+        {
+            int turns = potion.TurnDuration;
+            float perTurn = potion.healthRestore / turns;
+            string perTurnText = GetRestoreValueText(potion.restoreType, perTurn);
+            string totalText = GetRestoreValueText(potion.restoreType, potion.healthRestore);
+            AddBuffLine("HP Restore", $"{perTurnText}/turn", $"{turns} turns (Total: {totalText})");
+        }
+        else
+        {
+            string valueText = GetRestoreValueText(potion.restoreType, potion.healthRestore);
+            string durationText = GetDurationText(potion.durationType, potion.restoreDuration);
+            AddBuffLine("HP Restore", valueText, durationText);
+        }
+    }
+    
+    private string GetRestoreValueText(RestoreType restoreType, float value)
+    {
+        if (restoreType == RestoreType.Percentage)
+        {
+            return $"+{value}%";
+        }
+        else
+        {
+            return $"+{value:F0}";
+        }
+    }
+
+    private string GetDurationText(DurationType durationType, float duration)
+    {
+        return durationType switch
+        {
+            DurationType.Instant => "Instant",
+            DurationType.RealTime => $"{duration:F1}s (over time)",
+            DurationType.TurnBased => $"{Mathf.RoundToInt(duration)} turns",
+            _ => "Unknown"
+        };
+    }
+
     private void DisplayBuffPotionEffects(PotionSO potion)
     {
         if (potion.buffs == null || potion.buffs.Count == 0) return;
 
         foreach (var buff in potion.buffs)
         {
-            string durationText = $"{Mathf.RoundToInt(buff.duration)}s";
+            string durationText = buff.durationType switch
+            {
+                DurationType.TurnBased => $"{Mathf.RoundToInt(buff.duration)} turns",
+                DurationType.RealTime => $"{Mathf.RoundToInt(buff.duration)}s",
+                _ => "Instant"
+            };
 
             string buffValueText = GetBuffValueText(buff.type, buff.value);
             string buffLabel = GetBuffLabel(buff.type);
@@ -411,8 +420,6 @@ public class PotionPopupUI : MonoBehaviour
 
     private void OnUseClicked()
     {
-        // ✅ Properly integrate with PotionManager and CharacterManager
-        
         // Validate managers exist
         if (PotionManager.Instance == null)
         {
@@ -454,7 +461,7 @@ public class PotionPopupUI : MonoBehaviour
             }
             else
             {
-                // Stop if potion can't be used (cooldown, combat restriction, etc.)
+                // Stop if potion can't be used (combat restriction, etc.)
                 if (successfulUses > 0)
                 {
                     Debug.LogWarning($"[PotionPopupUI] Could only use {successfulUses}/{selectedQuantity} potions");
