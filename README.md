@@ -3,6 +3,21 @@
 
 # Ascension: Turn-Based RPG
 
+## Contact & Permissions
+
+Hi there! 👋  
+
+If you'd like to **use, reference, or contribute** to this project, please feel free to reach out. I’m happy to discuss ideas, collaborations, or just chat about the project.  
+
+You can contact me via:
+
+- Email: scryptid1@gmail.com  
+- GitHub: [MvPorcalla](https://github.com/MvPorcalla)  
+
+Please note: All rights reserved. Do not redistribute or claim this work as your own without permission.
+
+---
+
 **Engine:** Unity 2022.3.62f2 LTS (2D)
 **Platform Target:** Mobile (primary), potentially PC later
 **Version Control:** GitHub
