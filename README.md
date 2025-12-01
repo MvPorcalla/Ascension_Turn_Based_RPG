@@ -59,7 +59,6 @@ git clone https://github.com/MvPorcalla/Ascension_Turn_Based_RPG.git
 
 6. **Running the project**
 
-   * Open the `00_Disclaimer scene` or `01_Bootstrap scene`.
-   * Press `Play` in the Unity Editor to test.
+   * Press `Play` in the Unity Editor. It doesn't matter which scene you're currently in — the game will always start at 00_Disclaimer.
 
 ---
