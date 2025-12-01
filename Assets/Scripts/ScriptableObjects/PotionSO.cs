@@ -1,6 +1,7 @@
 // ──────────────────────────────────────────────────
-// PotionSO.cs (FIXED)
+// PotionSO.cs (Percentage-Based Update)
 // ScriptableObject for defining potions in the game
+// Supports percentage-based and flat healing values
 // ──────────────────────────────────────────────────
 
 using UnityEngine;
@@ -12,10 +13,30 @@ public class PotionSO : ItemBaseSO
     [Header("Potion Settings")]
     public PotionType potionType;
     
+    [Header("Restore Type")]
+    [Tooltip("Use percentage or flat values for healing")]
+    public RestoreType restoreType = RestoreType.Percentage;
+    
     [Header("Restore Effects")]
-    public float healthRestore;
-    public float manaRestore;
-    public float restoreDuration; // 0 = instant, >0 = over time
+    [Tooltip("Percentage (0-100) or flat amount to restore")]
+    [Range(0f, 100f)]
+    public float healthRestorePercent = 20f;
+    
+    [Tooltip("Flat HP amount (only used if RestoreType = Flat)")]
+    public float healthRestoreFlat = 50f;
+    
+    [Range(0f, 100f)]
+    public float manaRestorePercent = 0f;
+    
+    [Tooltip("Flat Mana amount (only used if RestoreType = Flat)")]
+    public float manaRestoreFlat = 0f;
+    
+    [Header("Duration Settings")]
+    [Tooltip("How the restore duration is measured")]
+    public DurationType durationType = DurationType.Instant;
+    
+    [Tooltip("Duration value (seconds for real-time, turns for turn-based)")]
+    public float restoreDuration = 0f;
     
     [Header("Buffs")]
     public List<PotionBuff> buffs = new List<PotionBuff>();
@@ -23,9 +44,10 @@ public class PotionSO : ItemBaseSO
     [Header("Usage Settings")]
     public bool canUseInCombat = true;
     public bool canUseOutOfCombat = true;
-    public float cooldown = 1f; // Potion category cooldown
 
-    // ✅ ADDED: Properties for backwards compatibility with PotionPopupUI
+    // ✅ Calculated properties
+    public float healthRestore => restoreType == RestoreType.Percentage ? healthRestorePercent : healthRestoreFlat;
+    public float manaRestore => restoreType == RestoreType.Percentage ? manaRestorePercent : manaRestoreFlat;
     public float restoreAmount => Mathf.Max(healthRestore, manaRestore);
     public float duration => restoreDuration;
     public bool grantsBuff => buffs != null && buffs.Count > 0;
@@ -33,30 +55,62 @@ public class PotionSO : ItemBaseSO
     public BuffType buffType => (buffs != null && buffs.Count > 0) ? buffs[0].type : BuffType.AttackDamage;
     public float buffValue => (buffs != null && buffs.Count > 0) ? buffs[0].value : 0f;
 
+    // ✅ Turn-based properties
+    public bool IsTurnBased => durationType == DurationType.TurnBased;
+    public int TurnDuration => IsTurnBased ? Mathf.RoundToInt(restoreDuration) : 0;
+
+    // ✅ Calculate actual heal amount for a given max HP
+    public float GetActualHealAmount(float maxHP)
+    {
+        if (restoreType == RestoreType.Percentage)
+        {
+            return (healthRestorePercent / 100f) * maxHP;
+        }
+        else
+        {
+            return healthRestoreFlat;
+        }
+    }
+
+    public float GetActualManaAmount(float maxMana)
+    {
+        if (restoreType == RestoreType.Percentage)
+        {
+            return (manaRestorePercent / 100f) * maxMana;
+        }
+        else
+        {
+            return manaRestoreFlat;
+        }
+    }
+
     private void OnValidate()
     {
         itemType = ItemType.Consumable;
         isStackable = true;
         maxStackSize = 999;
+        
+        // Auto-set duration type based on potion type
+        if (potionType == PotionType.Rejuvenation)
+        {
+            durationType = DurationType.TurnBased;
+        }
     }
 
     public override string GetInfoText()
     {
         string info = $"<b>{itemName}</b>\n{rarity} Potion\n\n";
         
-        // Health/Mana restore
+        // Health restore
         if (healthRestore > 0)
         {
-            info += restoreDuration > 0 
-                ? $"Restores {healthRestore} HP over {restoreDuration}s\n" 
-                : $"Restores {healthRestore} HP instantly\n";
+            info += GetRestoreDescription(healthRestore, "HP", restoreType);
         }
         
+        // Mana restore
         if (manaRestore > 0)
         {
-            info += restoreDuration > 0 
-                ? $"Restores {manaRestore} Mana over {restoreDuration}s\n" 
-                : $"Restores {manaRestore} Mana instantly\n";
+            info += GetRestoreDescription(manaRestore, "Mana", restoreType);
         }
 
         // Buffs
@@ -69,15 +123,34 @@ public class PotionSO : ItemBaseSO
             }
         }
 
-        // Cooldown
-        if (cooldown > 0)
-            info += $"\n<color=gray>Cooldown: {cooldown}s</color>";
-
         // Description
         if (!string.IsNullOrEmpty(description))
-            info += $"\n\n<i>{description}</i>";
+            info += $"\n<i>{description}</i>";
 
         return info;
+    }
+
+    private string GetRestoreDescription(float amount, string statName, RestoreType type)
+    {
+        string amountText = type == RestoreType.Percentage ? $"{amount}%" : $"{amount}";
+        
+        switch (durationType)
+        {
+            case DurationType.Instant:
+                return $"Restores {amountText} {statName} instantly\n";
+            
+            case DurationType.RealTime:
+                return $"Restores {amountText} {statName} over {restoreDuration:F1}s\n";
+            
+            case DurationType.TurnBased:
+                int turns = Mathf.RoundToInt(restoreDuration);
+                float perTurn = amount / turns;
+                string perTurnText = type == RestoreType.Percentage ? $"{perTurn:F1}%" : $"{perTurn:F1}";
+                return $"Restores {perTurnText} {statName} per turn for {turns} turns (Total: {amountText})\n";
+            
+            default:
+                return $"Restores {amountText} {statName}\n";
+        }
     }
 
     /// <summary>
@@ -131,6 +204,14 @@ public class PotionSO : ItemBaseSO
     {
         Debug.Log(GetInfoText());
     }
+
+    [ContextMenu("Test Heal Amount (1000 HP)")]
+    private void DebugTestHealAmount()
+    {
+        float testMaxHP = 1000f;
+        float healAmount = GetActualHealAmount(testMaxHP);
+        Debug.Log($"[{itemName}] Would heal {healAmount} HP on a player with {testMaxHP} max HP");
+    }
     #endregion
 }
 
@@ -144,6 +225,7 @@ public class PotionBuff
     public BuffType type;
     public float value;
     public float duration;
+    public DurationType durationType = DurationType.RealTime;
 
     public string GetDescription()
     {
@@ -162,19 +244,39 @@ public class PotionBuff
             _ => "Unknown Buff"
         };
 
-        return $"{buffDesc} ({duration}s)";
+        string durationDesc = durationType switch
+        {
+            DurationType.TurnBased => $"{duration} turns",
+            DurationType.RealTime => $"{duration}s",
+            _ => ""
+        };
+
+        return $"{buffDesc} ({durationDesc})";
     }
 }
 
-// ✅ FIXED: Added missing Antidote enum value
 public enum PotionType
 {
     HealthPotion,
     ManaPotion,
-    Elixir,        // HP + Mana
-    BuffPotion,    // Pure buffs
-    Antidote,      // ✅ ADDED
-    Utility        // Special effects
+    Elixir,           // HP + Mana instant
+    BuffPotion,       // Pure buffs
+    Antidote,         // Cure debuffs
+    Rejuvenation,     // Heal over turns
+    Utility           // Special effects
+}
+
+public enum RestoreType
+{
+    Percentage,       // Heal based on % of max HP/Mana
+    Flat              // Heal fixed amount
+}
+
+public enum DurationType
+{
+    Instant,          // Applied immediately
+    RealTime,         // Duration in seconds (for out-of-combat HoT)
+    TurnBased         // Duration in turns (for combat HoT)
 }
 
 public enum BuffType
