@@ -8,10 +8,10 @@ public class InventoryManager : MonoBehaviour
     public static InventoryManager Instance { get; private set; }
 
     [Header("References")]
-    [SerializeField] private GameDatabase gameDatabase;
+    [SerializeField] private GameDatabaseSO GameDatabaseSO;
 
     public BagInventory Inventory { get; private set; }
-    public GameDatabase Database => gameDatabase;
+    public GameDatabaseSO Database => GameDatabaseSO;
 
     // Event for UI to subscribe to
     public event System.Action OnInventoryLoaded;
@@ -28,7 +28,7 @@ public class InventoryManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
         Inventory = new BagInventory();
-        gameDatabase?.Initialize();
+        GameDatabaseSO?.Initialize();
     }
 
     /// <summary>
@@ -36,7 +36,7 @@ public class InventoryManager : MonoBehaviour
     /// </summary>
     public bool AddItem(string itemID, int quantity = 1, bool addToBag = false)
     {
-        return Inventory.AddItem(itemID, quantity, addToBag, gameDatabase);
+        return Inventory.AddItem(itemID, quantity, addToBag, GameDatabaseSO);
     }
 
     /// <summary>
@@ -70,14 +70,14 @@ public class InventoryManager : MonoBehaviour
     [ContextMenu("Debug: Add Test Items")]
     public void DebugAddTestItems()
     {
-        if (gameDatabase == null)
+        if (GameDatabaseSO == null)
         {
-            Debug.LogError("GameDatabase not assigned!");
+            Debug.LogError("GameDatabaseSO not assigned!");
             return;
         }
 
         // Add 10 of each stackable item to storage (excluding skills)
-        foreach (var item in gameDatabase.GetAllItems())
+        foreach (var item in GameDatabaseSO.GetAllItems())
         {
             // Skip skills - they have their own system
             if (item.itemType == ItemType.Skill)
@@ -96,7 +96,7 @@ public class InventoryManager : MonoBehaviour
         }
 
         // Add a few items to bag for testing
-        var weapons = gameDatabase.GetAllWeapons();
+        var weapons = GameDatabaseSO.GetAllWeapons();
         if (weapons.Count > 0)
         {
             AddItem(weapons[0].itemID, 1, true);

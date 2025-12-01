@@ -1,4 +1,7 @@
+// ──────────────────────────────────────────────────
+// WeaponEnums.cs
 // All weapon-related enums in one place
+// ──────────────────────────────────────────────────
 
 public enum WeaponType
 {

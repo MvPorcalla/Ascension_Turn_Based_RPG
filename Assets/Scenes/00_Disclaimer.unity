@@ -573,7 +573,7 @@ GameObject:
   - component: {fileID: 188635144}
   - component: {fileID: 188635143}
   m_Layer: 5
-  m_Name: BackButton
+  m_Name: ToSBackButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -896,6 +896,60 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 201207331}
   m_CullTransparentMesh: 1
+--- !u!1 &217422014
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 217422015}
+  - component: {fileID: 217422016}
+  m_Layer: 0
+  m_Name: DisclaimerController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &217422015
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 217422014}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 534.0265, y: 954.18097, z: -8.78777}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &217422016
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 217422014}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b31bab959b03d544aa4bed9cc627767a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  disclaimerPanel: {fileID: 1996323434}
+  tosPanel: {fileID: 1215916961}
+  acknowledgeToggle: {fileID: 1109109569}
+  agreeButton: {fileID: 1540268727}
+  exitButton: {fileID: 1639628610}
+  tosButton: {fileID: 911009488}
+  tosBackButton: {fileID: 188635143}
+  nextSceneName: 01_Bootstrap
+  alwaysShowDisclaimer: 0
+  enableDebugLogs: 1
 --- !u!1 &276068626
 GameObject:
   m_ObjectHideFlags: 0
@@ -1757,7 +1811,6 @@ GameObject:
   m_Component:
   - component: {fileID: 585770213}
   - component: {fileID: 585770215}
-  - component: {fileID: 585770216}
   - component: {fileID: 585770214}
   m_Layer: 5
   m_Name: ScreenDisclamier
@@ -1825,26 +1878,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 585770212}
   m_CullTransparentMesh: 1
---- !u!114 &585770216
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 585770212}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b31bab959b03d544aa4bed9cc627767a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  disclaimerPanel: {fileID: 1996323434}
-  tosPanel: {fileID: 1215916961}
-  acknowledgeToggle: {fileID: 1109109569}
-  agreeButton: {fileID: 1540268727}
-  exitButton: {fileID: 1639628610}
-  tosButton: {fileID: 911009488}
-  tosBackButton: {fileID: 188635143}
-  nextSceneName: 01_Bootstrap
 --- !u!1 &612253646
 GameObject:
   m_ObjectHideFlags: 0
@@ -6108,5 +6141,6 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 612253649}
+  - {fileID: 217422015}
   - {fileID: 484326325}
   - {fileID: 1699992444}

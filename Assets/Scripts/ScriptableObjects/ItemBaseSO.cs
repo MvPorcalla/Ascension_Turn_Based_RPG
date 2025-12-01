@@ -1,6 +1,8 @@
-// -------------------------------
-// ItemBaseSO.cs - Base class for all items
-// -------------------------------
+// ──────────────────────────────────────────────────
+// ItemBaseSO.cs
+// Base ScriptableObject for all item types
+// ──────────────────────────────────────────────────
+
 using UnityEngine;
 
 public abstract class ItemBaseSO : ScriptableObject

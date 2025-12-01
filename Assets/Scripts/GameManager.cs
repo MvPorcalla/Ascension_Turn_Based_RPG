@@ -1,6 +1,8 @@
-// -------------------------------
-// GameManager.cs (CORRECTED - removed duplicate)
-// -------------------------------
+// ──────────────────────────────────────────────────
+// GameManager.cs (Integrated with CharacterManager)
+// Handles: Game flow, saves, scene management
+// Delegates: Player stats to CharacterManager
+// ──────────────────────────────────────────────────
 
 using System;
 using UnityEngine;
@@ -10,16 +12,14 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
     
-    [Header("References")]
-    [SerializeField] private CharacterBaseStatsSO defaultBaseStats;
-    
     [Header("Runtime Data (Read Only)")]
     [SerializeField] private float sessionPlayTime = 0f;
     [SerializeField] private bool isAvatarCreationComplete = false;
     
-    public PlayerStats CurrentPlayer { get; private set; }
-    public CharacterBaseStatsSO BaseStats => defaultBaseStats;
-    public bool HasActivePlayer => CurrentPlayer != null;
+    // ✅ Delegate to CharacterManager for player data
+    public PlayerStats CurrentPlayer => CharacterManager.Instance?.CurrentPlayer;
+    public CharacterBaseStatsSO BaseStats => CharacterManager.Instance?.BaseStats;
+    public bool HasActivePlayer => CharacterManager.Instance != null && CharacterManager.Instance.HasActivePlayer;
     
     // Events
     public event Action<PlayerStats> OnPlayerLoaded;
@@ -37,6 +37,27 @@ public class GameManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
     }
+
+    private void Start()
+    {
+        // Subscribe to CharacterManager events
+        if (CharacterManager.Instance != null)
+        {
+            CharacterManager.Instance.OnPlayerLoaded += OnCharacterLoaded;
+        }
+        else
+        {
+            Debug.LogWarning("[GameManager] CharacterManager not found! Make sure it exists in the scene.");
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (CharacterManager.Instance != null)
+        {
+            CharacterManager.Instance.OnPlayerLoaded -= OnCharacterLoaded;
+        }
+    }
     
     private void Update()
     {
@@ -45,13 +66,25 @@ public class GameManager : MonoBehaviour
             sessionPlayTime += Time.unscaledDeltaTime;
         }
     }
+
+    private void OnCharacterLoaded(PlayerStats stats)
+    {
+        OnPlayerLoaded?.Invoke(stats);
+    }
     
     #region Game Flow
     
     public void StartNewGame()
     {
-        CurrentPlayer = new PlayerStats();
-        CurrentPlayer.Initialize(defaultBaseStats);
+        if (CharacterManager.Instance == null)
+        {
+            Debug.LogError("[GameManager] CharacterManager not found!");
+            return;
+        }
+
+        // Create default player (name will be set in avatar creation)
+        CharacterManager.Instance.CreateNewPlayer("Adventurer");
+        
         sessionPlayTime = 0f;
         isAvatarCreationComplete = false;
         
@@ -59,10 +92,16 @@ public class GameManager : MonoBehaviour
         OnNewGameStarted?.Invoke();
     }
     
-    public void SetPlayerStats(PlayerStats stats)
+    /// <summary>
+    /// Update player name after avatar creation
+    /// </summary>
+    public void SetPlayerName(string playerName)
     {
-        CurrentPlayer = stats;
-        Debug.Log($"[GameManager] Player set: {stats.playerName}");
+        if (HasActivePlayer)
+        {
+            CurrentPlayer.playerName = playerName;
+            Debug.Log($"[GameManager] Player name set: {playerName}");
+        }
     }
 
     /// <summary>
@@ -93,7 +132,10 @@ public class GameManager : MonoBehaviour
             return false;
         }
         
-        bool success = SaveManager.Instance.SaveGame(CurrentPlayer, sessionPlayTime);
+        // Get player data from CharacterManager
+        PlayerStats playerToSave = CharacterManager.Instance.GetPlayerDataForSave();
+        
+        bool success = SaveManager.Instance.SaveGame(playerToSave, sessionPlayTime);
         
         if (success)
         {
@@ -104,10 +146,16 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Load game - delegates to SaveManager
+    /// Load game - delegates to SaveManager and CharacterManager
     /// </summary>
     public bool LoadGame()
     {
+        if (CharacterManager.Instance == null)
+        {
+            Debug.LogError("[GameManager] CharacterManager not found!");
+            return false;
+        }
+
         SaveData saveData = SaveManager.Instance.LoadGame();
         
         if (saveData == null)
@@ -116,17 +164,20 @@ public class GameManager : MonoBehaviour
             return false;
         }
         
-        CurrentPlayer = saveData.playerData.ToPlayerStats(defaultBaseStats);
+        // Load player into CharacterManager
+        PlayerStats loadedPlayer = saveData.playerData.ToPlayerStats(CharacterManager.Instance.BaseStats);
+        CharacterManager.Instance.LoadPlayer(loadedPlayer);
+        
         sessionPlayTime = 0f;
         isAvatarCreationComplete = true; // Loaded characters are always complete
         
+        // Load inventory
         if (InventoryManager.Instance != null && saveData.inventoryData != null)
         {
             InventoryManager.Instance.LoadInventory(saveData.inventoryData);
         }
         
         Debug.Log($"[GameManager] Loaded: {CurrentPlayer.playerName} (Lv.{CurrentPlayer.Level})");
-        OnPlayerLoaded?.Invoke(CurrentPlayer);
         
         return true;
     }
@@ -140,9 +191,9 @@ public class GameManager : MonoBehaviour
     {
         bool success = SaveManager.Instance.DeleteSave();
         
-        if (success)
+        if (success && CharacterManager.Instance != null)
         {
-            CurrentPlayer = null;
+            CharacterManager.Instance.UnloadPlayer();
         }
         
         return success;
@@ -150,15 +201,17 @@ public class GameManager : MonoBehaviour
     
     #endregion
     
-    #region Quick Access Methods
+    #region Quick Access Methods (Delegate to CharacterManager)
     
     public bool AddExperience(int amount)
     {
-        if (!HasActivePlayer)
+        if (!HasActivePlayer || CharacterManager.Instance == null)
             return false;
         
-        bool leveledUp = CurrentPlayer.AddExperience(amount, defaultBaseStats);
+        int oldLevel = CurrentPlayer.Level;
+        CharacterManager.Instance.AddExperience(amount);
         
+        bool leveledUp = CurrentPlayer.Level > oldLevel;
         if (leveledUp)
         {
             Debug.Log($"[GameManager] Level up! Now level {CurrentPlayer.Level}");
@@ -166,6 +219,30 @@ public class GameManager : MonoBehaviour
         }
         
         return leveledUp;
+    }
+
+    public void Heal(float amount)
+    {
+        if (CharacterManager.Instance != null)
+        {
+            CharacterManager.Instance.Heal(amount);
+        }
+    }
+
+    public void TakeDamage(float amount)
+    {
+        if (CharacterManager.Instance != null)
+        {
+            CharacterManager.Instance.TakeDamage(amount);
+        }
+    }
+
+    public void FullHeal()
+    {
+        if (CharacterManager.Instance != null)
+        {
+            CharacterManager.Instance.FullHeal();
+        }
     }
     
     #endregion

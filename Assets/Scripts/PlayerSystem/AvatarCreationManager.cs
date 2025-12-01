@@ -232,8 +232,16 @@ public class AvatarCreationManager : MonoBehaviour
         // Recalculate with full heal
         currentStats.RecalculateStats(baseStats, fullHeal: true);
         
-        // Set the player stats in GameManager
-        GameManager.Instance.SetPlayerStats(currentStats);
+        // Load into CharacterManager instead of GameManager
+        if (CharacterManager.Instance != null)
+        {
+            CharacterManager.Instance.LoadPlayer(currentStats);
+        }
+        else
+        {
+            Debug.LogError("[AvatarCreation] CharacterManager not found!");
+            return;
+        }
         
         // Mark avatar creation as complete BEFORE saving
         GameManager.Instance.CompleteAvatarCreation();

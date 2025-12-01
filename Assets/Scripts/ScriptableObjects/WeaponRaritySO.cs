@@ -1,4 +1,7 @@
-// Rarity configuration and bonus stats
+// ──────────────────────────────────────────────────
+// WeaponRaritySO.cs
+// Rarity configuration and bonus stats for weapons
+// ──────────────────────────────────────────────────
 
 using UnityEngine;
 using System;

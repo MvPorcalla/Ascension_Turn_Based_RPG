@@ -80,13 +80,63 @@ This will make the asset creation menu more organized and consistent.
 
 ========================================== TODO ==========================================
 
-- 
+TODO: Critical Issue
+Assets\Scripts\PotionManager.cs(168,39): error CS0070: The event 'CharacterManager.OnHealthChanged' can only appear on the left hand side of += or -= (except when used from within the type 'CharacterManager')
 
-TODO:  Should I make RaritySO a universal reference for all the items I’m creating, like SkillSO.cs, WeaponSO.cs, GearSO.cs, ItemSO.cs, PotionSO.cs, etc.?
+affected CharacterManager.cs , PotionManager.cs
 
-Also, can I add a new category for growth-type weapons? For example, normal weapons follow the current logic, while growth-type weapons:
+is this the correct fix?
+Option 1: Expose a method in CharacterManager
+
+Instead of invoking the event from PotionManager, tell CharacterManager to apply health:
+
+// In CharacterManager
+public void ApplyHeal(float amount)
+{
+    if (!HasActivePlayer) return;
+    
+    float oldHP = currentPlayer.CurrentHP;
+    currentPlayer.combatRuntime.Heal(amount, currentPlayer.MaxHP);
+    OnHealthChanged?.Invoke(currentPlayer.CurrentHP, currentPlayer.MaxHP);
+
+    Debug.Log($"[CharacterManager] Healed {amount} HP ({oldHP:F0} → {currentPlayer.CurrentHP:F0})");
+}
+
+
+Then from PotionManager:
+
+if (CharacterManager.Instance != null)
+{
+    CharacterManager.Instance.ApplyHeal(amount);
+}
+
+
+This keeps the event invocation inside the owning class, which C# requires.
+
+
+
+TODO: 
+NullReferenceException: Object reference not set to an instance of an object
+StorageRoomUI.RefreshInventorySection () (at Assets/Scripts/InventorySystem/StorageRoomUI.cs:94)
+StorageRoomUI.RefreshUI () (at Assets/Scripts/InventorySystem/StorageRoomUI.cs:75)
+StorageRoomUI.Start () (at Assets/Scripts/InventorySystem/StorageRoomUI.cs:59)
+
+this error showup when i try to access the StorageRoomPanel
+
+the GameDatabase.cs have error like when i open it in unity it say 
+The referenced script (Unknown) on this Behaviour is missing! UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+and in inspector its dont show the fields
+
+---------------
+
+issue on debug for roll bonus stats it dont display anything when used
+
+--------------
+
+Also, can I add a new category for growth-type weapons? For example, normal weapons follow the current logic, while new weapon type is growth-type weapons:
 
 Always start as Common
+Growth type Mechanics:
 - Scale based on kills: The weapon’s rarity increases after a certain number of kills while the weapon is in equip so its the weapons counter. When the weapon is unequipped, it has no owner. The first time a player equips it, the weapon registers the player’s ID. From that point on, its rarity grows based on that player’s monster kills using that weapon.
 
 - Scale based on player level: Similarly, the weapon’s rarity can increase when the player reaches certain level thresholds. It ties to the player upon first equip, and then tracks level-based growth for that player.
@@ -94,7 +144,6 @@ Always start as Common
 - Other growth-related effects can also be added do you have suggestion?.
 
 Is this feasible to implement?
-
 
 
 on weapon creation should i make a cap of 100 stats additional overall? for all common items? so all are baalnce?

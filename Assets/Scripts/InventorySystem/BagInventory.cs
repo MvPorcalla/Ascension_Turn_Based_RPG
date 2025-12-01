@@ -58,7 +58,7 @@ public class BagInventory
     /// <summary>
     /// Get storage items filtered by type - Excludes skills
     /// </summary>
-    public List<ItemInstance> GetStorageItemsByType(ItemType? filterType, GameDatabase database)
+    public List<ItemInstance> GetStorageItemsByType(ItemType? filterType, GameDatabaseSO database)
     {
         var storageItems = GetStorageItems();
         
@@ -133,7 +133,7 @@ public class BagInventory
     /// <summary>
     /// Add item to inventory (goes to storage by default)
     /// </summary>
-    public bool AddItem(string itemID, int quantity = 1, bool addToBag = false, GameDatabase database = null)
+    public bool AddItem(string itemID, int quantity = 1, bool addToBag = false, GameDatabaseSO database = null)
     {
         if (database == null)
         {

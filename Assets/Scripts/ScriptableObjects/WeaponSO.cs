@@ -1,4 +1,7 @@
-// Main weapon ScriptableObject
+// ──────────────────────────────────────────────────
+// WeaponSO.cs
+// ScriptableObject for defining weapons in the game
+// ──────────────────────────────────────────────────
 
 using UnityEngine;
 using System.Collections.Generic;
@@ -188,6 +191,34 @@ public class WeaponSO : ItemBaseSO
         foreach (var bonus in bonusStats)
         {
             Debug.Log($"  • {bonus.GetDisplayText()}");
+        }
+    }
+
+    [ContextMenu("Test: Add to Inventory (Bag)")]
+    private void DebugAddToBag()
+    {
+        if (Application.isPlaying && InventoryManager.Instance != null)
+        {
+            InventoryManager.Instance.AddItem(itemID, 1, true);
+            Debug.Log($"[WeaponSO] Added {weaponName} to bag");
+        }
+        else
+        {
+            Debug.LogWarning("[WeaponSO] Cannot add to bag outside Play Mode or InventoryManager missing");
+        }
+    }
+
+    [ContextMenu("Test: Add to Storage")]
+    private void DebugAddToStorage()
+    {
+        if (Application.isPlaying && InventoryManager.Instance != null)
+        {
+            InventoryManager.Instance.AddItem(itemID, 1, false);
+            Debug.Log($"[WeaponSO] Added {weaponName} to storage");
+        }
+        else
+        {
+            Debug.LogWarning("[WeaponSO] Cannot add to storage outside Play Mode or InventoryManager missing");
         }
     }
 

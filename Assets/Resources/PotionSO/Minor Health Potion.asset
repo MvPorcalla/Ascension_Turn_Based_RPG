@@ -21,14 +21,11 @@ MonoBehaviour:
   isStackable: 1
   maxStackSize: 999
   requiredLevel: 1
-  potionName: Minor Health Potion
   potionType: 0
-  restoreAmount: 50
-  duration: 0
-  grantsBuff: 0
-  buffDuration: 0
-  buffType: 0
-  buffValue: 0
+  healthRestore: 0
+  manaRestore: 0
+  restoreDuration: 0
+  buffs: []
   canUseInCombat: 1
   canUseOutOfCombat: 1
-  useAnimation: {fileID: 0}
+  cooldown: 1

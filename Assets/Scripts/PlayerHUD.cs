@@ -1,6 +1,8 @@
-// -------------------------------
+// ──────────────────────────────────────────────────
 // PlayerHUD.cs
-// -------------------------------
+// Manages the player's HUD display (health, EXP, level, etc.)
+// Now subscribes to CharacterManager events
+// ──────────────────────────────────────────────────
 
 using UnityEngine;
 using UnityEngine.UI;
@@ -30,27 +32,41 @@ public class PlayerHUD : MonoBehaviour
 
     private void Start()
     {
-        if (GameManager.Instance != null)
+        // Subscribe to CharacterManager events
+        if (CharacterManager.Instance != null)
         {
-            GameManager.Instance.OnPlayerLoaded += OnPlayerLoaded;
-            GameManager.Instance.OnNewGameStarted += RefreshHUD;
+            CharacterManager.Instance.OnPlayerLoaded += OnPlayerLoaded;
+            CharacterManager.Instance.OnPlayerStatsChanged += OnPlayerStatsChanged;
+            CharacterManager.Instance.OnHealthChanged += OnHealthChanged;
+            CharacterManager.Instance.OnLevelUp += OnLevelUp;
 
-            if (GameManager.Instance.HasActivePlayer)
+            // Initial refresh if player already loaded
+            if (CharacterManager.Instance.HasActivePlayer)
+            {
                 RefreshHUD();
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerHUD] CharacterManager not found!");
         }
     }
 
     private void OnDestroy()
     {
-        if (GameManager.Instance != null)
+        // Unsubscribe from events
+        if (CharacterManager.Instance != null)
         {
-            GameManager.Instance.OnPlayerLoaded -= OnPlayerLoaded;
-            GameManager.Instance.OnNewGameStarted -= RefreshHUD;
+            CharacterManager.Instance.OnPlayerLoaded -= OnPlayerLoaded;
+            CharacterManager.Instance.OnPlayerStatsChanged -= OnPlayerStatsChanged;
+            CharacterManager.Instance.OnHealthChanged -= OnHealthChanged;
+            CharacterManager.Instance.OnLevelUp -= OnLevelUp;
         }
     }
 
     private void Update()
     {
+        // Smooth bar animations
         if (smoothBars)
         {
             healthFill.fillAmount = Mathf.Lerp(healthFill.fillAmount, targetHealthFill, barLerpSpeed * Time.deltaTime);
@@ -58,53 +74,44 @@ public class PlayerHUD : MonoBehaviour
         }
     }
 
+    #region Event Handlers
+
     private void OnPlayerLoaded(PlayerStats stats)
     {
         RefreshHUD();
     }
 
+    private void OnPlayerStatsChanged(PlayerStats stats)
+    {
+        RefreshHUD();
+    }
+
+    private void OnHealthChanged(float current, float max)
+    {
+        UpdateHealthBar(CharacterManager.Instance.CurrentPlayer);
+    }
+
+    private void OnLevelUp(int newLevel)
+    {
+        RefreshHUD();
+        // TODO: Add level up visual effect/sound
+        Debug.Log($"[PlayerHUD] Level up animation: {newLevel}");
+    }
+
+    #endregion
+
     #region Public API
 
     public void RefreshHUD()
     {
-        if (!GameManager.Instance.HasActivePlayer)
+        if (!CharacterManager.Instance.HasActivePlayer)
             return;
 
-        PlayerStats player = GameManager.Instance.CurrentPlayer;
+        PlayerStats player = CharacterManager.Instance.CurrentPlayer;
 
         UpdatePlayerInfo(player);
         UpdateHealthBar(player);
         UpdateExpBar(player);
-    }
-
-    public void TakeDamage(float damage)
-    {
-        if (!GameManager.Instance.HasActivePlayer)
-            return;
-
-        PlayerStats player = GameManager.Instance.CurrentPlayer;
-        player.combatRuntime.TakeDamage(damage, player.MaxHP);
-        UpdateHealthBar(player);
-    }
-
-    public void Heal(float amount)
-    {
-        if (!GameManager.Instance.HasActivePlayer)
-            return;
-
-        PlayerStats player = GameManager.Instance.CurrentPlayer;
-        player.combatRuntime.Heal(amount, player.MaxHP);
-        UpdateHealthBar(player);
-    }
-
-    public void FullHeal()
-    {
-        if (!GameManager.Instance.HasActivePlayer)
-            return;
-
-        PlayerStats player = GameManager.Instance.CurrentPlayer;
-        player.combatRuntime.currentHP = player.MaxHP;
-        UpdateHealthBar(player);
     }
 
     #endregion

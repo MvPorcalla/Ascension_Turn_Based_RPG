@@ -43,7 +43,8 @@ public class LevelUpManager : MonoBehaviour
     [SerializeField] private Button confirmButton;
     [SerializeField] private Button closeButton;
 
-    private CharacterBaseStatsSO baseStats => GameManager.Instance.BaseStats;
+    // Get base stats from CharacterManager
+    private CharacterBaseStatsSO baseStats => CharacterManager.Instance?.BaseStats;
     private PlayerStats playerStats;
     
     // Temp allocation state
@@ -203,8 +204,17 @@ public class LevelUpManager : MonoBehaviour
         playerStats.attributes.CopyFrom(tempAttributes);
         playerStats.levelSystem.unallocatedPoints = 0;
         
-        // Recalculate and save
-        playerStats.RecalculateStats(baseStats, fullHeal: false);
+        // Recalculate through CharacterManager
+        if (CharacterManager.Instance != null)
+        {
+            CharacterManager.Instance.RecalculateStats();
+        }
+        else
+        {
+            // Fallback
+            playerStats.RecalculateStats(baseStats, fullHeal: false);
+        }
+        
         GameManager.Instance.SaveGame();
         
         if (levelUpPanel != null)
@@ -227,15 +237,20 @@ public class LevelUpManager : MonoBehaviour
     
     public void GainExperience(int exp)
     {
-        playerStats = GameManager.Instance.CurrentPlayer;
-        
-        if (playerStats == null)
+        // Use CharacterManager
+        if (!CharacterManager.Instance.HasActivePlayer)
         {
-            Debug.LogError("No player stats found!");
+            Debug.LogError("No active player!");
             return;
         }
         
-        bool leveledUp = playerStats.AddExperience(exp, baseStats);
+        playerStats = CharacterManager.Instance.CurrentPlayer;
+        int oldLevel = playerStats.Level;
+        
+        // Add experience through CharacterManager
+        CharacterManager.Instance.AddExperience(exp);
+        
+        bool leveledUp = playerStats.Level > oldLevel;
         
         if (leveledUp)
         {

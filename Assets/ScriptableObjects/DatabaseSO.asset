@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8f71d039f64a5ec459c4e9d8604f256c, type: 3}
-  m_Name: GameDatabase
+  m_Name: DatabaseSO
   m_EditorClassIdentifier: 
   weapons:
   - {fileID: 11400000, guid: 267667d73a6c5a943ab0503cd0a5d290, type: 2}
@@ -35,6 +35,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 3709e6aa2e3765a45991b00b3139629f, type: 2}
   potions:
   - {fileID: 11400000, guid: e35ae557b2d13704d84f558786c402cb, type: 2}
+  materials:
+  - {fileID: 11400000, guid: d590e228ddad8bd429a3d54c32174cc7, type: 2}
   gear: []
-  materials: []
   misc: []

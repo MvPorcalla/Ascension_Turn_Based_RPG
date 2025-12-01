@@ -1,156 +1,180 @@
+// ──────────────────────────────────────────────────
+// PotionSO.cs (FIXED)
+// ScriptableObject for defining potions in the game
+// ──────────────────────────────────────────────────
+
 using UnityEngine;
+using System.Collections.Generic;
 
 [CreateAssetMenu(fileName = "New Potion", menuName = "Game/Potion")]
 public class PotionSO : ItemBaseSO
 {
-    [Header("Potion Info")]
-    public string potionName;
+    [Header("Potion Settings")]
     public PotionType potionType;
     
-    [Header("Potion Effects")]
-    public float restoreAmount; // HP/Mana restored
-    public float duration; // For buffs/DoTs (0 = instant)
+    [Header("Restore Effects")]
+    public float healthRestore;
+    public float manaRestore;
+    public float restoreDuration; // 0 = instant, >0 = over time
     
-    [Header("Buff Effects (Optional)")]
-    public bool grantsBuff;
-    public float buffDuration;
-    public BuffType buffType;
-    public float buffValue; // +10% speed, +50 AD, etc.
+    [Header("Buffs")]
+    public List<PotionBuff> buffs = new List<PotionBuff>();
     
-    [Header("Usage")]
+    [Header("Usage Settings")]
     public bool canUseInCombat = true;
     public bool canUseOutOfCombat = true;
-    public AnimationClip useAnimation; // Optional drinking animation
+    public float cooldown = 1f; // Potion category cooldown
+
+    // ✅ ADDED: Properties for backwards compatibility with PotionPopupUI
+    public float restoreAmount => Mathf.Max(healthRestore, manaRestore);
+    public float duration => restoreDuration;
+    public bool grantsBuff => buffs != null && buffs.Count > 0;
+    public float buffDuration => (buffs != null && buffs.Count > 0) ? buffs[0].duration : 0f;
+    public BuffType buffType => (buffs != null && buffs.Count > 0) ? buffs[0].type : BuffType.AttackDamage;
+    public float buffValue => (buffs != null && buffs.Count > 0) ? buffs[0].value : 0f;
 
     private void OnValidate()
     {
-        itemName = potionName;
         itemType = ItemType.Consumable;
         isStackable = true;
         maxStackSize = 999;
-
-        if (string.IsNullOrEmpty(itemID))
-        {
-            itemID = $"potion_{name.ToLower().Replace(" ", "_")}";
-        }
     }
 
     public override string GetInfoText()
     {
-        string info = $"<b>{potionName}</b>\n{rarity} Potion\n\n";
+        string info = $"<b>{itemName}</b>\n{rarity} Potion\n\n";
         
-        switch (potionType)
+        // Health/Mana restore
+        if (healthRestore > 0)
         {
-            case PotionType.HealthPotion:
-                info += duration > 0 
-                    ? $"Restores {restoreAmount} HP over {duration}s\n" 
-                    : $"Restores {restoreAmount} HP instantly\n";
-                break;
-            case PotionType.ManaPotion:
-                info += duration > 0 
-                    ? $"Restores {restoreAmount} Mana over {duration}s\n" 
-                    : $"Restores {restoreAmount} Mana instantly\n";
-                break;
-            case PotionType.BuffPotion:
-                info += $"Grants buff for {buffDuration}s\n{GetBuffDescription()}\n";
-                break;
-            case PotionType.Elixir:
-                info += $"Restores {restoreAmount} HP & Mana\n";
-                if (grantsBuff) info += $"+Buff: {GetBuffDescription()}\n";
-                break;
+            info += restoreDuration > 0 
+                ? $"Restores {healthRestore} HP over {restoreDuration}s\n" 
+                : $"Restores {healthRestore} HP instantly\n";
+        }
+        
+        if (manaRestore > 0)
+        {
+            info += restoreDuration > 0 
+                ? $"Restores {manaRestore} Mana over {restoreDuration}s\n" 
+                : $"Restores {manaRestore} Mana instantly\n";
         }
 
+        // Buffs
+        if (buffs.Count > 0)
+        {
+            info += "\n<color=yellow>Buffs:</color>\n";
+            foreach (var buff in buffs)
+            {
+                info += $"• {buff.GetDescription()}\n";
+            }
+        }
+
+        // Cooldown
+        if (cooldown > 0)
+            info += $"\n<color=gray>Cooldown: {cooldown}s</color>";
+
+        // Description
         if (!string.IsNullOrEmpty(description))
-            info += $"\n<i>{description}</i>";
+            info += $"\n\n<i>{description}</i>";
 
         return info;
     }
 
-    private string GetBuffDescription()
+    /// <summary>
+    /// Validates if the potion can be used in the given combat state
+    /// </summary>
+    public bool CanUse(bool isInCombat)
     {
-        return buffType switch
+        if (!canUseInCombat && isInCombat)
         {
-            BuffType.AttackDamage => $"+{buffValue} Attack Damage",
-            BuffType.AbilityPower => $"+{buffValue} Ability Power",
-            BuffType.Defense => $"+{buffValue} Defense",
-            BuffType.Speed => $"+{buffValue}% Movement Speed",
-            BuffType.CritRate => $"+{buffValue}% Crit Rate",
-            BuffType.AttackSpeed => $"+{buffValue}% Attack Speed",
-            BuffType.Regeneration => $"+{buffValue} HP/s Regeneration",
-            BuffType.Resistance => $"+{buffValue}% Damage Resistance",
-            BuffType.Invisibility => "Grants Invisibility",
-            BuffType.Invulnerability => "Grants Invulnerability",
-            _ => "Unknown Buff"
-        };
-    }
+            Debug.Log($"[PotionSO] Cannot use {itemName} in combat");
+            return false;
+        }
 
-    public bool Use(PlayerStats player)
-    {
-        Debug.Log($"[PotionSO] Used {potionName}");
-
-        switch (potionType)
+        if (!canUseOutOfCombat && !isInCombat)
         {
-            case PotionType.HealthPotion:
-                Debug.Log($"Restored {restoreAmount} HP");
-                break;
-            case PotionType.ManaPotion:
-                Debug.Log($"Restored {restoreAmount} Mana");
-                break;
-            case PotionType.BuffPotion:
-                Debug.Log($"Applied {buffType} buff for {buffDuration}s");
-                break;
-            case PotionType.Elixir:
-                Debug.Log($"Used elixir - restored HP/Mana and applied buff");
-                break;
+            Debug.Log($"[PotionSO] Can only use {itemName} in combat");
+            return false;
         }
 
         return true;
     }
 
     #region Debug Helpers
-    [ContextMenu("Test: Add to Inventory (Bag)")]
-    private void DebugAddToBag()
+    [ContextMenu("Generate Item ID")]
+    private void GenerateItemID()
     {
-        if (Application.isPlaying && InventoryManager.Instance != null)
-        {
-            InventoryManager.Instance.AddItem(itemID, 5, true);
-            Debug.Log($"[PotionSO] Added 5x {potionName} to bag");
-        }
+        itemID = $"potion_{itemName.ToLower().Replace(" ", "_").Replace("'", "")}";
+        Debug.Log($"Generated ID: {itemID}");
+        
+        #if UNITY_EDITOR
+        UnityEditor.EditorUtility.SetDirty(this);
+        #endif
     }
 
-    [ContextMenu("Test: Add to Storage")]
-    private void DebugAddToStorage()
+    [ContextMenu("Test: Add to Inventory")]
+    private void DebugAddToInventory()
     {
         if (Application.isPlaying && InventoryManager.Instance != null)
         {
-            InventoryManager.Instance.AddItem(itemID, 10, false);
-            Debug.Log($"[PotionSO] Added 10x {potionName} to storage");
+            InventoryManager.Instance.AddItem(itemID, 5);
+            Debug.Log($"[PotionSO] Added 5x {itemName} to inventory");
+        }
+        else
+        {
+            Debug.LogWarning("Can only test in Play Mode with InventoryManager present");
         }
     }
 
     [ContextMenu("Print Potion Info")]
     private void DebugPrintInfo()
     {
-        Debug.Log($"=== {potionName} ===");
-        Debug.Log($"ID: {itemID}");
-        Debug.Log($"Type: {potionType}");
-        Debug.Log($"Rarity: {rarity}");
-        Debug.Log($"Restore Amount: {restoreAmount}");
-        Debug.Log($"Duration: {duration}s");
-        if (grantsBuff)
-            Debug.Log($"Buff: {buffType} (+{buffValue}) for {buffDuration}s");
+        Debug.Log(GetInfoText());
     }
     #endregion
 }
 
+// ──────────────────────────────────────────────────
+// Supporting Classes
+// ──────────────────────────────────────────────────
+
+[System.Serializable]
+public class PotionBuff
+{
+    public BuffType type;
+    public float value;
+    public float duration;
+
+    public string GetDescription()
+    {
+        string buffDesc = type switch
+        {
+            BuffType.AttackDamage => $"+{value} Attack Damage",
+            BuffType.AbilityPower => $"+{value} Ability Power",
+            BuffType.Defense => $"+{value} Defense",
+            BuffType.Speed => $"+{value}% Movement Speed",
+            BuffType.CritRate => $"+{value}% Crit Rate",
+            BuffType.AttackSpeed => $"+{value}% Attack Speed",
+            BuffType.Regeneration => $"+{value} HP/s Regeneration",
+            BuffType.Resistance => $"+{value}% Damage Resistance",
+            BuffType.Invisibility => "Invisibility",
+            BuffType.Invulnerability => "Invulnerability",
+            _ => "Unknown Buff"
+        };
+
+        return $"{buffDesc} ({duration}s)";
+    }
+}
+
+// ✅ FIXED: Added missing Antidote enum value
 public enum PotionType
 {
     HealthPotion,
     ManaPotion,
-    BuffPotion,
-    Elixir,
-    Antidote,
-    Utility
+    Elixir,        // HP + Mana
+    BuffPotion,    // Pure buffs
+    Antidote,      // ✅ ADDED
+    Utility        // Special effects
 }
 
 public enum BuffType

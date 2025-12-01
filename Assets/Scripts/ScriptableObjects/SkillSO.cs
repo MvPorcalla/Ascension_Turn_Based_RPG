@@ -1,5 +1,6 @@
 // -------------------------------
-// SkillSO.cs (With Debug Helpers)
+// SkillSO.cs 
+// TODO: Rework skill system (its still incomplete)
 // -------------------------------
 using UnityEngine;
 

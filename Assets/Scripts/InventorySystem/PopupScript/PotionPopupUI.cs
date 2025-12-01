@@ -1,6 +1,8 @@
-// -------------------------------
-// PotionPopupUI.cs - Dedicated potion popup with buff display
-// -------------------------------
+// ──────────────────────────────────────────────────
+// PotionPopupUI.cs
+// UI Popup for displaying potion details and actions
+// ──────────────────────────────────────────────────
+
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -40,6 +42,10 @@ public class PotionPopupUI : MonoBehaviour
     [SerializeField] private Button addToPocketButton;
     [SerializeField] private Button addToBagButton;
 
+    [Header("Cooldown Display (Optional)")]
+    [SerializeField] private TMP_Text cooldownText;
+    [SerializeField] private GameObject cooldownWarning;
+
     private PotionSO currentPotion;
     private ItemInstance currentItem;
     private ItemLocation currentLocation;
@@ -65,6 +71,15 @@ public class PotionPopupUI : MonoBehaviour
         popupContainer.SetActive(false);
     }
 
+    private void Update()
+    {
+        // Update cooldown display if needed
+        if (popupContainer.activeSelf && currentPotion != null)
+        {
+            UpdateCooldownDisplay();
+        }
+    }
+
     public void ShowPotion(PotionSO potion, ItemInstance item, ItemLocation fromLocation)
     {
         currentPotion = potion;
@@ -75,7 +90,7 @@ public class PotionPopupUI : MonoBehaviour
         popupContainer.SetActive(true);
 
         // Setup header
-        itemName.text = potion.potionName;
+        itemName.text = potion.itemName;
 
         // Setup icon
         if (potionIcon != null)
@@ -107,6 +122,43 @@ public class PotionPopupUI : MonoBehaviour
 
         // Setup action buttons visibility
         SetupActionButtons(fromLocation, item);
+
+        // Update cooldown display
+        UpdateCooldownDisplay();
+    }
+
+    private void UpdateCooldownDisplay()
+    {
+        if (PotionManager.Instance == null) return;
+
+        float cooldown = PotionManager.Instance.GetCooldownRemaining();
+        bool isOnCooldown = PotionManager.Instance.IsOnCooldown();
+
+        // Update cooldown text
+        if (cooldownText != null)
+        {
+            if (isOnCooldown)
+            {
+                cooldownText.text = $"Cooldown: {cooldown:F1}s";
+                cooldownText.gameObject.SetActive(true);
+            }
+            else
+            {
+                cooldownText.gameObject.SetActive(false);
+            }
+        }
+
+        // Show/hide cooldown warning
+        if (cooldownWarning != null)
+        {
+            cooldownWarning.SetActive(isOnCooldown);
+        }
+
+        // Disable use button if on cooldown
+        if (useButton != null)
+        {
+            useButton.interactable = !isOnCooldown;
+        }
     }
 
     private void DisplayPotionType(PotionSO potion)
@@ -141,17 +193,17 @@ public class PotionPopupUI : MonoBehaviour
         switch (potion.potionType)
         {
             case PotionType.HealthPotion:
-                if (potion.duration > 0)
-                    AddBuffLine("HP Restore", $"+{potion.restoreAmount}", $"{potion.duration}s (over time)");
+                if (potion.restoreDuration > 0)
+                    AddBuffLine("HP Restore", $"+{potion.healthRestore}", $"{potion.restoreDuration}s (over time)");
                 else
-                    AddBuffLine("HP Restore", $"+{potion.restoreAmount}", "Instant");
+                    AddBuffLine("HP Restore", $"+{potion.healthRestore}", "Instant");
                 break;
 
             case PotionType.ManaPotion:
-                if (potion.duration > 0)
-                    AddBuffLine("Mana Restore", $"+{potion.restoreAmount}", $"{potion.duration}s (over time)");
+                if (potion.restoreDuration > 0)
+                    AddBuffLine("Mana Restore", $"+{potion.manaRestore}", $"{potion.restoreDuration}s (over time)");
                 else
-                    AddBuffLine("Mana Restore", $"+{potion.restoreAmount}", "Instant");
+                    AddBuffLine("Mana Restore", $"+{potion.manaRestore}", "Instant");
                 break;
 
             case PotionType.BuffPotion:
@@ -159,7 +211,7 @@ public class PotionPopupUI : MonoBehaviour
                 break;
 
             case PotionType.Elixir:
-                AddBuffLine("HP & Mana", $"+{potion.restoreAmount}", "Instant");
+                AddBuffLine("HP & Mana", $"+{potion.healthRestore} / +{potion.manaRestore}", "Instant");
                 if (potion.grantsBuff)
                 {
                     DisplayBuffPotionEffects(potion);
@@ -178,17 +230,17 @@ public class PotionPopupUI : MonoBehaviour
 
     private void DisplayBuffPotionEffects(PotionSO potion)
     {
-        if (!potion.grantsBuff) return;
+        if (potion.buffs == null || potion.buffs.Count == 0) return;
 
-        // Convert buffDuration to turns (assuming 1 turn = X seconds, adjust as needed)
-        // For now, showing duration in turns format
-        string durationText = $"{Mathf.RoundToInt(potion.buffDuration)} turns";
+        foreach (var buff in potion.buffs)
+        {
+            string durationText = $"{Mathf.RoundToInt(buff.duration)}s";
 
-        // Display buff based on type
-        string buffValueText = GetBuffValueText(potion.buffType, potion.buffValue);
-        string buffLabel = GetBuffLabel(potion.buffType);
+            string buffValueText = GetBuffValueText(buff.type, buff.value);
+            string buffLabel = GetBuffLabel(buff.type);
 
-        AddBuffLine(buffLabel, buffValueText, durationText);
+            AddBuffLine(buffLabel, buffValueText, durationText);
+        }
     }
 
     private string GetBuffLabel(BuffType buffType)
@@ -359,13 +411,82 @@ public class PotionPopupUI : MonoBehaviour
 
     private void OnUseClicked()
     {
-        // TODO: Implement potion usage system
-        Debug.Log($"Using {selectedQuantity}x {currentPotion.potionName}");
+        // ✅ Properly integrate with PotionManager and CharacterManager
         
-        // Remove used quantity from inventory
-        InventoryManager.Instance.Inventory.RemoveItem(currentItem, selectedQuantity);
-        
-        ClosePopup();
+        // Validate managers exist
+        if (PotionManager.Instance == null)
+        {
+            Debug.LogError("[PotionPopupUI] PotionManager not found!");
+            return;
+        }
+
+        if (CharacterManager.Instance == null)
+        {
+            Debug.LogError("[PotionPopupUI] CharacterManager not found!");
+            return;
+        }
+
+        if (!CharacterManager.Instance.HasActivePlayer)
+        {
+            Debug.LogError("[PotionPopupUI] No active player!");
+            return;
+        }
+
+        // Get player stats from CharacterManager
+        PlayerStats playerStats = CharacterManager.Instance.CurrentPlayer;
+        CharacterBaseStatsSO baseStats = CharacterManager.Instance.BaseStats;
+
+        if (playerStats == null || baseStats == null)
+        {
+            Debug.LogError("[PotionPopupUI] Player stats not initialized!");
+            return;
+        }
+
+        // Try to use potions one by one
+        int successfulUses = 0;
+        for (int i = 0; i < selectedQuantity; i++)
+        {
+            bool success = PotionManager.Instance.UsePotion(currentPotion, playerStats, baseStats);
+            
+            if (success)
+            {
+                successfulUses++;
+            }
+            else
+            {
+                // Stop if potion can't be used (cooldown, combat restriction, etc.)
+                if (successfulUses > 0)
+                {
+                    Debug.LogWarning($"[PotionPopupUI] Could only use {successfulUses}/{selectedQuantity} potions");
+                }
+                break;
+            }
+        }
+
+        // Remove successfully used potions from inventory
+        if (successfulUses > 0)
+        {
+            InventoryManager.Instance.Inventory.RemoveItem(currentItem, successfulUses);
+            Debug.Log($"[PotionPopupUI] Used {successfulUses}x {currentPotion.itemName}");
+            
+            // HUD will auto-update via CharacterManager events (OnHealthChanged)
+            
+            // Close popup if all items were used or inventory is empty
+            if (successfulUses == selectedQuantity || currentItem.quantity <= 0)
+            {
+                ClosePopup();
+            }
+            else
+            {
+                // Update quantity controls for remaining items
+                selectedQuantity = Mathf.Min(selectedQuantity, currentItem.quantity);
+                SetupQuantityControls(currentItem.quantity);
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[PotionPopupUI] Failed to use {currentPotion.itemName}");
+        }
     }
 
     private void OnAddToPocketClicked()
@@ -377,7 +498,7 @@ public class PotionPopupUI : MonoBehaviour
             // From storage or bag: Move to pocket
             if (InventoryManager.Instance.Inventory.MoveToPocket(currentItem, selectedQuantity))
             {
-                Debug.Log($"Moved {selectedQuantity}x {currentPotion.potionName} to pocket");
+                Debug.Log($"Moved {selectedQuantity}x {currentPotion.itemName} to pocket");
                 ClosePopup();
             }
         }
@@ -386,7 +507,7 @@ public class PotionPopupUI : MonoBehaviour
             // From pocket: Move to storage
             if (InventoryManager.Instance.Inventory.MoveToStorage(currentItem, selectedQuantity))
             {
-                Debug.Log($"Stored {selectedQuantity}x {currentPotion.potionName}");
+                Debug.Log($"Stored {selectedQuantity}x {currentPotion.itemName}");
                 ClosePopup();
             }
         }
@@ -401,7 +522,7 @@ public class PotionPopupUI : MonoBehaviour
             // From storage or pocket: Move to bag
             if (InventoryManager.Instance.Inventory.MoveToBag(currentItem, selectedQuantity))
             {
-                Debug.Log($"Moved {selectedQuantity}x {currentPotion.potionName} to bag");
+                Debug.Log($"Moved {selectedQuantity}x {currentPotion.itemName} to bag");
                 ClosePopup();
             }
         }
@@ -410,7 +531,7 @@ public class PotionPopupUI : MonoBehaviour
             // From bag: Move to storage
             if (InventoryManager.Instance.Inventory.MoveToStorage(currentItem, selectedQuantity))
             {
-                Debug.Log($"Stored {selectedQuantity}x {currentPotion.potionName}");
+                Debug.Log($"Stored {selectedQuantity}x {currentPotion.itemName}");
                 ClosePopup();
             }
         }

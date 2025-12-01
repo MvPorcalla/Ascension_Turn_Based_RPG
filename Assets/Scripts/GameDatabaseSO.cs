@@ -1,19 +1,22 @@
-// -------------------------------
-// GameDatabase.cs (Updated with PotionSO)
-// -------------------------------
+// ──────────────────────────────────────────────────
+// GameDatabaseSO.cs
+// Central database for all game items
+// Provides categorized access and lookup by ID
+// ──────────────────────────────────────────────────
+
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-[CreateAssetMenu(fileName = "GameDatabase", menuName = "Game/Database")]
-public class GameDatabase : ScriptableObject
+[CreateAssetMenu(fileName = "DatabaseSO", menuName = "GameDatabase/DatabaseSO")]
+public class GameDatabaseSO : ScriptableObject
 {
     [Header("Items by Category (Inspector View)")]
     [SerializeField] private List<WeaponSO> weapons = new List<WeaponSO>();
     [SerializeField] private List<SkillSO> skills = new List<SkillSO>();
-    [SerializeField] private List<PotionSO> potions = new List<PotionSO>(); // Potions category 🆕 NEW
-    [SerializeField] private List<ItemBaseSO> gear = new List<ItemBaseSO>(); // Helmets, chest, gloves, boots, accessories
-    [SerializeField] private List<ItemBaseSO> materials = new List<ItemBaseSO>();
+    [SerializeField] private List<PotionSO> potions = new List<PotionSO>();
+    [SerializeField] private List<MaterialSO> materials = new List<MaterialSO>();
+    [SerializeField] private List<ItemBaseSO> gear = new List<ItemBaseSO>();
     [SerializeField] private List<ItemBaseSO> misc = new List<ItemBaseSO>();
 
     // Cached dictionaries for fast lookup
@@ -26,8 +29,8 @@ public class GameDatabase : ScriptableObject
         allItemsCache = new List<ItemBaseSO>();
         allItemsCache.AddRange(weapons.Cast<ItemBaseSO>());
         allItemsCache.AddRange(skills.Cast<ItemBaseSO>());
-        allItemsCache.AddRange(potions.Cast<ItemBaseSO>()); // 🔧 CHANGED
-        allItemsCache.AddRange(materials);
+        allItemsCache.AddRange(potions.Cast<ItemBaseSO>());
+        allItemsCache.AddRange(materials.Cast<ItemBaseSO>());
         allItemsCache.AddRange(gear);
         allItemsCache.AddRange(misc);
 
@@ -50,7 +53,7 @@ public class GameDatabase : ScriptableObject
 
         Debug.Log($"[GameDatabase] Initialized: {allItemsCache.Count} items " +
                   $"(Weapons: {weapons.Count}, Skills: {skills.Count}, " +
-                  $"Potions: {potions.Count}, Materials: {materials.Count}, " + // 🔧 CHANGED
+                  $"Potions: {potions.Count}, Materials: {materials.Count}, " +
                   $"Gear: {gear.Count}, Misc: {misc.Count})");
     }
 
@@ -100,7 +103,7 @@ public class GameDatabase : ScriptableObject
     }
 
     /// <summary>
-    /// Get all potions (typed) 🆕 NEW
+    /// Get all potions (typed)
     /// </summary>
     public List<PotionSO> GetAllPotions()
     {
@@ -108,35 +111,51 @@ public class GameDatabase : ScriptableObject
     }
 
     /// <summary>
-    /// Get weapon by name
+    /// Get all materials (typed)
+    /// </summary>
+    public List<MaterialSO> GetAllMaterials()
+    {
+        return new List<MaterialSO>(materials);
+    }
+
+    /// <summary>
+    /// Get weapon by itemName
     /// </summary>
     public WeaponSO GetWeapon(string weaponName)
     {
-        return weapons.FirstOrDefault(w => w.weaponName == weaponName);
+        return weapons.FirstOrDefault(w => w.itemName == weaponName);
     }
 
     /// <summary>
-    /// Get skill by name
+    /// Get skill by itemName
     /// </summary>
     public SkillSO GetSkill(string skillName)
     {
-        return skills.FirstOrDefault(s => s.skillName == skillName);
+        return skills.FirstOrDefault(s => s.itemName == skillName);
     }
 
     /// <summary>
-    /// Get potion by name 🆕 NEW
+    /// Get potion by itemName
     /// </summary>
     public PotionSO GetPotion(string potionName)
     {
-        return potions.FirstOrDefault(p => p.potionName == potionName);
+        return potions.FirstOrDefault(p => p.itemName == potionName); // ✅ FIXED: use itemName
     }
 
     /// <summary>
-    /// Get potions by type 🆕 NEW
+    /// Get potions by type
     /// </summary>
     public List<PotionSO> GetPotionsByType(PotionType type)
     {
         return potions.Where(p => p.potionType == type).ToList();
+    }
+
+    /// <summary>
+    /// Get materials by category
+    /// </summary>
+    public List<MaterialSO> GetMaterialsByCategory(MaterialCategory category)
+    {
+        return materials.Where(m => m.category == category).ToList();
     }
 
     /// <summary>
@@ -188,20 +207,25 @@ public class GameDatabase : ScriptableObject
             {
                 skills.Add(skill);
             }
-            else if (item is PotionSO potion) // 🆕 NEW - check for PotionSO
+            else if (item is PotionSO potion)
             {
                 potions.Add(potion);
+            }
+            else if (item is MaterialSO material) // ✅ Check for MaterialSO
+            {
+                materials.Add(material);
             }
             else
             {
                 switch (item.itemType)
                 {
                     case ItemType.Consumable:
-                        // Generic consumables (if not PotionSO) go to misc
                         misc.Add(item);
                         break;
                     case ItemType.Material:
-                        materials.Add(item);
+                        // If not MaterialSO but marked as material, still add
+                        Debug.LogWarning($"Item {item.itemName} is ItemType.Material but not MaterialSO");
+                        misc.Add(item);
                         break;
                     case ItemType.Gear:
                         gear.Add(item);
@@ -213,11 +237,11 @@ public class GameDatabase : ScriptableObject
             }
         }
 
-        // Sort each category
-        weapons = weapons.OrderBy(w => w.weaponName).ToList();
-        skills = skills.OrderBy(s => s.skillName).ToList();
-        potions = potions.OrderBy(p => p.potionName).ToList(); // 🔧 CHANGED
-        materials = materials.OrderBy(i => i.itemName).ToList();
+        // Sort each category by itemName
+        weapons = weapons.OrderBy(w => w.itemName).ToList();
+        skills = skills.OrderBy(s => s.itemName).ToList();
+        potions = potions.OrderBy(p => p.itemName).ToList(); // ✅ FIXED
+        materials = materials.OrderBy(m => m.itemName).ToList();
         gear = gear.OrderBy(i => i.itemName).ToList();
         misc = misc.OrderBy(i => i.itemName).ToList();
 
@@ -226,7 +250,7 @@ public class GameDatabase : ScriptableObject
         UnityEditor.AssetDatabase.SaveAssets();
         #endif
 
-        int total = weapons.Count + skills.Count + potions.Count + // 🔧 CHANGED
+        int total = weapons.Count + skills.Count + potions.Count +
                     materials.Count + gear.Count + misc.Count;
         
         Debug.Log($"[GameDatabase] Auto-populated {total} items:");
@@ -237,7 +261,7 @@ public class GameDatabase : ScriptableObject
     {
         weapons.Clear();
         skills.Clear();
-        potions.Clear(); // 🔧 CHANGED
+        potions.Clear();
         materials.Clear();
         gear.Clear();
         misc.Clear();
@@ -249,12 +273,12 @@ public class GameDatabase : ScriptableObject
         Debug.Log("=== ITEM BREAKDOWN ===");
         Debug.Log($"Weapons: {weapons.Count}");
         Debug.Log($"Skills: {skills.Count}");
-        Debug.Log($"Potions: {potions.Count}"); // 🔧 CHANGED
+        Debug.Log($"Potions: {potions.Count}");
         Debug.Log($"Materials: {materials.Count}");
         Debug.Log($"Gear: {gear.Count}");
         Debug.Log($"Misc: {misc.Count}");
         
-        int total = weapons.Count + skills.Count + potions.Count + // 🔧 CHANGED
+        int total = weapons.Count + skills.Count + potions.Count +
                     materials.Count + gear.Count + misc.Count;
         Debug.Log($"Total: {total}");
     }
@@ -267,25 +291,25 @@ public class GameDatabase : ScriptableObject
         Debug.Log($"=== WEAPONS ({weapons.Count}) ===");
         foreach (var weapon in weapons)
         {
-            Debug.Log($"  {weapon.weaponName} [{weapon.weaponType}] - ID: {weapon.itemID}");
+            Debug.Log($"  {weapon.itemName} - ID: {weapon.itemID}");
         }
         
         Debug.Log($"=== SKILLS ({skills.Count}) ===");
         foreach (var skill in skills)
         {
-            Debug.Log($"  {skill.skillName} [{skill.category}] - ID: {skill.itemID}");
+            Debug.Log($"  {skill.itemName} - ID: {skill.itemID}");
         }
         
-        Debug.Log($"=== POTIONS ({potions.Count}) ==="); // 🔧 CHANGED
+        Debug.Log($"=== POTIONS ({potions.Count}) ===");
         foreach (var potion in potions)
         {
-            Debug.Log($"  {potion.potionName} [{potion.potionType}] - ID: {potion.itemID}");
+            Debug.Log($"  {potion.itemName} [{potion.potionType}] - ID: {potion.itemID}");
         }
         
         Debug.Log($"=== MATERIALS ({materials.Count}) ===");
-        foreach (var item in materials)
+        foreach (var material in materials)
         {
-            Debug.Log($"  {item.itemName} - ID: {item.itemID}");
+            Debug.Log($"  {material.itemName} [{material.category}] - ID: {material.itemID}");
         }
 
         PrintCategorizedCount();
