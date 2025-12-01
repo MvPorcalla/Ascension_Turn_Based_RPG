@@ -176,7 +176,7 @@ public class WeaponSO : ItemBaseSO
             info += $"\n<i>{description}</i>";
         
         if (defaultWeaponSkill != null)
-            info += $"\n\n<color=#ffd93d>⚔ {defaultWeaponSkill.skillName}</color>";
+            info += $"\n\n<color=#ffd93d> {defaultWeaponSkill.skillName}</color>";
         
         return info;
     }

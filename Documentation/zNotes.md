@@ -80,19 +80,6 @@ This will make the asset creation menu more organized and consistent.
 
 TODO: 
 
-Critical Issue:
-The character with Unicode value \u2694 was not found in the [LiberationSans SDF] font asset or any potential fallbacks. It was replaced by Unicode character \u25A1 in text object [Text (TMP)].
-UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
-TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/UnicodeChar[]) (at ./Library/PackageCache/com.unity.textmeshpro@3.0.7/Scripts/Runtime/TMPro_UGUI_Private.cs:1274)
-TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.textmeshpro@3.0.7/Scripts/Runtime/TMP_Text.cs:1902)
-TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.textmeshpro@3.0.7/Scripts/Runtime/TMPro_UGUI_Private.cs:1644)
-TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.textmeshpro@3.0.7/Scripts/Runtime/TextMeshProUGUI.cs:216)
-UnityEngine.Canvas:SendWillRenderCanvases ()
-
-this always showup when i press the weapon, only happens on weapon
-
-------------
-
 [PotionPopupUI] PotionManager not found!
 UnityEngine.Debug:LogError (object)
 PotionPopupUI:OnUseClicked () (at Assets/Scripts/InventorySystem/PopupScript/PotionPopupUI.cs:419)

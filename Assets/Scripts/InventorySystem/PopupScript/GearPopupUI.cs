@@ -117,7 +117,7 @@ public class GearPopupUI : MonoBehaviour
         // Display weapon skill if available
         if (weapon.defaultWeaponSkill != null)
         {
-            AddEffectLine($"⚔ Skill: {weapon.defaultWeaponSkill.skillName}");
+            AddEffectLine($"[Skill] : {weapon.defaultWeaponSkill.skillName}");
         }
     }
 
