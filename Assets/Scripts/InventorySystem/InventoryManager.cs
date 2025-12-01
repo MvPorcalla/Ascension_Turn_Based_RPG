@@ -10,35 +10,40 @@ public class InventoryManager : MonoBehaviour
     public static InventoryManager Instance { get; private set; }
 
     [Header("References")]
-    [SerializeField] private GameDatabaseSO GameDatabaseSO;
+    [SerializeField] private GameDatabaseSO database;
 
     public BagInventory Inventory { get; private set; }
-    public GameDatabaseSO Database => GameDatabaseSO;
+    public GameDatabaseSO Database => database;
 
     // Event for UI to subscribe to
     public event System.Action OnInventoryLoaded;
 
     private void Awake()
+{
+    if (Instance != null && Instance != this)
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
-
-        Inventory = new BagInventory();
-        GameDatabaseSO?.Initialize();
+        Destroy(gameObject);
+        return;
     }
+
+    Instance = this;
+    DontDestroyOnLoad(gameObject);
+
+    Inventory = new BagInventory();
+
+    if (database == null)
+        Debug.LogError("[InventoryManager] Database not assigned!");
+    else
+        database.Initialize();
+}
+
 
     /// <summary>
     /// Add item to player inventory
     /// </summary>
     public bool AddItem(string itemID, int quantity = 1, bool addToBag = false)
     {
-        return Inventory.AddItem(itemID, quantity, addToBag, GameDatabaseSO);
+        return Inventory.AddItem(itemID, quantity, addToBag, database);
     }
 
     /// <summary>
@@ -72,14 +77,14 @@ public class InventoryManager : MonoBehaviour
     [ContextMenu("Debug: Add Test Items")]
     public void DebugAddTestItems()
     {
-        if (GameDatabaseSO == null)
+        if (database == null)
         {
-            Debug.LogError("GameDatabaseSO not assigned!");
+            Debug.LogError("database not assigned!");
             return;
         }
 
         // Add 10 of each stackable item to storage (excluding skills)
-        foreach (var item in GameDatabaseSO.GetAllItems())
+        foreach (var item in database.GetAllItems())
         {
             // Skip skills - they have their own system
             if (item.itemType == ItemType.Skill)
@@ -98,7 +103,7 @@ public class InventoryManager : MonoBehaviour
         }
 
         // Add a few items to bag for testing
-        var weapons = GameDatabaseSO.GetAllWeapons();
+        var weapons = database.GetAllWeapons();
         if (weapons.Count > 0)
         {
             AddItem(weapons[0].itemID, 1, true);

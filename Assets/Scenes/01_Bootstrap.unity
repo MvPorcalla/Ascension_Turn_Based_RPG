@@ -351,7 +351,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4384aa91a43d9a943910eb66f5c844a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultBaseStats: {fileID: 11400000, guid: 574267c73f9d35e4797fa9a15380cc67, type: 2}
   sessionPlayTime: 0
   isAvatarCreationComplete: 0
 --- !u!1 &849151975
@@ -523,7 +522,7 @@ Transform:
   m_GameObject: {fileID: 1169047381}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 534.0265, y: 954.18097, z: -8.78777}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -727,7 +726,7 @@ Transform:
   m_GameObject: {fileID: 1757574844}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 110.68172, y: 881.4332, z: -3.5310445}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -745,7 +744,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 47397caea3fd8fc4b83317b76aed440c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameDatabase: {fileID: 11400000, guid: 7f26be12c05cea44fbbe0ef89fe26ee7, type: 2}
+  database: {fileID: 11400000, guid: 5e6c6bc828c53f444b57e5f015f8f851, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

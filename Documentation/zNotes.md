@@ -58,16 +58,14 @@ TODO: make a separate script called EWqupmentPopupUI.cs but reiusing the GearPop
 
 
 
------------------- WeaponSO --------------------
-
-TODO: How should i implement the rarity of the weapon like rarity affects the bonus stats of the weapon like maybe a multiplier?
-
-
 ------------------ Disclaimer and Boostrap --------------------
 
 TODO: add a loader on the 00_Disclaimer and 01_Boostrap scene 
 
 ------------------ Disclaimer and Boostrap --------------------
+
+TODO: later
+
 Rename the [CreateAssetMenu] entries as follows:
 
 Change the ones currently under Game to ItemSO/... (e.g., ItemSO/Weapon, ItemSO/Consumable, etc.).
@@ -79,7 +77,30 @@ This will make the asset creation menu more organized and consistent.
 
 
 ========================================== TODO ==========================================
+
 TODO: 
+
+Critical Issue:
+The character with Unicode value \u2694 was not found in the [LiberationSans SDF] font asset or any potential fallbacks. It was replaced by Unicode character \u25A1 in text object [Text (TMP)].
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/UnicodeChar[]) (at ./Library/PackageCache/com.unity.textmeshpro@3.0.7/Scripts/Runtime/TMPro_UGUI_Private.cs:1274)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.textmeshpro@3.0.7/Scripts/Runtime/TMP_Text.cs:1902)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.textmeshpro@3.0.7/Scripts/Runtime/TMPro_UGUI_Private.cs:1644)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.textmeshpro@3.0.7/Scripts/Runtime/TextMeshProUGUI.cs:216)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+this always showup when i press the weapon, only happens on weapon
+
+------------
+
+[PotionPopupUI] PotionManager not found!
+UnityEngine.Debug:LogError (object)
+PotionPopupUI:OnUseClicked () (at Assets/Scripts/InventorySystem/PopupScript/PotionPopupUI.cs:419)
+UnityEngine.EventSystems.EventSystem:Update () (at ./Library/PackageCache/com.unity.ugui@1.0.0/Runtime/EventSystem/EventSystem.cs:530)
+
+show up when i press the use probably because of mismatch on potionmanager nad potionpopup
+
+
 
 issue on debug for roll bonus stats it dont display anything when used
 
