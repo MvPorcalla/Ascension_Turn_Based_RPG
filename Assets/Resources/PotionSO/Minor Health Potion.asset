@@ -22,10 +22,13 @@ MonoBehaviour:
   maxStackSize: 999
   requiredLevel: 1
   potionType: 0
-  healthRestore: 0
-  manaRestore: 0
+  restoreType: 0
+  healthRestorePercent: 20
+  healthRestoreFlat: 50
+  manaRestorePercent: 0
+  manaRestoreFlat: 0
+  durationType: 0
   restoreDuration: 0
   buffs: []
   canUseInCombat: 1
   canUseOutOfCombat: 1
-  cooldown: 1
