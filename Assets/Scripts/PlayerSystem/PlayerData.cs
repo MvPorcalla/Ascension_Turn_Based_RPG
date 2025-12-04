@@ -108,19 +108,19 @@ public class PlayerData
         stats.attributes.END = this.END;
         stats.attributes.WIS = this.WIS;
         
-        // Restore item stats
-        stats.itemStats.AD = this.itemAD;
-        stats.itemStats.AP = this.itemAP;
-        stats.itemStats.HP = this.itemHP;
-        stats.itemStats.Defense = this.itemDefense;
-        stats.itemStats.AttackSpeed = this.itemAttackSpeed;
-        stats.itemStats.CritRate = this.itemCritRate;
-        stats.itemStats.CritDamage = this.itemCritDamage;
-        stats.itemStats.Evasion = this.itemEvasion;
-        stats.itemStats.Tenacity = this.itemTenacity;
-        stats.itemStats.Lethality = this.itemLethality;
-        stats.itemStats.Penetration = this.itemPenetration;
-        stats.itemStats.Lifesteal = this.itemLifesteal;
+        // Restore item stats - Use AddStat() method
+        stats.itemStats.AddStat(BonusStatType.AttackDamage, this.itemAD);
+        stats.itemStats.AddStat(BonusStatType.AbilityPower, this.itemAP);
+        stats.itemStats.AddStat(BonusStatType.Health, this.itemHP);
+        stats.itemStats.AddStat(BonusStatType.Defense, this.itemDefense);
+        stats.itemStats.AddStat(BonusStatType.AttackSpeed, this.itemAttackSpeed);
+        stats.itemStats.AddStat(BonusStatType.CritRate, this.itemCritRate);
+        stats.itemStats.AddStat(BonusStatType.CritDamage, this.itemCritDamage);
+        stats.itemStats.AddStat(BonusStatType.Evasion, this.itemEvasion);
+        stats.itemStats.AddStat(BonusStatType.Tenacity, this.itemTenacity);
+        stats.itemStats.AddStat(BonusStatType.Lethality, this.itemLethality);
+        stats.itemStats.AddStat(BonusStatType.Penetration, this.itemPenetration);
+        stats.itemStats.AddStat(BonusStatType.Lifesteal, this.itemLifesteal);
         
         // Calculate derived stats
         stats.RecalculateStats(baseStats, fullHeal: false);
@@ -131,7 +131,7 @@ public class PlayerData
         // Validate EXP (check for pending level ups)
         int maxPossibleLevel = stats.levelSystem.GetMaxPossibleLevel(baseStats);
         while (stats.levelSystem.currentEXP >= stats.levelSystem.expToNextLevel && 
-               stats.levelSystem.level < maxPossibleLevel)
+            stats.levelSystem.level < maxPossibleLevel)
         {
             stats.levelSystem.AddExperience(0, baseStats); // Trigger level up without adding EXP
             stats.RecalculateStats(baseStats, fullHeal: true);

@@ -1,4 +1,5 @@
 // ──────────────────────────────────────────────────
+// InventorySystem
 // ItemSlotUI.cs
 // UI component for displaying an item slot in inventory/storage
 // ──────────────────────────────────────────────────

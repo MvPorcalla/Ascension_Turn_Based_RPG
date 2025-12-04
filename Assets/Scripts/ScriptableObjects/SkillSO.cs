@@ -1,6 +1,7 @@
 // -------------------------------
 // SkillSO.cs 
 // TODO: Rework skill system (its still incomplete)
+// change skillSO to AbilitySO later
 // -------------------------------
 using UnityEngine;
 

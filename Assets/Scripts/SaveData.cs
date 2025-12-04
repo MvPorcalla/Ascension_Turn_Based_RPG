@@ -23,6 +23,7 @@ public class SaveData
     }
     
     /// <summary>
+    /// Remove this later if not needed
     /// Create a new save from current game state
     /// NOTE: This is only called by SaveManager now
     /// </summary>

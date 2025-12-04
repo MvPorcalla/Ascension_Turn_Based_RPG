@@ -80,12 +80,11 @@ This will make the asset creation menu more organized and consistent.
 
 TODO: 
 
-[PotionPopupUI] PotionManager not found!
-UnityEngine.Debug:LogError (object)
-PotionPopupUI:OnUseClicked () (at Assets/Scripts/InventorySystem/PopupScript/PotionPopupUI.cs:419)
-UnityEngine.EventSystems.EventSystem:Update () (at ./Library/PackageCache/com.unity.ugui@1.0.0/Runtime/EventSystem/EventSystem.cs:530)
+change the Gearslots and hotbarslots from image to buttons
 
-show up when i press the use probably because of mismatch on potionmanager nad potionpopup
+im confuse cuz why is it say storage room panel in the fiesld and asking me to put my storageroompanel when in my equipmentroompanel i have build in storage that is a prefab so i can reuse it to switch between skills storage and gear storage
+
+EquipmentRoomPanel.cs
 
 
 
