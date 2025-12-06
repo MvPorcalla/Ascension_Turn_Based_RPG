@@ -12,6 +12,19 @@ using Ascension.Managers;
 
 namespace Ascension.Core {}
 
+// ════════════════════════════════════════════════════════════════════════
+// GameSystemHub.cs
+// Central coordinator for all game systems
+// Place as parent GameObject with all managers as children
+// ════════════════════════════════════════════════════════════════════════
+
+using UnityEngine;
+using Ascension.Managers;
+using Ascension.Systems;
+
+namespace Ascension.Core
+{}
+
 // ════════════════════════════════════════════
 // CharacterManager.cs
 // Single source of truth for player character data
