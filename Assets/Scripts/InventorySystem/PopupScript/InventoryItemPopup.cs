@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────────
-// ItemPopupUI.cs
+// InventoryItemPopup.cs
 // UI popup for displaying item details and actions
 // ──────────────────────────────────────────────────
 
@@ -9,7 +9,7 @@ using TMPro;
 using Ascension.Data.SO;
 using Ascension.Managers;
 
-public class ItemPopupUI : MonoBehaviour
+public class InventoryItemPopup : MonoBehaviour
 {
     [Header("Popup Container")]
     [SerializeField] private GameObject popupContainer;

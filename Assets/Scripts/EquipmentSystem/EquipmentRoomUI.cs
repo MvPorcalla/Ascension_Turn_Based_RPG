@@ -48,8 +48,8 @@ public class EquipmentRoomUI : MonoBehaviour
     [SerializeField] private GameObject abilitiesSortButtons;
     
     [Header("Popup")]
-    [SerializeField] private GearInfoPopup gearInfoPopup;
-    [SerializeField] private EquipmentRoomPotionPopup potionInfoPopup;
+    [SerializeField] private EquipmentGearPopup gearInfoPopup;
+    [SerializeField] private EquipmentPotionPopup potionInfoPopup;
     // [SerializeField] private SkillPopup skillInfoPopup;
     
     [Header("Storage Mode")]

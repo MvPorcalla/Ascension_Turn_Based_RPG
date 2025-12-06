@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────────
-// PotionPopupUI.cs
+// InventoryPotionPopup.cs
 // UI Popup for displaying potion details and actions
 // ──────────────────────────────────────────────────
 
@@ -11,7 +11,7 @@ using Ascension.Managers;
 using Ascension.Systems;
 using Ascension.Data.SO;
 
-public class PotionPopupUI : MonoBehaviour
+public class InventoryPotionPopup : MonoBehaviour
 {
     [Header("Popup Container")]
     [SerializeField] private GameObject popupContainer;

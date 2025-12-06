@@ -280,7 +280,6 @@ namespace Ascension.Managers
             if (Instance == null)
             {
                 Instance = this;
-                DontDestroyOnLoad(gameObject);
             }
             else
             {

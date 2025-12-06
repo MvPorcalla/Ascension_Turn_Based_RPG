@@ -21,23 +21,22 @@ public class InventoryManager : MonoBehaviour
     public event System.Action OnInventoryLoaded;
 
     private void Awake()
-{
-    if (Instance != null && Instance != this)
     {
-        Destroy(gameObject);
-        return;
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+
+        Inventory = new BagInventory();
+
+        if (database == null)
+            Debug.LogError("[InventoryManager] Database not assigned!");
+        else
+            database.Initialize();
     }
-
-    Instance = this;
-    DontDestroyOnLoad(gameObject);
-
-    Inventory = new BagInventory();
-
-    if (database == null)
-        Debug.LogError("[InventoryManager] Database not assigned!");
-    else
-        database.Initialize();
-}
 
 
     /// <summary>

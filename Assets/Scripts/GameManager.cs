@@ -47,7 +47,6 @@ namespace Ascension.Managers
             }
             
             Instance = this;
-            DontDestroyOnLoad(gameObject);
         }
 
         private void Start()

@@ -28,9 +28,9 @@ public class StorageRoomUI : MonoBehaviour
     [SerializeField] private Button miscButton;
 
     [Header("Popups")]
-    [SerializeField] private ItemPopupUI itemPopup; // For stackable items (materials, misc)
-    [SerializeField] private PotionPopupUI potionPopup; // For potions
-    [SerializeField] private GearPopupUI gearPopup; // For weapons, Gear
+    [SerializeField] private InventoryItemPopup itemPopup; // For stackable items (materials, misc)
+    [SerializeField] private InventoryPotionPopup potionPopup; // For potions
+    [SerializeField] private InventoryGearPopup gearPopup; // For weapons, Gear
 
     [Header("Quick Actions")]
     [SerializeField] private Button storeAllButton;

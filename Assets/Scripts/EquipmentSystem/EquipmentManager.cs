@@ -48,7 +48,6 @@ public class EquipmentManager : MonoBehaviour
             return;
         }
         Instance = this;
-        DontDestroyOnLoad(gameObject);
         
         if (debugMode)
             Debug.Log("[EquipmentManager] Initialized");

@@ -43,7 +43,6 @@ namespace Ascension.Systems
             }
             
             Instance = this;
-            DontDestroyOnLoad(gameObject);
         }
         
         private void Update()

@@ -1,4 +1,4 @@
-// GearInfoPopup.cs
+// EquipmentGearPopup.cs
 // Popup UI for displaying detailed gear or weapon information
 
 using UnityEngine;
@@ -7,7 +7,7 @@ using TMPro;
 using System;
 using Ascension.Data.SO;
 
-public class GearInfoPopup : MonoBehaviour
+public class EquipmentGearPopup : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private GameObject popupContainer;

@@ -4,7 +4,7 @@ using TMPro;
 using System;
 using Ascension.Data.SO;
 
-public class EquipmentRoomPotionPopup : MonoBehaviour
+public class EquipmentPotionPopup : MonoBehaviour
 {
     [Header("Popup Container")]
     [SerializeField] private GameObject popupContainer;
