@@ -438,6 +438,71 @@ public class EquipmentManager : MonoBehaviour
     
     #endregion
 
+    #region Save/Load (NEW)
+
+    public EquipmentData SaveEquipment()
+    {
+        return new EquipmentData
+        {
+            equippedWeaponID = equippedWeapon?.ItemID,
+            equippedHelmetID = equippedHelmet?.ItemID,
+            equippedChestPlateID = equippedChestPlate?.ItemID,
+            equippedGlovesID = equippedGloves?.ItemID,
+            equippedBootsID = equippedBoots?.ItemID,
+            equippedAccessory1ID = equippedAccessory1?.ItemID,
+            equippedAccessory2ID = equippedAccessory2?.ItemID,
+            normalSkill1ID = normalSkill1?.ItemID,
+            normalSkill2ID = normalSkill2?.ItemID,
+            ultimateSkillID = ultimateSkill?.ItemID,
+            hotbarItem1ID = hotbarItem1?.ItemID,
+            hotbarItem2ID = hotbarItem2?.ItemID,
+            hotbarItem3ID = hotbarItem3?.ItemID
+        };
+    }
+
+    public void LoadEquipment(EquipmentData data)
+    {
+        if (data == null) return;
+        
+        // Load weapon
+        if (!string.IsNullOrEmpty(data.equippedWeaponID))
+            EquipWeapon(data.equippedWeaponID);
+        
+        // Load gear
+        if (!string.IsNullOrEmpty(data.equippedHelmetID))
+            EquipGear(data.equippedHelmetID, GearSlotType.Helmet);
+        if (!string.IsNullOrEmpty(data.equippedChestPlateID))
+            EquipGear(data.equippedChestPlateID, GearSlotType.ChestPlate);
+        if (!string.IsNullOrEmpty(data.equippedGlovesID))
+            EquipGear(data.equippedGlovesID, GearSlotType.Gloves);
+        if (!string.IsNullOrEmpty(data.equippedBootsID))
+            EquipGear(data.equippedBootsID, GearSlotType.Boots);
+        if (!string.IsNullOrEmpty(data.equippedAccessory1ID))
+            EquipGear(data.equippedAccessory1ID, GearSlotType.Accessory1);
+        if (!string.IsNullOrEmpty(data.equippedAccessory2ID))
+            EquipGear(data.equippedAccessory2ID, GearSlotType.Accessory2);
+        
+        // Load skills
+        if (!string.IsNullOrEmpty(data.normalSkill1ID))
+            EquipSkill(data.normalSkill1ID, SkillSlotType.Normal1);
+        if (!string.IsNullOrEmpty(data.normalSkill2ID))
+            EquipSkill(data.normalSkill2ID, SkillSlotType.Normal2);
+        if (!string.IsNullOrEmpty(data.ultimateSkillID))
+            EquipSkill(data.ultimateSkillID, SkillSlotType.Ultimate);
+        
+        // Load hotbar
+        if (!string.IsNullOrEmpty(data.hotbarItem1ID))
+            EquipHotbarItem(data.hotbarItem1ID, 1);
+        if (!string.IsNullOrEmpty(data.hotbarItem2ID))
+            EquipHotbarItem(data.hotbarItem2ID, 2);
+        if (!string.IsNullOrEmpty(data.hotbarItem3ID))
+            EquipHotbarItem(data.hotbarItem3ID, 3);
+        
+        Debug.Log("[EquipmentManager] Equipment loaded from save");
+    }
+
+    #endregion
+
     #region Utility
     
     /// <summary>

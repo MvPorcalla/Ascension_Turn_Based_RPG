@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════
 // GameManager.cs
-// Central game controller - delegates player data to CharacterManager
+// Central game controller - uses GameSystemHub for system access
 // Handles: Game flow, saves, scene management
 // ════════════════════════════════════════════
 
@@ -8,6 +8,7 @@ using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Ascension.Data.Models;
+using Ascension.Core;
 
 namespace Ascension.Managers
 {
@@ -23,10 +24,11 @@ namespace Ascension.Managers
         [SerializeField] private bool isAvatarCreationComplete = false;
         #endregion
         
-        #region Properties
-        public PlayerStats CurrentPlayer => CharacterManager.Instance?.CurrentPlayer;
-        public CharacterBaseStatsSO BaseStats => CharacterManager.Instance?.BaseStats;
-        public bool HasActivePlayer => CharacterManager.Instance != null && CharacterManager.Instance.HasActivePlayer;
+        #region Properties (Through Hub)
+        private GameSystemHub Hub => GameSystemHub.Instance;
+        public PlayerStats CurrentPlayer => Hub?.CharacterManager?.CurrentPlayer;
+        public CharacterBaseStatsSO BaseStats => Hub?.CharacterManager?.BaseStats;
+        public bool HasActivePlayer => Hub?.CharacterManager != null && Hub.CharacterManager.HasActivePlayer;
         #endregion
         
         #region Events
@@ -50,7 +52,7 @@ namespace Ascension.Managers
 
         private void Start()
         {
-            SubscribeToCharacterManager();
+            WaitForSystemsAndSubscribe();
         }
 
         private void OnDestroy()
@@ -86,13 +88,10 @@ namespace Ascension.Managers
         #region Public Methods - Game Flow
         public void StartNewGame()
         {
-            if (CharacterManager.Instance == null)
-            {
-                Debug.LogError("[GameManager] CharacterManager not found!");
+            if (!ValidateSystemsReady())
                 return;
-            }
 
-            CharacterManager.Instance.CreateNewPlayer("Adventurer");
+            Hub.CharacterManager.CreateNewPlayer("Adventurer");
             
             sessionPlayTime = 0f;
             isAvatarCreationComplete = false;
@@ -123,8 +122,11 @@ namespace Ascension.Managers
                 return false;
             }
             
-            PlayerStats playerToSave = CharacterManager.Instance.GetPlayerDataForSave();
-            bool success = SaveManager.Instance.SaveGame(playerToSave, sessionPlayTime);
+            PlayerStats playerToSave = Hub.CharacterManager.GetPlayerDataForSave();
+            BagInventoryData inventoryData = Hub.InventoryManager.SaveInventory();
+            EquipmentData equipmentData = GetEquipmentData();
+            
+            bool success = Hub.SaveManager.SaveGame(playerToSave, inventoryData, equipmentData, sessionPlayTime);
             
             if (success)
             {
@@ -136,12 +138,10 @@ namespace Ascension.Managers
 
         public bool LoadGame()
         {
-            if (!ValidateLoadConditions())
-            {
+            if (!ValidateSystemsReady())
                 return false;
-            }
 
-            SaveData saveData = SaveManager.Instance.LoadGame();
+            SaveData saveData = Hub.SaveManager.LoadGame();
             
             if (saveData == null)
             {
@@ -151,6 +151,7 @@ namespace Ascension.Managers
             
             LoadPlayerFromSave(saveData);
             LoadInventoryFromSave(saveData);
+            LoadEquipmentFromSave(saveData);
             
             sessionPlayTime = 0f;
             isAvatarCreationComplete = true;
@@ -162,16 +163,18 @@ namespace Ascension.Managers
         
         public bool SaveExists()
         {
-            return SaveManager.Instance.SaveExists();
+            return Hub?.SaveManager != null && Hub.SaveManager.SaveExists();
         }
         
         public bool DeleteSave()
         {
-            bool success = SaveManager.Instance.DeleteSave();
+            if (Hub?.SaveManager == null) return false;
             
-            if (success && CharacterManager.Instance != null)
+            bool success = Hub.SaveManager.DeleteSave();
+            
+            if (success && Hub.CharacterManager != null)
             {
-                CharacterManager.Instance.UnloadPlayer();
+                Hub.CharacterManager.UnloadPlayer();
             }
             
             return success;
@@ -181,11 +184,11 @@ namespace Ascension.Managers
         #region Public Methods - Player Actions (Delegate to CharacterManager)
         public bool AddExperience(int amount)
         {
-            if (!HasActivePlayer || CharacterManager.Instance == null)
+            if (!HasActivePlayer || Hub.CharacterManager == null)
                 return false;
             
             int oldLevel = CurrentPlayer.Level;
-            CharacterManager.Instance.AddExperience(amount);
+            Hub.CharacterManager.AddExperience(amount);
             
             bool leveledUp = CurrentPlayer.Level > oldLevel;
             
@@ -200,17 +203,17 @@ namespace Ascension.Managers
 
         public void Heal(float amount)
         {
-            CharacterManager.Instance?.Heal(amount);
+            Hub?.CharacterManager?.Heal(amount);
         }
 
         public void TakeDamage(float amount)
         {
-            CharacterManager.Instance?.TakeDamage(amount);
+            Hub?.CharacterManager?.TakeDamage(amount);
         }
 
         public void FullHeal()
         {
-            CharacterManager.Instance?.FullHeal();
+            Hub?.CharacterManager?.FullHeal();
         }
         #endregion
         
@@ -252,29 +255,52 @@ namespace Ascension.Managers
         #endregion
         
         #region Private Methods
+        private void WaitForSystemsAndSubscribe()
+        {
+            if (Hub == null || !Hub.IsInitialized)
+            {
+                Debug.LogWarning("[GameManager] Waiting for GameSystemHub...");
+                Invoke(nameof(WaitForSystemsAndSubscribe), 0.1f);
+                return;
+            }
+            
+            SubscribeToCharacterManager();
+        }
+        
         private void SubscribeToCharacterManager()
         {
-            if (CharacterManager.Instance != null)
+            if (Hub?.CharacterManager != null)
             {
-                CharacterManager.Instance.OnPlayerLoaded += OnCharacterLoaded;
+                Hub.CharacterManager.OnPlayerLoaded += OnCharacterLoaded;
+                Debug.Log("[GameManager] Subscribed to CharacterManager");
             }
             else
             {
-                Debug.LogWarning("[GameManager] CharacterManager not found! Ensure it exists in scene.");
+                Debug.LogWarning("[GameManager] CharacterManager not found!");
             }
         }
 
         private void UnsubscribeFromCharacterManager()
         {
-            if (CharacterManager.Instance != null)
+            if (Hub?.CharacterManager != null)
             {
-                CharacterManager.Instance.OnPlayerLoaded -= OnCharacterLoaded;
+                Hub.CharacterManager.OnPlayerLoaded -= OnCharacterLoaded;
             }
         }
         
         private void OnCharacterLoaded(PlayerStats stats)
         {
             OnPlayerLoaded?.Invoke(stats);
+        }
+        
+        private bool ValidateSystemsReady()
+        {
+            if (Hub == null || !Hub.AreAllSystemsReady())
+            {
+                Debug.LogError("[GameManager] Systems not ready!");
+                return false;
+            }
+            return true;
         }
         
         private bool CanSave()
@@ -294,31 +320,37 @@ namespace Ascension.Managers
             return true;
         }
         
-        private bool ValidateLoadConditions()
-        {
-            if (CharacterManager.Instance == null)
-            {
-                Debug.LogError("[GameManager] CharacterManager not found!");
-                return false;
-            }
-            
-            return true;
-        }
-        
         private void LoadPlayerFromSave(SaveData saveData)
         {
-            PlayerStats loadedPlayer = saveData.playerData.ToPlayerStats(
-                CharacterManager.Instance.BaseStats
-            );
-            CharacterManager.Instance.LoadPlayer(loadedPlayer);
+            PlayerStats loadedPlayer = saveData.playerData.ToPlayerStats(Hub.CharacterManager.BaseStats);
+            Hub.CharacterManager.LoadPlayer(loadedPlayer);
         }
         
         private void LoadInventoryFromSave(SaveData saveData)
         {
-            if (InventoryManager.Instance != null && saveData.inventoryData != null)
+            if (Hub.InventoryManager != null && saveData.inventoryData != null)
             {
-                InventoryManager.Instance.LoadInventory(saveData.inventoryData);
+                Hub.InventoryManager.LoadInventory(saveData.inventoryData);
             }
+        }
+        
+        private void LoadEquipmentFromSave(SaveData saveData)
+        {
+            if (Hub.EquipmentManager != null && saveData.equipmentData != null)
+            {
+                Hub.EquipmentManager.LoadEquipment(saveData.equipmentData);
+                // Update CharacterManager stats after loading equipment
+                Hub.CharacterManager.UpdateStatsFromEquipment();
+            }
+        }
+        
+        private EquipmentData GetEquipmentData()
+        {
+            if (Hub.EquipmentManager != null)
+            {
+                return Hub.EquipmentManager.SaveEquipment();
+            }
+            return new EquipmentData(); // Empty equipment data
         }
         #endregion
     }

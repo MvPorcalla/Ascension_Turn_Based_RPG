@@ -87,6 +87,71 @@ namespace Ascension.Managers
         }
         #endregion
 
+        #region Equipment Integration (NEW)
+
+        /// <summary>
+        /// Update player stats from equipped items
+        /// Called by EquipmentManager when equipment changes
+        /// </summary>
+        public void UpdateStatsFromEquipment()
+        {
+            if (!HasActivePlayer) return;
+            
+            // Get equipment stats from EquipmentManager
+            if (EquipmentManager.Instance != null)
+            {
+                PlayerItemStats equipmentStats = EquipmentManager.Instance.GetTotalItemStats();
+                currentPlayer.ApplyItemStats(equipmentStats, baseStats);
+                
+                Debug.Log("[CharacterManager] Stats updated from equipment");
+                OnPlayerStatsChanged?.Invoke(currentPlayer);
+            }
+        }
+
+        /// <summary>
+        /// Equip weapon (delegates to EquipmentManager, then updates stats)
+        /// </summary>
+        public bool EquipWeaponFromInventory(string itemID)
+        {
+            if (!HasActivePlayer) return false;
+            
+            if (EquipmentManager.Instance == null)
+            {
+                Debug.LogError("[CharacterManager] EquipmentManager not found!");
+                return false;
+            }
+            
+            bool success = EquipmentManager.Instance.EquipWeapon(itemID);
+            
+            if (success)
+            {
+                // Update PlayerStats weapon reference
+                WeaponSO weapon = EquipmentManager.Instance.GetEquippedWeapon();
+                currentPlayer.equippedWeapon = weapon;
+                
+                // Recalculate stats
+                UpdateStatsFromEquipment();
+            }
+            
+            return success;
+        }
+
+        /// <summary>
+        /// Unequip weapon
+        /// </summary>
+        public void UnequipWeaponFromInventory()
+        {
+            if (!HasActivePlayer) return;
+            
+            if (EquipmentManager.Instance != null)
+            {
+                EquipmentManager.Instance.UnequipWeapon();
+                currentPlayer.equippedWeapon = null;
+                UpdateStatsFromEquipment();
+            }
+        }
+        #endregion
+
         #region Public Methods - Player Actions
         public void AddExperience(int amount)
         {

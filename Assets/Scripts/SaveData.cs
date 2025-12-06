@@ -14,6 +14,7 @@ namespace Ascension.Data.Models
         public SaveMetaData metaData;
         public PlayerData playerData;
         public BagInventoryData inventoryData;
+        public EquipmentData equipmentData;
         
         public SaveData()
         {

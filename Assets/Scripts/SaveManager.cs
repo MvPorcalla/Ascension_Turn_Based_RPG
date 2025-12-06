@@ -61,13 +61,14 @@ namespace Ascension.Managers
         #endregion
         
         #region Public Methods - Save/Load API
-        public bool SaveGame(PlayerStats playerStats, float playTime)
+
+        public bool SaveGame(PlayerStats playerStats, BagInventoryData inventoryData, EquipmentData equipmentData, float playTime)
         {
             try
             {
                 CreateBackupIfNeeded();
                 
-                SaveData saveData = BuildSaveData(playerStats, playTime);
+                SaveData saveData = BuildSaveData(playerStats, inventoryData, equipmentData, playTime);
                 saveData.UpdateMetaData();
                 
                 WriteSaveFile(saveData);
@@ -166,13 +167,15 @@ namespace Ascension.Managers
                 Directory.CreateDirectory(path);
         }
         
-        private SaveData BuildSaveData(PlayerStats playerStats, float playTime)
+        
+        private SaveData BuildSaveData(PlayerStats playerStats, BagInventoryData inventoryData, EquipmentData equipmentData, float playTime)
         {
             SaveData save = new SaveData
             {
                 metaData = SaveMetaData.CreateNew(),
                 playerData = PlayerData.FromPlayerStats(playerStats),
-                inventoryData = GetInventoryData()
+                inventoryData = inventoryData,
+                equipmentData = equipmentData
             };
             
             save.metaData.totalPlayTimeSeconds += playTime;

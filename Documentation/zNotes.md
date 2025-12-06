@@ -124,3 +124,45 @@ what is ideal for base stats cap? for
 - epic = 
 - legendary = 
 - Mythic = 
+
+
+
+Heirarchy
+├── GameSystems (GameSystemHub.cs) (Prefab)
+│   ├── GameManager
+│   ├── CharacterManager
+│   ├── SaveManager
+│   ├── InventoryManager
+│   ├── EquipmentManager
+│   └── PotionManager
+│
+├── Bootstrap
+
+
+
+DontDestroyOnLoad only works for root GameObjects or components on root GameObjects.
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+Ascension.Systems.PotionManager:Awake () (at Assets/Scripts/PotionManager.cs:46)
+
+DontDestroyOnLoad only works for root GameObjects or components on root GameObjects.
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+Ascension.Managers.SaveManager:InitializeSingleton () (at Assets/Scripts/SaveManager.cs:154)
+Ascension.Managers.SaveManager:Awake () (at Assets/Scripts/SaveManager.cs:51)
+
+DontDestroyOnLoad only works for root GameObjects or components on root GameObjects.
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+Ascension.Managers.CharacterManager:InitializeSingleton () (at Assets/Scripts/CharacterManager.cs:283)
+Ascension.Managers.CharacterManager:Awake () (at Assets/Scripts/CharacterManager.cs:46)
+
+DontDestroyOnLoad only works for root GameObjects or components on root GameObjects.
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+InventoryManager:Awake () (at Assets/Scripts/InventorySystem/InventoryManager.cs:32)
+
+DontDestroyOnLoad only works for root GameObjects or components on root GameObjects.
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+Ascension.Managers.GameManager:Awake () (at Assets/Scripts/GameManager.cs:50)
+
+[GameSystemHub] EquipmentManager missing
+UnityEngine.Debug:LogWarning (object)
+Ascension.Core.GameSystemHub:ValidateCriticalSystems () (at Assets/Scripts/GameSystemHub.cs:94)
+Ascension.Core.GameSystemHub:Start () (at Assets/Scripts/GameSystemHub.cs:44)
