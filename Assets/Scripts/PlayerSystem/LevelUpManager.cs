@@ -6,6 +6,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using Ascension.Managers;
 
 public class LevelUpManager : MonoBehaviour
 {

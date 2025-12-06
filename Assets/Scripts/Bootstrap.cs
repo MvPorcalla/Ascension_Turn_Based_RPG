@@ -1,81 +1,85 @@
-// ──────────────────────────────────────────────────
-// Bootstrap.cs - Entry point for game initialization
-// Determines which scene to load based on save state
-// ──────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════
+// Bootstrap.cs
+// Entry point for game initialization and scene routing based on save state
+// ════════════════════════════════════════════════════════════════════════
 
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Ascension.Managers;
 
-/// <summary>
-/// Entry point of the game. Determines which scene to load based on save state.
-/// Singletons (GameManager, SaveManager) are placed directly in this scene.
-/// </summary>
-public class Bootstrap : MonoBehaviour
+namespace Ascension.Core
 {
-    [Header("Scene Names")]
-    [SerializeField] private string avatarCreationScene = "02_AvatarCreation";
-    [SerializeField] private string mainBaseScene = "03_MainBase";
-    
-    [Header("Settings")]
-    [SerializeField] private float minimumLoadTime = 1f; // For splash screen
-    [SerializeField] private bool showDebugLogs = true;
-    
-    private IEnumerator Start()
+    public class Bootstrap : MonoBehaviour
     {
-        float startTime = Time.time;
-        
-        Log("Initializing...");
-        
-        // Wait a frame for Awake() calls on GameManager & SaveManager
-        yield return null;
-        
-        Log("Singletons ready");
-        
-        // Wait for minimum load time (splash screen)
-        float elapsed = Time.time - startTime;
-        if (elapsed < minimumLoadTime)
+        #region Serialized Fields
+        [Header("Scene Routing")]
+        [SerializeField] private string avatarCreationScene = "02_AvatarCreation";
+        [SerializeField] private string mainBaseScene = "03_MainBase";
+
+        [Header("Splash / Load Timing")]
+        [SerializeField] private float minimumLoadTime = 1f;
+
+        [Header("Debug")]
+        [SerializeField] private bool showDebugLogs = true;
+        #endregion
+
+        #region Unity Lifecycle
+        private IEnumerator Start()
         {
-            yield return new WaitForSeconds(minimumLoadTime - elapsed);
+            float startTime = Time.time;
+            Log("Bootstrap initializing…");
+
+            // Allow GameManager and SaveManager Awake() to execute
+            yield return null;
+
+            Log("Managers initialized");
+
+            yield return EnsureMinimumLoadTime(startTime);
+
+            string targetScene = DetermineTargetScene();
+            Log($"Loading Scene: {targetScene}");
+            SceneManager.LoadScene(targetScene);
         }
-        
-        // Determine and load target scene
-        string targetScene = DetermineTargetScene();
-        Log($"Loading {targetScene}");
-        
-        SceneManager.LoadScene(targetScene);
-    }
-    
-    private string DetermineTargetScene()
-    {
-        // Check if a save exists
-        if (SaveManager.Instance.SaveExists())
+        #endregion
+
+        #region Scene Logic
+        private string DetermineTargetScene()
         {
-            // Save exists - try to load it
-            if (GameManager.Instance.LoadGame())
+            if (!SaveManager.Instance.SaveExists())
             {
-                Log($"Save found - {GameManager.Instance.CurrentPlayer.playerName}");
-                return mainBaseScene;
-            }
-            else
-            {
-                // Save corrupted and backup failed
-                Log("Save corrupted, starting fresh");
+                Log("No save found — creating new profile");
+                GameManager.Instance.StartNewGame();
                 return avatarCreationScene;
             }
-        }
-        else
-        {
-            // No save - new player
-            Log("No save found, new game");
-            GameManager.Instance.StartNewGame();
+
+            if (GameManager.Instance.LoadGame())
+            {
+                Log($"Save loaded — Welcome back {GameManager.Instance.CurrentPlayer.playerName}");
+                return mainBaseScene;
+            }
+
+            Log("Save corrupted — fallback to new game");
             return avatarCreationScene;
         }
-    }
-    
-    private void Log(string message)
-    {
-        if (showDebugLogs)
-            Debug.Log($"[Bootstrap] {message}");
+        #endregion
+
+        #region Helper Methods
+        private IEnumerator EnsureMinimumLoadTime(float startTime)
+        {
+            float elapsed = Time.time - startTime;
+            if (elapsed < minimumLoadTime)
+            {
+                float remaining = minimumLoadTime - elapsed;
+                yield return new WaitForSeconds(remaining);
+            }
+        }
+
+        private void Log(string message)
+        {
+            if (showDebugLogs)
+                Debug.Log($"[Bootstrap] {message}");
+        }
+        #endregion
     }
 }

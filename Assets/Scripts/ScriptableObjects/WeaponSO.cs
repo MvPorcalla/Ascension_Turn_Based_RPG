@@ -1,270 +1,206 @@
-// ──────────────────────────────────────────────────
+// ════════════════════════════════════════════
 // WeaponSO.cs
-// ScriptableObject for defining weapons in the game
-// ──────────────────────────────────────────────────
+// ScriptableObject defining weapon data, stats, rarity, and skills
+// ════════════════════════════════════════════
 
-using UnityEngine;
+using System;
 using System.Collections.Generic;
+using UnityEngine;
 
-[CreateAssetMenu(fileName = "New Weapon", menuName = "Game/Weapon")]
-public class WeaponSO : ItemBaseSO
+namespace Ascension.Data.SO
 {
-    [Header("Weapon Info")]
-    public string weaponName;
-    public WeaponType weaponType;
-    public AttackRangeType attackRangeType;
-
-    [Header("Rarity System")]
-    [Tooltip("Rarity configuration - affects stat multipliers and bonus slots")]
-    public WeaponRaritySO rarityConfig;
-    
-    [Tooltip("Randomly rolled bonus stats (filled at craft/drop time)")]
-    public List<WeaponBonusStat> bonusStats = new List<WeaponBonusStat>();
-
-    [Header("Base Stats (Before Rarity Multiplier)")]
-    [Tooltip("Base physical damage - Multiplied by rarity, then scales with STR")]
-    public float baseAD;
-    
-    [Tooltip("Base magical damage - Multiplied by rarity, then scales with INT")]
-    public float baseAP;
-
-    [Header("Defensive Stats")]
-    public float baseHP;
-    public float baseDefense;
-
-    [Header("Offensive Stats")]
-    public float baseAttackSpeed;
-    public float baseCritRate;
-    public float baseCritDamage;
-
-    [Header("Utility Stats")]
-    public float baseEvasion;
-    public float baseTenacity;
-    public float baseLethality;
-    [Range(0f, 100f)] public float basePenetration;
-    [Range(0f, 100f)] public float baseLifesteal;
-
-    [Header("Weapon Skill")]
-    public SkillSO defaultWeaponSkill;
-
-    // === CALCULATED PROPERTIES (Read-Only) ===
-    public float bonusAD => baseAD * GetRarityMultiplier() + GetBonusStat(BonusStatType.AttackDamage);
-    public float bonusAP => baseAP * GetRarityMultiplier() + GetBonusStat(BonusStatType.AbilityPower);
-    public float bonusHP => baseHP * GetRarityMultiplier() + GetBonusStat(BonusStatType.Health);
-    public float bonusDefense => baseDefense * GetRarityMultiplier() + GetBonusStat(BonusStatType.Defense);
-    public float bonusAttackSpeed => baseAttackSpeed * GetRarityMultiplier() + GetBonusStat(BonusStatType.AttackSpeed);
-    public float bonusCritRate => baseCritRate * GetRarityMultiplier() + GetBonusStat(BonusStatType.CritRate);
-    public float bonusCritDamage => baseCritDamage * GetRarityMultiplier() + GetBonusStat(BonusStatType.CritDamage);
-    public float bonusEvasion => baseEvasion * GetRarityMultiplier() + GetBonusStat(BonusStatType.Evasion);
-    public float bonusTenacity => baseTenacity * GetRarityMultiplier() + GetBonusStat(BonusStatType.Tenacity);
-    public float bonusLethality => baseLethality * GetRarityMultiplier() + GetBonusStat(BonusStatType.Lethality);
-    public float bonusPenetration => basePenetration * GetRarityMultiplier() + GetBonusStat(BonusStatType.Penetration);
-    public float bonusLifesteal => baseLifesteal * GetRarityMultiplier() + GetBonusStat(BonusStatType.Lifesteal);
-
-    private float GetRarityMultiplier()
+    [CreateAssetMenu(fileName = "NewWeapon", menuName = "Items/Weapon")]
+    public class WeaponSO : ItemBaseSO
     {
-        return rarityConfig != null ? rarityConfig.statMultiplier : 1f;
-    }
-    
-    private float GetBonusStat(BonusStatType type)
-    {
-        float total = 0f;
-        foreach (var bonus in bonusStats)
+        #region Serialized Fields
+        [Header("Weapon Info")]
+        [SerializeField] private string weaponName;
+        [SerializeField] private WeaponType weaponType;
+        [SerializeField] private AttackRangeType attackRangeType;
+
+        [Header("Rarity System")]
+        [SerializeField, Tooltip("Rarity configuration - affects stat multipliers and bonus slots")]
+        private WeaponRaritySO rarityConfig;
+
+        [SerializeField, Tooltip("Randomly rolled bonus stats (filled at craft/drop time)")]
+        private List<WeaponBonusStat> bonusStats = new List<WeaponBonusStat>();
+
+        [Header("Base Stats (Before Rarity Multiplier)")]
+        [SerializeField] private float baseAD;
+        [SerializeField] private float baseAP;
+
+        [Header("Defensive Stats")]
+        [SerializeField] private float baseHP;
+        [SerializeField] private float baseDefense;
+
+        [Header("Offensive Stats")]
+        [SerializeField] private float baseAttackSpeed;
+        [SerializeField] private float baseCritRate;
+        [SerializeField] private float baseCritDamage;
+
+        [Header("Utility Stats")]
+        [SerializeField] private float baseEvasion;
+        [SerializeField] private float baseTenacity;
+        [SerializeField] private float baseLethality;
+        [SerializeField, Range(0f, 100f)] private float basePenetration;
+        [SerializeField, Range(0f, 100f)] private float baseLifesteal;
+
+        [Header("Weapon Skill")]
+        [SerializeField] private AbilitySO defaultWeaponSkill;
+
+        #endregion
+
+        // ✅ Public getter to allow other scripts to read it
+        public string WeaponName => weaponName;
+        public WeaponType WeaponType => weaponType;
+        public AttackRangeType AttackRangeType => attackRangeType;
+
+        // Public accessors for GearInfoPopUp
+        public List<WeaponBonusStat> BonusStats => bonusStats;
+        public AbilitySO DefaultWeaponSkill => defaultWeaponSkill;
+
+        #region Properties - Calculated Stats
+        public float BonusAD => CalculateBonusStat(BonusStatType.AttackDamage, baseAD);
+        public float BonusAP => CalculateBonusStat(BonusStatType.AbilityPower, baseAP);
+        public float BonusHP => CalculateBonusStat(BonusStatType.Health, baseHP);
+        public float BonusDefense => CalculateBonusStat(BonusStatType.Defense, baseDefense);
+        public float BonusAttackSpeed => CalculateBonusStat(BonusStatType.AttackSpeed, baseAttackSpeed);
+        public float BonusCritRate => CalculateBonusStat(BonusStatType.CritRate, baseCritRate);
+        public float BonusCritDamage => CalculateBonusStat(BonusStatType.CritDamage, baseCritDamage);
+        public float BonusEvasion => CalculateBonusStat(BonusStatType.Evasion, baseEvasion);
+        public float BonusTenacity => CalculateBonusStat(BonusStatType.Tenacity, baseTenacity);
+        public float BonusLethality => CalculateBonusStat(BonusStatType.Lethality, baseLethality);
+        public float BonusPenetration => CalculateBonusStat(BonusStatType.Penetration, basePenetration);
+        public float BonusLifesteal => CalculateBonusStat(BonusStatType.Lifesteal, baseLifesteal);
+        #endregion
+
+        #region Public Methods
+        public void RollBonusStats()
         {
-            if (bonus.statType == type)
-                total += bonus.value;
-        }
-        return total;
-    }
+            if (rarityConfig == null || rarityConfig.BonusStatSlots <= 0)
+            {
+                bonusStats.Clear();
+                return;
+            }
 
-    public void RollBonusStats()
-    {
-        if (rarityConfig == null || rarityConfig.bonusStatSlots <= 0)
-        {
             bonusStats.Clear();
-            return;
-        }
-        
-        bonusStats.Clear();
-        
-        var availableStats = new List<BonusStatType>((BonusStatType[])System.Enum.GetValues(typeof(BonusStatType)));
-        
-        for (int i = 0; i < rarityConfig.bonusStatSlots && availableStats.Count > 0; i++)
-        {
-            int randomIndex = Random.Range(0, availableStats.Count);
-            BonusStatType statType = availableStats[randomIndex];
-            availableStats.RemoveAt(randomIndex);
-            
-            float baseValue = GetBaseStatValue(statType);
-            float rollPercent = Random.Range(rarityConfig.bonusStatMinRoll, rarityConfig.bonusStatMaxRoll);
-            float rolledValue = baseValue * rollPercent;
-            
-            bonusStats.Add(new WeaponBonusStat(statType, rolledValue));
-        }
-        
-        Debug.Log($"[WeaponSO] Rolled {bonusStats.Count} bonus stats for {weaponName}");
-    }
-    
-    private float GetBaseStatValue(BonusStatType type)
-    {
-        switch (type)
-        {
-            case BonusStatType.AttackDamage: return baseAD;
-            case BonusStatType.AbilityPower: return baseAP;
-            case BonusStatType.Health: return baseHP;
-            case BonusStatType.Defense: return baseDefense;
-            case BonusStatType.AttackSpeed: return baseAttackSpeed;
-            case BonusStatType.CritRate: return baseCritRate;
-            case BonusStatType.CritDamage: return baseCritDamage;
-            case BonusStatType.Evasion: return baseEvasion;
-            case BonusStatType.Tenacity: return baseTenacity;
-            case BonusStatType.Lethality: return baseLethality;
-            case BonusStatType.Penetration: return basePenetration;
-            case BonusStatType.Lifesteal: return baseLifesteal;
-            default: return 10f;
-        }
-    }
 
-    private void OnValidate()
-    {
-        itemName = weaponName;
-        itemType = ItemType.Weapon;
-        isStackable = false;
-        
-        if (rarityConfig != null)
-        {
-            rarity = (Rarity)((int)rarityConfig.tier);
-        }
-        
-        if (string.IsNullOrEmpty(itemID))
-        {
-            itemID = $"weapon_{name.ToLower().Replace(" ", "_")}";
-        }
-    }
+            var availableStats = new List<BonusStatType>((BonusStatType[])Enum.GetValues(typeof(BonusStatType)));
 
-    public override string GetInfoText()
-    {
-        string rarityName = rarityConfig != null ? rarityConfig.rarityName : "Common";
-        string rarityColorHex = rarityConfig != null ? ColorUtility.ToHtmlStringRGB(rarityConfig.rarityColor) : "FFFFFF";
-        
-        string info = $"<b>{weaponName}</b>\n";
-        info += $"<color=#{rarityColorHex}>{rarityName} {weaponType}</color> ({attackRangeType})\n\n";
-        
-        if (bonusAD > 0) info += $"<color=#ff6b6b>+{bonusAD:F1} Attack Damage</color>\n";
-        if (bonusAP > 0) info += $"<color=#4ecdc4>+{bonusAP:F1} Ability Power</color>\n";
-        if (bonusHP > 0) info += $"+{bonusHP:F0} HP\n";
-        if (bonusDefense > 0) info += $"+{bonusDefense:F1} Defense\n";
-        if (bonusAttackSpeed > 0) info += $"+{bonusAttackSpeed:F1} Attack Speed\n";
-        if (bonusCritRate > 0) info += $"+{bonusCritRate:F1}% Crit Rate\n";
-        if (bonusCritDamage > 0) info += $"+{bonusCritDamage:F1}% Crit Damage\n";
-        if (bonusEvasion > 0) info += $"+{bonusEvasion:F1}% Evasion\n";
-        if (bonusTenacity > 0) info += $"+{bonusTenacity:F1}% Tenacity\n";
-        if (bonusLethality > 0) info += $"+{bonusLethality:F0} Lethality\n";
-        if (bonusPenetration > 0) info += $"+{bonusPenetration:F1}% Penetration\n";
-        if (bonusLifesteal > 0) info += $"+{bonusLifesteal:F1}% Lifesteal\n";
-        
-        if (bonusStats.Count > 0)
+            for (int i = 0; i < rarityConfig.BonusStatSlots && availableStats.Count > 0; i++)
+            {
+                int randomIndex = UnityEngine.Random.Range(0, availableStats.Count);
+                var statType = availableStats[randomIndex];
+                availableStats.RemoveAt(randomIndex);
+
+                float baseValue = GetBaseStatValue(statType);
+                float rollPercent = UnityEngine.Random.Range(rarityConfig.BonusStatMinRoll, rarityConfig.BonusStatMaxRoll);
+                float rolledValue = baseValue * rollPercent;
+
+                bonusStats.Add(new WeaponBonusStat(statType, rolledValue));
+            }
+
+            Debug.Log($"[WeaponSO] Rolled {bonusStats.Count} bonus stats for {weaponName}");
+        }
+
+        public override string GetInfoText()
         {
-            info += $"\n<color=#{rarityColorHex}><b>Bonus Stats:</b></color>\n";
+            string rarityName = rarityConfig != null ? rarityConfig.RarityName : "Common";
+            string rarityColorHex = rarityConfig != null ? ColorUtility.ToHtmlStringRGB(rarityConfig.RarityColor) : "FFFFFF";
+
+            string info = $"<b>{weaponName}</b>\n";
+            info += $"<color=#{rarityColorHex}>{rarityName} {weaponType}</color> ({attackRangeType})\n\n";
+
+            info += FormatStatText(BonusAD, "Attack Damage", "#ff6b6b");
+            info += FormatStatText(BonusAP, "Ability Power", "#4ecdc4");
+            info += FormatStatText(BonusHP, "HP");
+            info += FormatStatText(BonusDefense, "Defense");
+            info += FormatStatText(BonusAttackSpeed, "Attack Speed");
+            info += FormatStatText(BonusCritRate, "Crit Rate", "%");
+            info += FormatStatText(BonusCritDamage, "Crit Damage", "%");
+            info += FormatStatText(BonusEvasion, "Evasion", "%");
+            info += FormatStatText(BonusTenacity, "Tenacity", "%");
+            info += FormatStatText(BonusLethality, "Lethality");
+            info += FormatStatText(BonusPenetration, "Penetration", "%");
+            info += FormatStatText(BonusLifesteal, "Lifesteal", "%");
+
+            if (bonusStats.Count > 0)
+            {
+                info += $"\n<color=#{rarityColorHex}><b>Bonus Stats:</b></color>\n";
+                foreach (var bonus in bonusStats)
+                    info += $"<color=#ffd700>• {bonus.GetDisplayText()}</color>\n";
+            }
+
+            if (!string.IsNullOrEmpty(Description))
+                info += $"\n<i>{Description}</i>";
+
+            if (defaultWeaponSkill != null)
+                info += $"\n\n<color=#ffd93d> {defaultWeaponSkill.AbilityName}</color>";
+
+            return info;
+        }
+        #endregion
+
+        #region Private Methods
+        // Private method to get rarity multiplier safely
+        private float GetRarityMultiplier() => rarityConfig != null ? rarityConfig.StatMultiplier : 1f;
+
+        private float CalculateBonusStat(BonusStatType type, float baseValue)
+        {
+            float totalBonus = 0f;
+
             foreach (var bonus in bonusStats)
             {
-                info += $"<color=#ffd700>• {bonus.GetDisplayText()}</color>\n";
+                if (bonus.StatType == type)
+                    totalBonus += bonus.Value;
             }
-        }
-        
-        if (!string.IsNullOrEmpty(description))
-            info += $"\n<i>{description}</i>";
-        
-        if (defaultWeaponSkill != null)
-            info += $"\n\n<color=#ffd93d> {defaultWeaponSkill.skillName}</color>";
-        
-        return info;
-    }
 
-    #region Debug Helpers
-    
-    [ContextMenu("Roll Bonus Stats")]
-    private void DebugRollBonusStats()
-    {
-        RollBonusStats();
-        Debug.Log($"[WeaponSO] Rolled stats for {weaponName}:");
-        foreach (var bonus in bonusStats)
-        {
-            Debug.Log($"  • {bonus.GetDisplayText()}");
+            return baseValue * GetRarityMultiplier() + totalBonus;
         }
-    }
 
-    [ContextMenu("Test: Add to Inventory (Bag)")]
-    private void DebugAddToBag()
-    {
-        if (Application.isPlaying && InventoryManager.Instance != null)
+        private float GetBaseStatValue(BonusStatType type)
         {
-            InventoryManager.Instance.AddItem(itemID, 1, true);
-            Debug.Log($"[WeaponSO] Added {weaponName} to bag");
-        }
-        else
-        {
-            Debug.LogWarning("[WeaponSO] Cannot add to bag outside Play Mode or InventoryManager missing");
-        }
-    }
-
-    [ContextMenu("Test: Add to Storage")]
-    private void DebugAddToStorage()
-    {
-        if (Application.isPlaying && InventoryManager.Instance != null)
-        {
-            InventoryManager.Instance.AddItem(itemID, 1, false);
-            Debug.Log($"[WeaponSO] Added {weaponName} to storage");
-        }
-        else
-        {
-            Debug.LogWarning("[WeaponSO] Cannot add to storage outside Play Mode or InventoryManager missing");
-        }
-    }
-
-    [ContextMenu("Test: Equip Weapon")]
-    private void DebugEquipWeapon()
-    {
-        if (Application.isPlaying && GameManager.Instance != null && GameManager.Instance.CurrentPlayer != null)
-        {
-            GameManager.Instance.CurrentPlayer.EquipWeapon(this, GameManager.Instance.BaseStats);
-            Debug.Log($"[WeaponSO] Equipped {weaponName}");
-            
-            var stats = GameManager.Instance.CurrentPlayer;
-            Debug.Log($"  AD: {stats.AD:F1} | AP: {stats.AP:F1} | Speed: {stats.AttackSpeed:F1}");
-        }
-        else
-        {
-            Debug.LogWarning("[WeaponSO] Can only equip during Play Mode with active player");
-        }
-    }
-
-    [ContextMenu("Print Weapon Stats")]
-    private void DebugPrintStats()
-    {
-        string rarityName = rarityConfig != null ? rarityConfig.rarityName : "None";
-        float multiplier = GetRarityMultiplier();
-        
-        Debug.Log($"=== {weaponName} ===");
-        Debug.Log($"ID: {itemID}");
-        Debug.Log($"Type: {weaponType} ({attackRangeType})");
-        Debug.Log($"Rarity: {rarityName} (x{multiplier})");
-        Debug.Log($"Bonus Stat Slots: {bonusStats.Count}\n");
-        
-        Debug.Log("Final Stats (Base × Multiplier + Bonus):");
-        if (bonusAD > 0) Debug.Log($"  AD: {baseAD} × {multiplier} + {GetBonusStat(BonusStatType.AttackDamage):F1} = {bonusAD:F1}");
-        if (bonusAP > 0) Debug.Log($"  AP: {baseAP} × {multiplier} + {GetBonusStat(BonusStatType.AbilityPower):F1} = {bonusAP:F1}");
-        if (bonusHP > 0) Debug.Log($"  HP: {baseHP} × {multiplier} + {GetBonusStat(BonusStatType.Health):F0} = {bonusHP:F0}");
-        
-        if (bonusStats.Count > 0)
-        {
-            Debug.Log("\nBonus Stats:");
-            foreach (var bonus in bonusStats)
+            return type switch
             {
-                Debug.Log($"  • {bonus.GetDisplayText()}");
-            }
+                BonusStatType.AttackDamage => baseAD,
+                BonusStatType.AbilityPower => baseAP,
+                BonusStatType.Health => baseHP,
+                BonusStatType.Defense => baseDefense,
+                BonusStatType.AttackSpeed => baseAttackSpeed,
+                BonusStatType.CritRate => baseCritRate,
+                BonusStatType.CritDamage => baseCritDamage,
+                BonusStatType.Evasion => baseEvasion,
+                BonusStatType.Tenacity => baseTenacity,
+                BonusStatType.Lethality => baseLethality,
+                BonusStatType.Penetration => basePenetration,
+                BonusStatType.Lifesteal => baseLifesteal,
+                _ => 0f
+            };
         }
-    }
 
-    #endregion
+        private string FormatStatText(float value, string name, string suffix = "")
+        {
+            if (value <= 0) return string.Empty;
+
+            string color = suffix == "%" ? "#ffffff" : "#ffffff";
+            return !string.IsNullOrEmpty(suffix)
+                ? $"+{value:F1}{suffix} {name}\n"
+                : $"+{value:F1} {name}\n";
+        }
+
+        private void OnValidate()
+        {
+            // Assign directly to the protected fields
+            itemName = weaponName;
+            itemType = ItemType.Weapon;
+            isStackable = false;
+
+            if (rarityConfig != null)
+                rarity = (Rarity)((int)rarityConfig.Tier);
+
+            if (string.IsNullOrEmpty(itemID))
+                itemID = $"weapon_{name.ToLower().Replace(" ", "_")}";
+        }
+        #endregion
+    }
 }

@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
+using Ascension.Managers;
 
 public class AvatarCreationManager : MonoBehaviour
 {

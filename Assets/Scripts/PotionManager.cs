@@ -1,382 +1,390 @@
-// ──────────────────────────────────────────────────
-// PotionManager.cs (Percentage-Based Update)
+// ════════════════════════════════════════════
+// PotionManager.cs
 // Handles potion usage, effects, and turn-based HoT
-// Supports both percentage and flat healing values
-// ─────────────────────────────────────────────────
+// Supports percentage and flat healing values
+// ════════════════════════════════════════════
 
-using UnityEngine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
+using Ascension.Managers;
+using Ascension.Data.SO;
 
-public class PotionManager : MonoBehaviour
+namespace Ascension.Systems
 {
-    public static PotionManager Instance { get; private set; }
-
-    [Header("Runtime State")]
-    private bool isInCombat = false;
-    
-    // Active effects
-    private List<ActiveBuff> activeBuffs = new List<ActiveBuff>();
-    private List<ActiveHealOverTurn> activeHealOverTurns = new List<ActiveHealOverTurn>();
-
-    private void Awake()
+    public class PotionManager : MonoBehaviour
     {
-        if (Instance == null)
+        #region Singleton
+        public static PotionManager Instance { get; private set; }
+        #endregion
+        
+        #region Serialized Fields
+        [Header("Runtime State")]
+        [SerializeField] private bool isInCombat = false;
+        #endregion
+        
+        #region Private Fields
+        private List<ActiveBuff> activeBuffs = new List<ActiveBuff>();
+        private List<ActiveHealOverTurn> activeHealOverTurns = new List<ActiveHealOverTurn>();
+        #endregion
+        
+        #region Properties
+        public bool IsInCombat => isInCombat;
+        #endregion
+        
+        #region Unity Callbacks
+        private void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            
             Instance = this;
             DontDestroyOnLoad(gameObject);
         }
-        else
+        
+        private void Update()
         {
-            Destroy(gameObject);
+            UpdateActiveBuffs();
         }
-    }
-
-    private void Update()
-    {
-        // Update real-time buffs
-        UpdateActiveBuffs();
-    }
-
-    #region Public API
-
-    /// <summary>
-    /// Use a potion on the player
-    /// </summary>
-    public bool UsePotion(PotionSO potion, PlayerStats playerStats, CharacterBaseStatsSO baseStats)
-    {
-        if (potion == null || playerStats == null)
+        #endregion
+        
+        #region Public Methods - Potion Usage
+        public bool UsePotion(PotionSO potion, PlayerStats playerStats, CharacterBaseStatsSO baseStats)
         {
-            Debug.LogWarning("[PotionManager] Invalid potion or player stats");
-            return false;
+            if (!ValidatePotionUsage(potion, playerStats))
+            {
+                return false;
+            }
+            
+            if (!potion.CanUse(isInCombat))
+            {
+                Debug.LogWarning($"[PotionManager] Cannot use {potion.ItemName} in current state");
+                return false;
+            }
+
+            ApplyPotionEffects(potion, playerStats, baseStats);
+            
+            Debug.Log($"[PotionManager] Used {potion.ItemName}");
+            return true;
         }
-
-        // Check if potion can be used
-        if (!potion.CanUse(isInCombat))
+        #endregion
+        
+        #region Public Methods - Turn Management
+        public void OnTurnStart()
         {
-            Debug.LogWarning($"[PotionManager] Cannot use {potion.itemName} in current state");
-            return false;
+            if (!isInCombat) return;
+            
+            ProcessHealOverTurns();
+            ProcessTurnBasedBuffs();
         }
-
-        // Apply potion effects
-        ApplyPotionEffects(potion, playerStats, baseStats);
-
-        Debug.Log($"[PotionManager] Used {potion.itemName}");
-        return true;
-    }
-
-    /// <summary>
-    /// Called at the start of each turn in combat
-    /// Processes turn-based heal-over-time effects
-    /// </summary>
-    public void OnTurnStart()
-    {
-        if (!isInCombat) return;
-
-        ProcessHealOverTurns();
-        ProcessTurnBasedBuffs();
-    }
-
-    /// <summary>
-    /// Set combat state
-    /// </summary>
-    public void SetCombatState(bool inCombat)
-    {
-        isInCombat = inCombat;
-        Debug.Log($"[PotionManager] Combat state: {(inCombat ? "IN COMBAT" : "OUT OF COMBAT")}");
-
-        // Clear turn-based effects when leaving combat
-        if (!inCombat)
+        
+        public void SetCombatState(bool inCombat)
         {
-            activeHealOverTurns.Clear();
+            isInCombat = inCombat;
+            Debug.Log($"[PotionManager] Combat state: {(inCombat ? "IN COMBAT" : "OUT OF COMBAT")}");
+            
+            if (!inCombat)
+            {
+                ClearTurnBasedEffects();
+            }
         }
-    }
-
-    /// <summary>
-    /// Check if currently in combat
-    /// </summary>
-    public bool IsInCombat()
-    {
-        return isInCombat;
-    }
-
-    /// <summary>
-    /// Get active heal-over-turn effects
-    /// </summary>
-    public List<ActiveHealOverTurn> GetActiveHealOverTurns()
-    {
-        return new List<ActiveHealOverTurn>(activeHealOverTurns);
-    }
-
-    #endregion
-
-    #region Potion Effects
-
-    private void ApplyPotionEffects(PotionSO potion, PlayerStats playerStats, CharacterBaseStatsSO baseStats)
-    {
-        // Apply health restore
-        if (potion.healthRestore > 0)
+        #endregion
+        
+        #region Public Methods - Query Active Effects
+        public List<ActiveHealOverTurn> GetActiveHealOverTurns()
         {
-            // Calculate actual heal amount based on percentage or flat
+            return new List<ActiveHealOverTurn>(activeHealOverTurns);
+        }
+        
+        public List<ActiveBuff> GetActiveBuffs()
+        {
+            return new List<ActiveBuff>(activeBuffs);
+        }
+        #endregion
+        
+        #region Private Methods - Validation
+        private bool ValidatePotionUsage(PotionSO potion, PlayerStats playerStats)
+        {
+            if (potion == null)
+            {
+                Debug.LogWarning("[PotionManager] Potion is null");
+                return false;
+            }
+            
+            if (playerStats == null)
+            {
+                Debug.LogWarning("[PotionManager] PlayerStats is null");
+                return false;
+            }
+            
+            return true;
+        }
+        #endregion
+        
+        #region Private Methods - Potion Effects
+        private void ApplyPotionEffects(PotionSO potion, PlayerStats playerStats, CharacterBaseStatsSO baseStats)
+        {
+            if (potion.HealthRestore > 0)
+            {
+                ApplyHealthRestore(potion, playerStats);
+            }
+            
+            if (potion.ManaRestore > 0)
+            {
+                ApplyManaRestore(potion);
+            }
+            
+            if (potion.buffs != null && potion.buffs.Count > 0)
+            {
+                ApplyBuffs(potion.buffs, playerStats, baseStats);
+            }
+        }
+        
+        private void ApplyHealthRestore(PotionSO potion, PlayerStats playerStats)
+        {
             float healAmount = potion.GetActualHealAmount(playerStats.MaxHP);
-
+            
             switch (potion.durationType)
             {
                 case DurationType.Instant:
-                    // Instant heal
                     HealPlayer(playerStats, healAmount);
                     break;
-
+                    
                 case DurationType.RealTime:
-                    // Heal over time (real-time)
                     StartCoroutine(HealOverTime(playerStats, healAmount, potion.restoreDuration));
                     break;
-
+                    
                 case DurationType.TurnBased:
-                    // Heal over turns
-                    AddHealOverTurn(potion.itemName, playerStats, healAmount, potion.TurnDuration);
+                    AddHealOverTurn(potion.ItemName, playerStats, healAmount, potion.TurnDuration);
                     break;
             }
         }
-
-        // Apply mana restore (TODO: Add mana to PlayerStats)
-        if (potion.manaRestore > 0)
+        
+        private void ApplyManaRestore(PotionSO potion)
         {
-            float manaAmount = potion.GetActualManaAmount(100f); // TODO: Use actual max mana
+            const float TEMP_MAX_MANA = 100f;
+            float manaAmount = potion.GetActualManaAmount(TEMP_MAX_MANA);
             Debug.Log($"[PotionManager] Restored {manaAmount} mana (STUB - mana not implemented yet)");
         }
-
-        // Apply buffs
-        if (potion.buffs != null && potion.buffs.Count > 0)
+        
+        private void ApplyBuffs(List<PotionBuff> buffs, PlayerStats playerStats, CharacterBaseStatsSO baseStats)
         {
-            foreach (var buff in potion.buffs)
+            foreach (var buff in buffs)
             {
                 ApplyBuff(buff, playerStats, baseStats);
             }
         }
-    }
-
-    #endregion
-
-    #region Instant Healing
-
-    private void HealPlayer(PlayerStats playerStats, float amount)
-    {
-        float oldHP = playerStats.CurrentHP;
-        float maxHP = playerStats.MaxHP;
+        #endregion
         
-        // Calculate new HP
-        float newHP = Mathf.Min(oldHP + amount, maxHP);
-        float actualHealed = newHP - oldHP;
-
-        // Apply healing
-        playerStats.combatRuntime.currentHP = newHP;
-
-        Debug.Log($"[PotionManager] Healed {actualHealed:F0} HP ({oldHP:F0} → {newHP:F0})");
-
-        // Trigger event through CharacterManager
-        if (CharacterManager.Instance != null)
+        #region Private Methods - Instant Healing
+        private void HealPlayer(PlayerStats playerStats, float amount)
         {
-            CharacterManager.Instance.ApplyHeal(amount);
+            float oldHP = playerStats.CurrentHP;
+            float maxHP = playerStats.MaxHP;
+            float newHP = Mathf.Min(oldHP + amount, maxHP);
+            float actualHealed = newHP - oldHP;
+            
+            playerStats.combatRuntime.currentHP = newHP;
+            
+            Debug.Log($"[PotionManager] Healed {actualHealed:F0} HP ({oldHP:F0} → {newHP:F0})");
+            
+            TriggerHealEvent(amount);
         }
-    }
-
-    #endregion
-
-    #region Real-Time Heal Over Time
-
-    private IEnumerator HealOverTime(PlayerStats playerStats, float totalAmount, float duration)
-    {
-        float healPerSecond = totalAmount / duration;
-        float elapsed = 0f;
-
-        Debug.Log($"[PotionManager] Healing {totalAmount:F0} HP over {duration}s ({healPerSecond:F1} HP/s)");
-
-        while (elapsed < duration)
+        
+        private void TriggerHealEvent(float amount)
         {
-            float deltaHeal = healPerSecond * Time.deltaTime;
-            HealPlayer(playerStats, deltaHeal);
-
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        Debug.Log($"[PotionManager] Heal over time completed");
-    }
-
-    #endregion
-
-    #region Turn-Based Heal Over Turn
-
-    private void AddHealOverTurn(string potionName, PlayerStats playerStats, float totalHeal, int turnCount)
-    {
-        float healPerTurn = totalHeal / turnCount;
-
-        ActiveHealOverTurn hot = new ActiveHealOverTurn
-        {
-            potionName = potionName,
-            playerStats = playerStats,
-            healPerTurn = healPerTurn,
-            totalHealRemaining = totalHeal,
-            turnsRemaining = turnCount
-        };
-
-        activeHealOverTurns.Add(hot);
-
-        Debug.Log($"[PotionManager] Applied Heal over Turn: {healPerTurn:F0} HP/turn for {turnCount} turns (Total: {totalHeal:F0})");
-    }
-
-    private void ProcessHealOverTurns()
-    {
-        for (int i = activeHealOverTurns.Count - 1; i >= 0; i--)
-        {
-            var hot = activeHealOverTurns[i];
-
-            // Apply heal for this turn
-            HealPlayer(hot.playerStats, hot.healPerTurn);
-
-            // Update remaining
-            hot.turnsRemaining--;
-            hot.totalHealRemaining -= hot.healPerTurn;
-
-            // Remove if expired
-            if (hot.turnsRemaining <= 0)
+            if (CharacterManager.Instance != null)
             {
-                Debug.Log($"[PotionManager] Heal over Turn expired: {hot.potionName}");
-                activeHealOverTurns.RemoveAt(i);
+                CharacterManager.Instance.ApplyHeal(amount);
             }
         }
-    }
-
-    #endregion
-
-    #region Buff System
-
-    private void ApplyBuff(PotionBuff buff, PlayerStats playerStats, CharacterBaseStatsSO baseStats)
-    {
-        Debug.Log($"[PotionManager] Applied buff: {buff.type} (+{buff.value}) for {buff.duration}");
-
-        ActiveBuff activeBuff = new ActiveBuff
+        #endregion
+        
+        #region Private Methods - Real-Time Heal Over Time
+        private IEnumerator HealOverTime(PlayerStats playerStats, float totalAmount, float duration)
         {
-            buffType = buff.type,
-            value = buff.value,
-            duration = buff.duration,
-            remainingTime = buff.duration,
-            durationType = buff.durationType
-        };
-
-        activeBuffs.Add(activeBuff);
-
-        // TODO: Implement actual buff effects on PlayerStats
-    }
-
-    private void UpdateActiveBuffs()
-    {
-        // Update real-time buffs only
-        for (int i = activeBuffs.Count - 1; i >= 0; i--)
-        {
-            if (activeBuffs[i].durationType == DurationType.RealTime)
+            float healPerSecond = totalAmount / duration;
+            float elapsed = 0f;
+            
+            Debug.Log($"[PotionManager] Healing {totalAmount:F0} HP over {duration}s ({healPerSecond:F1} HP/s)");
+            
+            while (elapsed < duration)
             {
-                activeBuffs[i].remainingTime -= Time.deltaTime;
-
-                if (activeBuffs[i].remainingTime <= 0)
+                float deltaHeal = healPerSecond * Time.deltaTime;
+                HealPlayer(playerStats, deltaHeal);
+                
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            Debug.Log("[PotionManager] Heal over time completed");
+        }
+        #endregion
+        
+        #region Private Methods - Turn-Based Heal Over Turn
+        private void AddHealOverTurn(string potionName, PlayerStats playerStats, float totalHeal, int turnCount)
+        {
+            float healPerTurn = totalHeal / turnCount;
+            
+            ActiveHealOverTurn hot = new ActiveHealOverTurn
+            {
+                potionName = potionName,
+                playerStats = playerStats,
+                healPerTurn = healPerTurn,
+                totalHealRemaining = totalHeal,
+                turnsRemaining = turnCount
+            };
+            
+            activeHealOverTurns.Add(hot);
+            
+            Debug.Log($"[PotionManager] Applied Heal over Turn: {healPerTurn:F0} HP/turn for {turnCount} turns (Total: {totalHeal:F0})");
+        }
+        
+        private void ProcessHealOverTurns()
+        {
+            for (int i = activeHealOverTurns.Count - 1; i >= 0; i--)
+            {
+                var hot = activeHealOverTurns[i];
+                
+                HealPlayer(hot.playerStats, hot.healPerTurn);
+                
+                hot.turnsRemaining--;
+                hot.totalHealRemaining -= hot.healPerTurn;
+                
+                if (hot.turnsRemaining <= 0)
                 {
-                    Debug.Log($"[PotionManager] Buff expired: {activeBuffs[i].buffType}");
-                    activeBuffs.RemoveAt(i);
+                    Debug.Log($"[PotionManager] Heal over Turn expired: {hot.potionName}");
+                    activeHealOverTurns.RemoveAt(i);
                 }
             }
         }
-    }
-
-    private void ProcessTurnBasedBuffs()
-    {
-        // Process turn-based buffs
-        for (int i = activeBuffs.Count - 1; i >= 0; i--)
+        #endregion
+        
+        #region Private Methods - Buff System
+        private void ApplyBuff(PotionBuff buff, PlayerStats playerStats, CharacterBaseStatsSO baseStats)
         {
-            if (activeBuffs[i].durationType == DurationType.TurnBased)
+            Debug.Log($"[PotionManager] Applied buff: {buff.type} (+{buff.value}) for {buff.duration}");
+            
+            ActiveBuff activeBuff = new ActiveBuff
             {
-                activeBuffs[i].remainingTime--;
-
-                if (activeBuffs[i].remainingTime <= 0)
+                buffType = buff.type,
+                value = buff.value,
+                duration = buff.duration,
+                remainingTime = buff.duration,
+                durationType = buff.durationType
+            };
+            
+            activeBuffs.Add(activeBuff);
+        }
+        
+        private void UpdateActiveBuffs()
+        {
+            for (int i = activeBuffs.Count - 1; i >= 0; i--)
+            {
+                if (activeBuffs[i].durationType == DurationType.RealTime)
                 {
-                    Debug.Log($"[PotionManager] Turn-based buff expired: {activeBuffs[i].buffType}");
-                    activeBuffs.RemoveAt(i);
+                    activeBuffs[i].remainingTime -= Time.deltaTime;
+                    
+                    if (activeBuffs[i].remainingTime <= 0)
+                    {
+                        Debug.Log($"[PotionManager] Buff expired: {activeBuffs[i].buffType}");
+                        activeBuffs.RemoveAt(i);
+                    }
                 }
             }
         }
-    }
-
-    /// <summary>
-    /// Get all active buffs
-    /// </summary>
-    public List<ActiveBuff> GetActiveBuffs()
-    {
-        return new List<ActiveBuff>(activeBuffs);
-    }
-
-    #endregion
-
-    #region Debug
-
-    [ContextMenu("Debug: Enter Combat")]
-    private void DebugEnterCombat()
-    {
-        SetCombatState(true);
-    }
-
-    [ContextMenu("Debug: Exit Combat")]
-    private void DebugExitCombat()
-    {
-        SetCombatState(false);
-    }
-
-    [ContextMenu("Debug: Trigger Turn")]
-    private void DebugTriggerTurn()
-    {
-        OnTurnStart();
-        Debug.Log("[PotionManager] Turn triggered manually");
-    }
-
-    [ContextMenu("Debug: Print Active Effects")]
-    private void DebugPrintEffects()
-    {
-        Debug.Log($"=== ACTIVE EFFECTS ===");
-        Debug.Log($"Heal over Turns: {activeHealOverTurns.Count}");
-        foreach (var hot in activeHealOverTurns)
+        
+        private void ProcessTurnBasedBuffs()
         {
-            Debug.Log($"  • {hot.potionName}: {hot.healPerTurn:F0} HP/turn for {hot.turnsRemaining} turns");
+            for (int i = activeBuffs.Count - 1; i >= 0; i--)
+            {
+                if (activeBuffs[i].durationType == DurationType.TurnBased)
+                {
+                    activeBuffs[i].remainingTime--;
+                    
+                    if (activeBuffs[i].remainingTime <= 0)
+                    {
+                        Debug.Log($"[PotionManager] Turn-based buff expired: {activeBuffs[i].buffType}");
+                        activeBuffs.RemoveAt(i);
+                    }
+                }
+            }
         }
-
-        Debug.Log($"Active Buffs: {activeBuffs.Count}");
-        foreach (var buff in activeBuffs)
+        #endregion
+        
+        #region Private Methods - Cleanup
+        private void ClearTurnBasedEffects()
         {
-            Debug.Log($"  • {buff.buffType} (+{buff.value}) - {buff.remainingTime:F1} remaining");
+            activeHealOverTurns.Clear();
         }
+        #endregion
+        
+        #region Debug Methods
+        [ContextMenu("Debug: Enter Combat")]
+        private void DebugEnterCombat()
+        {
+            SetCombatState(true);
+        }
+        
+        [ContextMenu("Debug: Exit Combat")]
+        private void DebugExitCombat()
+        {
+            SetCombatState(false);
+        }
+        
+        [ContextMenu("Debug: Trigger Turn")]
+        private void DebugTriggerTurn()
+        {
+            OnTurnStart();
+            Debug.Log("[PotionManager] Turn triggered manually");
+        }
+        
+        [ContextMenu("Debug: Print Active Effects")]
+        private void DebugPrintEffects()
+        {
+            Debug.Log("=== ACTIVE EFFECTS ===");
+            Debug.Log($"Heal over Turns: {activeHealOverTurns.Count}");
+            
+            foreach (var hot in activeHealOverTurns)
+            {
+                Debug.Log($"  • {hot.potionName}: {hot.healPerTurn:F0} HP/turn for {hot.turnsRemaining} turns");
+            }
+            
+            Debug.Log($"Active Buffs: {activeBuffs.Count}");
+            
+            foreach (var buff in activeBuffs)
+            {
+                Debug.Log($"  • {buff.buffType} (+{buff.value}) - {buff.remainingTime:F1} remaining");
+            }
+        }
+        #endregion
     }
-
-    #endregion
-}
-
-// ──────────────────────────────────────────────────
-// Supporting Classes
-// ──────────────────────────────────────────────────
-
-[System.Serializable]
-public class ActiveBuff
-{
-    public BuffType buffType;
-    public float value;
-    public float duration;
-    public float remainingTime;
-    public DurationType durationType = DurationType.RealTime;
-}
-
-[System.Serializable]
-public class ActiveHealOverTurn
-{
-    public string potionName;
-    public PlayerStats playerStats;
-    public float healPerTurn;
-    public float totalHealRemaining;
-    public int turnsRemaining;
+    
+    // ════════════════════════════════════════════
+    // Supporting Classes
+    // ════════════════════════════════════════════
+    
+    [Serializable]
+    public class ActiveBuff
+    {
+        public BuffType buffType;
+        public float value;
+        public float duration;
+        public float remainingTime;
+        public DurationType durationType = DurationType.RealTime;
+    }
+    
+    [Serializable]
+    public class ActiveHealOverTurn
+    {
+        public string potionName;
+        public PlayerStats playerStats;
+        public float healPerTurn;
+        public float totalHealRemaining;
+        public int turnsRemaining;
+    }
 }

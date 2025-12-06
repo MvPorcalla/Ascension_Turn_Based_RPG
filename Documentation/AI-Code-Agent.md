@@ -8,7 +8,7 @@ You are a Unity C# expert specialized in creating turn-based 2D games. Generate 
 
 ### 1. File Structure
 - **One class per file**, filename must match class name exactly
-- Use namespaces: `TurnBasedGame.Systems`, `TurnBasedGame.Combat`, `TurnBasedGame.UI`
+- Use namespaces: `Ascension.Systems`, `Ascension.Managers`, `Ascension.Data.Models`,`Ascension.Data.SO`, `Ascension.Combat`, `Ascension.UI, etc`
 - Folder structure:
   ```
   Scripts/

@@ -8,6 +8,9 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
 using System.Linq;
+using Ascension.Managers;
+using Ascension.Data.SO;
+using Ascension.UI;
 
 public class EquipmentRoomUI : MonoBehaviour
 {
@@ -45,7 +48,9 @@ public class EquipmentRoomUI : MonoBehaviour
     [SerializeField] private GameObject abilitiesSortButtons;
     
     [Header("Popup")]
-    [SerializeField] private GearInfoPopUp gearInfoPopup;
+    [SerializeField] private GearInfoPopup gearInfoPopup;
+    [SerializeField] private EquipmentRoomPotionPopup potionInfoPopup;
+    // [SerializeField] private SkillPopup skillInfoPopup;
     
     [Header("Storage Mode")]
     private StorageMode currentStorageMode = StorageMode.Gear;
@@ -184,7 +189,7 @@ public class EquipmentRoomUI : MonoBehaviour
         if (mode == StorageMode.Gear)
             currentSortFilter = ItemType.Weapon;
         else
-            currentSortFilter = ItemType.Skill;
+            currentSortFilter = ItemType.Ability;
         
         RefreshStorage();
         
@@ -206,8 +211,8 @@ public class EquipmentRoomUI : MonoBehaviour
             case "Consumable":
                 currentSortFilter = ItemType.Consumable;
                 break;
-            case "Skill":
-                currentSortFilter = ItemType.Skill;
+            case "Ability":
+                currentSortFilter = ItemType.Ability;
                 break;
             case "All":
                 currentSortFilter = ItemType.Misc; // Use Misc as "All" indicator
@@ -241,8 +246,9 @@ public class EquipmentRoomUI : MonoBehaviour
             if (slotUI != null)
             {
                 slotUI.SetItem(item);
-                slotUI.SetEquippedIndicator(EquipmentManager.Instance.IsItemEquipped(item.itemID));
+                slotUI.SetEquippedIndicator(EquipmentManager.Instance.IsItemEquipped(item.ItemID));
                 slotUI.OnClick += () => OnStorageItemClicked(item);
+
                 storageSlots.Add(slotUI);
             }
         }
@@ -270,22 +276,22 @@ public class EquipmentRoomUI : MonoBehaviour
             if (currentStorageMode == StorageMode.Gear)
             {
                 // Show weapons, gear, and potions
-                bool isGearMode = item.itemType == ItemType.Weapon || 
-                                  item.itemType == ItemType.Gear || 
+                bool isGearMode = item.ItemType == ItemType.Weapon || 
+                                  item.ItemType == ItemType.Gear || 
                                   item is PotionSO;
                 
                 if (!isGearMode) continue;
                 
                 // Apply sort filter
-                if (currentSortFilter == ItemType.Weapon && item.itemType != ItemType.Weapon) continue;
-                if (currentSortFilter == ItemType.Gear && item.itemType != ItemType.Gear) continue;
+                if (currentSortFilter == ItemType.Weapon && item.ItemType != ItemType.Weapon) continue;
+                if (currentSortFilter == ItemType.Gear && item.ItemType != ItemType.Gear) continue;
                 if (currentSortFilter == ItemType.Consumable && !(item is PotionSO)) continue;
                 // ItemType.Misc is used as "All" indicator - don't filter
             }
             else // Abilities mode
             {
-                // Show only skills
-                if (item.itemType != ItemType.Skill) continue;
+                // Show only Abilities
+                if (item.ItemType != ItemType.Ability) continue;
             }
             
             // Filter by selected slot compatibility
@@ -321,37 +327,37 @@ public class EquipmentRoomUI : MonoBehaviour
         switch (slot.SlotType)
         {
             case EquipmentSlotType.Weapon:
-                return item.itemType == ItemType.Weapon;
-            
+                return item.ItemType == ItemType.Weapon;
+
             case EquipmentSlotType.Helmet:
-                return item is GearSO gear && gear.gearType == GearType.Helmet;
-            
+                return item is GearSO gear && gear.GearType == GearType.Helmet;
+
             case EquipmentSlotType.ChestPlate:
-                return item is GearSO gear2 && gear2.gearType == GearType.ChestPlate;
-            
+                return item is GearSO gear2 && gear2.GearType == GearType.ChestPlate;
+
             case EquipmentSlotType.Gloves:
-                return item is GearSO gear3 && gear3.gearType == GearType.Gloves;
-            
+                return item is GearSO gear3 && gear3.GearType == GearType.Gloves;
+
             case EquipmentSlotType.Boots:
-                return item is GearSO gear4 && gear4.gearType == GearType.Boots;
-            
+                return item is GearSO gear4 && gear4.GearType == GearType.Boots;
+
             case EquipmentSlotType.Accessory1:
             case EquipmentSlotType.Accessory2:
-                return item is GearSO gear5 && gear5.gearType == GearType.Accessory;
-            
+                return item is GearSO gear5 && gear5.GearType == GearType.Accessory;
+
             case EquipmentSlotType.NormalSkill1:
             case EquipmentSlotType.NormalSkill2:
-                return item is SkillSO skill && 
-                       (skill.category == SkillCategory.Normal || skill.category == SkillCategory.Weapon);
-            
+                return item is AbilitySO skill &&
+                    (skill.Category == AbilityCategory.Normal || skill.Category == AbilityCategory.Weapon);
+
             case EquipmentSlotType.UltimateSkill:
-                return item is SkillSO skill2 && skill2.category == SkillCategory.Ultimate;
-            
+                return item is AbilitySO skill2 && skill2.Category == AbilityCategory.Ultimate;
+
             case EquipmentSlotType.Hotbar1:
             case EquipmentSlotType.Hotbar2:
             case EquipmentSlotType.Hotbar3:
                 return item is PotionSO;
-            
+
             default:
                 return false;
         }
@@ -363,12 +369,24 @@ public class EquipmentRoomUI : MonoBehaviour
     
     private void OnStorageItemClicked(ItemBaseSO item)
     {
-        // Show popup
-        ShowGearInfoPopup(item, false);
-        
+        // Show appropriate popup
+        if (item is PotionSO potion)
+        {
+            if (potionInfoPopup != null)
+            {
+                bool isEquipped = EquipmentManager.Instance.IsItemEquipped(potion.ItemID);
+                potionInfoPopup.ShowPotion(potion, null, isEquipped);
+            }
+        }
+        else
+        {
+            ShowGearInfoPopup(item, false);
+        }
+
         if (debugMode)
-            Debug.Log($"[EquipmentRoomManager] Storage item clicked: {item.itemName}");
+            Debug.Log($"[EquipmentRoomManager] Storage item clicked: {item.ItemName}");
     }
+
     
     private void ShowGearInfoPopup(ItemBaseSO item, bool isEquipped)
     {
@@ -425,46 +443,46 @@ public class EquipmentRoomUI : MonoBehaviour
         switch (selectedSlot.SlotType)
         {
             case EquipmentSlotType.Weapon:
-                EquipmentManager.Instance.EquipWeapon(item.itemID);
+                EquipmentManager.Instance.EquipWeapon(item.ItemID);
                 break;
             
             case EquipmentSlotType.Helmet:
-                EquipmentManager.Instance.EquipGear(item.itemID, GearSlotType.Helmet);
+                EquipmentManager.Instance.EquipGear(item.ItemID, GearSlotType.Helmet);
                 break;
             case EquipmentSlotType.ChestPlate:
-                EquipmentManager.Instance.EquipGear(item.itemID, GearSlotType.ChestPlate);
+                EquipmentManager.Instance.EquipGear(item.ItemID, GearSlotType.ChestPlate);
                 break;
             case EquipmentSlotType.Gloves:
-                EquipmentManager.Instance.EquipGear(item.itemID, GearSlotType.Gloves);
+                EquipmentManager.Instance.EquipGear(item.ItemID, GearSlotType.Gloves);
                 break;
             case EquipmentSlotType.Boots:
-                EquipmentManager.Instance.EquipGear(item.itemID, GearSlotType.Boots);
+                EquipmentManager.Instance.EquipGear(item.ItemID, GearSlotType.Boots);
                 break;
             case EquipmentSlotType.Accessory1:
-                EquipmentManager.Instance.EquipGear(item.itemID, GearSlotType.Accessory1);
+                EquipmentManager.Instance.EquipGear(item.ItemID, GearSlotType.Accessory1);
                 break;
             case EquipmentSlotType.Accessory2:
-                EquipmentManager.Instance.EquipGear(item.itemID, GearSlotType.Accessory2);
+                EquipmentManager.Instance.EquipGear(item.ItemID, GearSlotType.Accessory2);
                 break;
             
             case EquipmentSlotType.NormalSkill1:
-                EquipmentManager.Instance.EquipSkill(item.itemID, SkillSlotType.Normal1);
+                EquipmentManager.Instance.EquipSkill(item.ItemID, SkillSlotType.Normal1);
                 break;
             case EquipmentSlotType.NormalSkill2:
-                EquipmentManager.Instance.EquipSkill(item.itemID, SkillSlotType.Normal2);
+                EquipmentManager.Instance.EquipSkill(item.ItemID, SkillSlotType.Normal2);
                 break;
             case EquipmentSlotType.UltimateSkill:
-                EquipmentManager.Instance.EquipSkill(item.itemID, SkillSlotType.Ultimate);
+                EquipmentManager.Instance.EquipSkill(item.ItemID, SkillSlotType.Ultimate);
                 break;
             
             case EquipmentSlotType.Hotbar1:
-                EquipmentManager.Instance.EquipHotbarItem(item.itemID, 1);
+                EquipmentManager.Instance.EquipHotbarItem(item.ItemID, 1);
                 break;
             case EquipmentSlotType.Hotbar2:
-                EquipmentManager.Instance.EquipHotbarItem(item.itemID, 2);
+                EquipmentManager.Instance.EquipHotbarItem(item.ItemID, 2);
                 break;
             case EquipmentSlotType.Hotbar3:
-                EquipmentManager.Instance.EquipHotbarItem(item.itemID, 3);
+                EquipmentManager.Instance.EquipHotbarItem(item.ItemID, 3);
                 break;
         }
     }
@@ -494,7 +512,7 @@ public class EquipmentRoomUI : MonoBehaviour
             else if (EquipmentManager.Instance.GetEquippedAccessory2() == gear)
                 EquipmentManager.Instance.UnequipGear(GearSlotType.Accessory2);
         }
-        else if (item is SkillSO skill)
+        else if (item is AbilitySO skill)
         {
             if (EquipmentManager.Instance.GetNormalSkill1() == skill)
                 EquipmentManager.Instance.UnequipSkill(SkillSlotType.Normal1);
@@ -503,7 +521,7 @@ public class EquipmentRoomUI : MonoBehaviour
             else if (EquipmentManager.Instance.GetUltimateSkill() == skill)
                 EquipmentManager.Instance.UnequipSkill(SkillSlotType.Ultimate);
         }
-        else if (item.itemType == ItemType.Consumable)
+        else if (item.ItemType == ItemType.Consumable)
         {
             if (EquipmentManager.Instance.GetHotbarItem1() == item)
                 EquipmentManager.Instance.UnequipHotbarItem(1);
@@ -518,45 +536,44 @@ public class EquipmentRoomUI : MonoBehaviour
     {
         if (item is WeaponSO)
             return weaponSlot;
-        
+
         if (item is GearSO gear)
         {
-            switch (gear.gearType)
+            switch (gear.GearType)
             {
                 case GearType.Helmet: return helmetSlot;
                 case GearType.ChestPlate: return chestPlateSlot;
                 case GearType.Gloves: return glovesSlot;
                 case GearType.Boots: return bootsSlot;
                 case GearType.Accessory:
-                    // Use first empty accessory slot
                     if (!accessory1Slot.HasItem()) return accessory1Slot;
                     if (!accessory2Slot.HasItem()) return accessory2Slot;
                     return accessory1Slot; // Replace first if both full
             }
         }
-        
-        if (item is SkillSO skill)
+
+        if (item is AbilitySO skill)
         {
-            switch (skill.category)
+            switch (skill.Category)
             {
-                case SkillCategory.Normal:
-                case SkillCategory.Weapon:
+                case AbilityCategory.Normal:
+                case AbilityCategory.Weapon:
                     if (!normalSkill1Slot.HasItem()) return normalSkill1Slot;
                     if (!normalSkill2Slot.HasItem()) return normalSkill2Slot;
                     return normalSkill1Slot;
-                case SkillCategory.Ultimate:
+                case AbilityCategory.Ultimate:
                     return ultimateSkillSlot;
             }
         }
-        
-        if (item.itemType == ItemType.Consumable)
+
+        if (item.ItemType == ItemType.Consumable)
         {
             if (!hotbarSlot1.HasItem()) return hotbarSlot1;
             if (!hotbarSlot2.HasItem()) return hotbarSlot2;
             if (!hotbarSlot3.HasItem()) return hotbarSlot3;
             return hotbarSlot1;
         }
-        
+
         return null;
     }
     

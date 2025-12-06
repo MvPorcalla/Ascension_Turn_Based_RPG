@@ -1,51 +1,72 @@
-// ──────────────────────────────────────────────────
+// ════════════════════════════════════════════
 // ItemBaseSO.cs
 // Base ScriptableObject for all item types
-// ──────────────────────────────────────────────────
+// ════════════════════════════════════════════
 
 using UnityEngine;
 
-public abstract class ItemBaseSO : ScriptableObject
+namespace Ascension.Data.SO
 {
-    [Header("Basic Info")]
-    public string itemID; // Unique identifier (auto-generated or manual)
-    public string itemName;
-    public Sprite icon;
-    public Rarity rarity = Rarity.Common;
-    [TextArea(2, 4)] public string description;
-
-    [Header("Item Properties")]
-    public ItemType itemType;
-    public bool isStackable = false;
-    public int maxStackSize = 999;
-
-    [Header("Requirements")]
-    public int requiredLevel = 1;
-
-    /// <summary>
-    /// Get formatted info text for tooltip/details
-    /// </summary>
-    public virtual string GetInfoText()
+    public abstract class ItemBaseSO : ScriptableObject
     {
-        return $"<b>{itemName}</b>\n{rarity}\n\n{description}";
+        #region Serialized Fields
+        [Header("Basic Info")]
+        [SerializeField] protected string itemID; // Unique identifier
+        [SerializeField] protected string itemName;
+        [SerializeField] protected Sprite icon;
+        [SerializeField] protected Rarity rarity = Rarity.Common;
+        [TextArea(2, 4)]
+        [SerializeField] protected string description;
+
+        [Header("Item Properties")]
+        [SerializeField] protected ItemType itemType;
+        [SerializeField] protected bool isStackable = false;
+        [SerializeField] protected int maxStackSize = 999;
+
+        [Header("Requirements")]
+        [SerializeField] protected int requiredLevel = 1;
+        #endregion
+
+        #region Properties
+        public string ItemID => itemID;
+        public string ItemName => itemName;
+        public Sprite Icon => icon;
+        public Rarity Rarity => rarity;
+        public string Description => description;
+
+        public ItemType ItemType => itemType;
+        public bool IsStackable => isStackable;
+        public int MaxStackSize => maxStackSize;
+        public int RequiredLevel => requiredLevel;
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Returns formatted info text for tooltip or details
+        /// </summary>
+        public virtual string GetInfoText()
+        {
+            return $"<b>{itemName}</b>\n{rarity}\n\n{description}";
+        }
+        #endregion
     }
-}
 
-public enum ItemType
-{
-    Weapon,
-    Gear,
-    Skill,
-    Consumable,
-    Material,
-    Misc
-}
+    public enum ItemType
+    {
+        Weapon,
+        Gear,
+        Ability,
+        Consumable,
+        Material,
+        Misc
+    }
 
-public enum Rarity
-{
-    Common,
-    Rare,
-    Epic,
-    Legendary,
-    Mythic
+    public enum Rarity
+    {
+        Common,
+        Rare,
+        Epic,
+        Legendary,
+        Mythic
+    }
 }

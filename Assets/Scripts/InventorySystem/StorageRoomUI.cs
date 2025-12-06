@@ -7,6 +7,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
+using Ascension.Managers;
+using Ascension.Data.SO;
 
 public class StorageRoomUI : MonoBehaviour
 {
@@ -188,7 +190,7 @@ public class StorageRoomUI : MonoBehaviour
             // Use dedicated potion popup
             potionPopup.ShowPotion(potion, item, fromLocation);
         }
-        else if (itemData.isStackable)
+        else if (itemData.IsStackable)
         {
             // Use generic item popup for other stackables (materials, misc, ingredients)
             itemPopup.ShowItem(itemData, item, fromLocation);

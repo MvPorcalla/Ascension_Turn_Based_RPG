@@ -5,6 +5,8 @@
 
 using System;
 using UnityEngine;
+using Ascension.Data.SO;
+using Ascension.Systems;
 
 [Serializable]
 public class PlayerDerivedStats
@@ -52,7 +54,7 @@ public class PlayerDerivedStats
         
         // === ATTACK DAMAGE (Weapon-Based) ===
         float baseAD = baseStats.BaseAD;
-        float weaponAD = equippedWeapon != null ? equippedWeapon.bonusAD : 0f;
+        float weaponAD = equippedWeapon != null ? equippedWeapon.BonusAD : 0f;
         float weaponScaling = weaponAD * (effectiveSTR * baseStats.weaponSTRScaling);
         float attributeAD = effectiveSTR * baseStats.STRtoAD;
         
@@ -60,7 +62,7 @@ public class PlayerDerivedStats
         
         // === ABILITY POWER (Weapon-Based) ===
         float baseAP = baseStats.BaseAP;
-        float weaponAP = equippedWeapon != null ? equippedWeapon.bonusAP : 0f;
+        float weaponAP = equippedWeapon != null ? equippedWeapon.BonusAP : 0f;
         float weaponAPScaling = weaponAP * (effectiveINT * baseStats.weaponINTScaling);
         float attributeAP = effectiveINT * baseStats.INTtoAP;
         
@@ -69,13 +71,13 @@ public class PlayerDerivedStats
         // === HEALTH (Flat from attributes) ===
         float levelHP = baseStats.HPPerLevel * levelBonus;
         float attributeHP = effectiveEND * baseStats.ENDtoHP;
-        float weaponHP = equippedWeapon != null ? equippedWeapon.bonusHP : 0f;
+        float weaponHP = equippedWeapon != null ? equippedWeapon.BonusHP : 0f;
         
         MaxHP = baseStats.BaseHP + levelHP + attributeHP + weaponHP + itemStats.HP;
         
         // === DEFENSE ===
         float levelDefense = baseStats.DefensePerLevel * levelBonus;
-        float weaponDefense = equippedWeapon != null ? equippedWeapon.bonusDefense : 0f;
+        float weaponDefense = equippedWeapon != null ? equippedWeapon.BonusDefense : 0f;
         
         Defense = baseStats.BaseDefense + levelDefense +
                   (effectiveEND * baseStats.ENDtoDefense) +
@@ -94,7 +96,7 @@ public class PlayerDerivedStats
         
         // Add weapon crit rate (before base cap)
         if (equippedWeapon != null)
-            baseCritRate += equippedWeapon.bonusCritRate;
+            baseCritRate += equippedWeapon.BonusCritRate;
         
         baseCritRate = Mathf.Min(baseCritRate, baseStats.baseCritRateCap);
         
@@ -102,7 +104,7 @@ public class PlayerDerivedStats
         CritRate = Mathf.Min(CritRate, baseStats.totalCritRateCap);
         
         // === CRITICAL DAMAGE ===
-        float weaponCritDamage = equippedWeapon != null ? equippedWeapon.bonusCritDamage : 0f;
+        float weaponCritDamage = equippedWeapon != null ? equippedWeapon.BonusCritDamage : 0f;
         CritDamage = baseStats.BaseCritDamage + weaponCritDamage + itemStats.CritDamage;
         
         // === EVASION (Tiered Cap) ===
@@ -110,7 +112,7 @@ public class PlayerDerivedStats
         
         // Add weapon evasion (before base cap)
         if (equippedWeapon != null)
-            baseEvasion += equippedWeapon.bonusEvasion;
+            baseEvasion += equippedWeapon.BonusEvasion;
         
         baseEvasion = Mathf.Min(baseEvasion, baseStats.baseEvasionCap);
         
@@ -123,7 +125,7 @@ public class PlayerDerivedStats
 
         // Add weapon tenacity (before base cap)
         if (equippedWeapon != null)
-            baseTenacity += equippedWeapon.bonusTenacity;
+            baseTenacity += equippedWeapon.BonusTenacity;
 
         // Apply base cap
         baseTenacity = Mathf.Min(baseTenacity, baseStats.baseTenacityCap);
@@ -133,9 +135,9 @@ public class PlayerDerivedStats
         Tenacity = Mathf.Min(Tenacity, baseStats.totalTenacityCap);
         
         // === ITEM-ONLY STATS (Weapon can also provide these) ===
-        float weaponLethality = equippedWeapon != null ? equippedWeapon.bonusLethality : 0f;
-        float weaponPenetration = equippedWeapon != null ? equippedWeapon.bonusPenetration : 0f;
-        float weaponLifesteal = equippedWeapon != null ? equippedWeapon.bonusLifesteal : 0f;
+        float weaponLethality = equippedWeapon != null ? equippedWeapon.BonusLethality : 0f;
+        float weaponPenetration = equippedWeapon != null ? equippedWeapon.BonusPenetration : 0f;
+        float weaponLifesteal = equippedWeapon != null ? equippedWeapon.BonusLifesteal : 0f;
         
         Lethality = weaponLethality + itemStats.Lethality;
         Penetration = Mathf.Min(weaponPenetration + itemStats.Penetration, baseStats.maxPenetration);

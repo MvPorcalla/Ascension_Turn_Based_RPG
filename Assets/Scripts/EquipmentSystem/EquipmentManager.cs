@@ -7,6 +7,8 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
+using Ascension.Data.SO;
+using Ascension.Systems;
 
 public class EquipmentManager : MonoBehaviour
 {
@@ -22,9 +24,9 @@ public class EquipmentManager : MonoBehaviour
     [SerializeField] private GearSO equippedAccessory2;
     
     [Header("Skills")]
-    [SerializeField] private SkillSO normalSkill1;
-    [SerializeField] private SkillSO normalSkill2;
-    [SerializeField] private SkillSO ultimateSkill;
+    [SerializeField] private AbilitySO normalSkill1;
+    [SerializeField] private AbilitySO normalSkill2;
+    [SerializeField] private AbilitySO ultimateSkill;
     
     [Header("HotBar Items (Consumables for Combat)")]
     [SerializeField] private ItemBaseSO hotbarItem1;
@@ -62,9 +64,9 @@ public class EquipmentManager : MonoBehaviour
     public GearSO GetEquippedAccessory1() => equippedAccessory1;
     public GearSO GetEquippedAccessory2() => equippedAccessory2;
     
-    public SkillSO GetNormalSkill1() => normalSkill1;
-    public SkillSO GetNormalSkill2() => normalSkill2;
-    public SkillSO GetUltimateSkill() => ultimateSkill;
+    public AbilitySO GetNormalSkill1() => normalSkill1;
+    public AbilitySO GetNormalSkill2() => normalSkill2;
+    public AbilitySO GetUltimateSkill() => ultimateSkill;
     
     public ItemBaseSO GetHotbarItem1() => hotbarItem1;
     public ItemBaseSO GetHotbarItem2() => hotbarItem2;
@@ -93,7 +95,7 @@ public class EquipmentManager : MonoBehaviour
         OnEquipmentChanged?.Invoke();
         
         if (debugMode)
-            Debug.Log($"[EquipmentManager] Equipped weapon: {weapon.weaponName}");
+            Debug.Log($"[EquipmentManager] Equipped weapon: {weapon.WeaponName}");
         
         return true;
     }
@@ -103,7 +105,7 @@ public class EquipmentManager : MonoBehaviour
         if (equippedWeapon == null) return;
         
         if (debugMode)
-            Debug.Log($"[EquipmentManager] Unequipped weapon: {equippedWeapon.weaponName}");
+            Debug.Log($"[EquipmentManager] Unequipped weapon: {equippedWeapon.WeaponName}");
         
         equippedWeapon = null;
         OnEquipmentChanged?.Invoke();
@@ -125,7 +127,7 @@ public class EquipmentManager : MonoBehaviour
         // Validate gear type matches slot
         if (!IsGearCompatibleWithSlot(gear, slotType))
         {
-            Debug.LogWarning($"[EquipmentManager] {gear.gearType} cannot be equipped in {slotType} slot");
+            Debug.LogWarning($"[EquipmentManager] {gear.GearType} cannot be equipped in {slotType} slot");
             return false;
         }
         
@@ -158,7 +160,7 @@ public class EquipmentManager : MonoBehaviour
         OnEquipmentChanged?.Invoke();
         
         if (debugMode)
-            Debug.Log($"[EquipmentManager] Equipped {gear.gearName} in {slotType}");
+            Debug.Log($"[EquipmentManager] Equipped {gear.GearName} in {slotType}");
         
         return true;
     }
@@ -193,7 +195,7 @@ public class EquipmentManager : MonoBehaviour
         OnEquipmentChanged?.Invoke();
         
         if (debugMode)
-            Debug.Log($"[EquipmentManager] Unequipped {currentGear.gearName} from {slotType}");
+            Debug.Log($"[EquipmentManager] Unequipped {currentGear.GearName} from {slotType}");
     }
     
     public GearSO GetEquippedGear(GearSlotType slotType)
@@ -215,16 +217,16 @@ public class EquipmentManager : MonoBehaviour
         switch (slotType)
         {
             case GearSlotType.Helmet:
-                return gear.gearType == GearType.Helmet;
+                return gear.GearType == GearType.Helmet;
             case GearSlotType.ChestPlate:
-                return gear.gearType == GearType.ChestPlate;
+                return gear.GearType == GearType.ChestPlate;
             case GearSlotType.Gloves:
-                return gear.gearType == GearType.Gloves;
+                return gear.GearType == GearType.Gloves;
             case GearSlotType.Boots:
-                return gear.gearType == GearType.Boots;
+                return gear.GearType == GearType.Boots;
             case GearSlotType.Accessory1:
             case GearSlotType.Accessory2:
-                return gear.gearType == GearType.Accessory;
+                return gear.GearType == GearType.Accessory;
             default:
                 return false;
         }
@@ -237,7 +239,7 @@ public class EquipmentManager : MonoBehaviour
     public bool EquipSkill(string itemID, SkillSlotType slotType)
     {
         ItemBaseSO item = GetItemFromInventory(itemID);
-        if (item == null || !(item is SkillSO skill))
+        if (item == null || !(item is AbilitySO skill))
         {
             Debug.LogWarning($"[EquipmentManager] Item {itemID} is not a skill");
             return false;
@@ -246,16 +248,16 @@ public class EquipmentManager : MonoBehaviour
         // Validate skill category matches slot
         if (!IsSkillCompatibleWithSlot(skill, slotType))
         {
-            Debug.LogWarning($"[EquipmentManager] {skill.category} skill cannot be equipped in {slotType} slot");
+            Debug.LogWarning($"[EquipmentManager] {skill.Category} ability cannot be equipped in {slotType} slot");
             return false;
         }
         
         // Check weapon compatibility
-        if (skill.compatibleWeaponTypes != null && skill.compatibleWeaponTypes.Length > 0)
+        if (skill.CompatibleWeaponTypes != null && skill.CompatibleWeaponTypes.Length > 0)
         {
             if (equippedWeapon == null || !IsSkillCompatibleWithWeapon(skill, equippedWeapon))
             {
-                Debug.LogWarning($"[EquipmentManager] Skill {skill.skillName} requires compatible weapon");
+                Debug.LogWarning($"[EquipmentManager] Ability {skill.AbilityName} requires compatible weapon");
                 return false;
             }
         }
@@ -280,14 +282,14 @@ public class EquipmentManager : MonoBehaviour
         OnEquipmentChanged?.Invoke();
         
         if (debugMode)
-            Debug.Log($"[EquipmentManager] Equipped skill: {skill.skillName}");
+            Debug.Log($"[EquipmentManager] Equipped ability: {skill.AbilityName}");
         
         return true;
     }
     
     public void UnequipSkill(SkillSlotType slotType)
     {
-        SkillSO currentSkill = GetEquippedSkill(slotType);
+        AbilitySO currentSkill = GetEquippedSkill(slotType);
         if (currentSkill == null) return;
         
         switch (slotType)
@@ -306,10 +308,10 @@ public class EquipmentManager : MonoBehaviour
         OnEquipmentChanged?.Invoke();
         
         if (debugMode)
-            Debug.Log($"[EquipmentManager] Unequipped skill: {currentSkill.skillName}");
+            Debug.Log($"[EquipmentManager] Unequipped ability: {currentSkill.AbilityName}");
     }
     
-    public SkillSO GetEquippedSkill(SkillSlotType slotType)
+    public AbilitySO GetEquippedSkill(SkillSlotType slotType)
     {
         switch (slotType)
         {
@@ -320,28 +322,28 @@ public class EquipmentManager : MonoBehaviour
         }
     }
     
-    private bool IsSkillCompatibleWithSlot(SkillSO skill, SkillSlotType slotType)
+    private bool IsSkillCompatibleWithSlot(AbilitySO skill, SkillSlotType slotType)
     {
         switch (slotType)
         {
             case SkillSlotType.Normal1:
             case SkillSlotType.Normal2:
-                return skill.category == SkillCategory.Normal || skill.category == SkillCategory.Weapon;
+                return skill.Category == AbilityCategory.Normal || skill.Category == AbilityCategory.Weapon;
             case SkillSlotType.Ultimate:
-                return skill.category == SkillCategory.Ultimate;
+                return skill.Category == AbilityCategory.Ultimate;
             default:
                 return false;
         }
     }
     
-    private bool IsSkillCompatibleWithWeapon(SkillSO skill, WeaponSO weapon)
+    private bool IsSkillCompatibleWithWeapon(AbilitySO skill, WeaponSO weapon)
     {
-        if (skill.compatibleWeaponTypes == null || skill.compatibleWeaponTypes.Length == 0)
+        if (skill.CompatibleWeaponTypes == null || skill.CompatibleWeaponTypes.Length == 0)
             return true;
         
-        foreach (var weaponType in skill.compatibleWeaponTypes)
+        foreach (var weaponType in skill.CompatibleWeaponTypes)
         {
-            if (weapon.weaponType == weaponType)
+            if (weapon.WeaponType == weaponType)
                 return true;
         }
         
@@ -394,7 +396,7 @@ public class EquipmentManager : MonoBehaviour
         OnEquipmentChanged?.Invoke();
         
         if (debugMode)
-            Debug.Log($"[EquipmentManager] Equipped {item.itemName} in hotbar slot {slotIndex}");
+            Debug.Log($"[EquipmentManager] Equipped {item.ItemName} in hotbar slot {slotIndex}");
         
         return true;
     }
@@ -420,7 +422,7 @@ public class EquipmentManager : MonoBehaviour
         OnEquipmentChanged?.Invoke();
         
         if (debugMode)
-            Debug.Log($"[EquipmentManager] Unequipped {current.itemName} from hotbar slot {slotIndex}");
+            Debug.Log($"[EquipmentManager] Unequipped {current.ItemName} from hotbar slot {slotIndex}");
     }
     
     public ItemBaseSO GetHotbarItem(int slotIndex)
@@ -443,19 +445,19 @@ public class EquipmentManager : MonoBehaviour
     /// </summary>
     public bool IsItemEquipped(string itemID)
     {
-        if (equippedWeapon != null && equippedWeapon.itemID == itemID) return true;
-        if (equippedHelmet != null && equippedHelmet.itemID == itemID) return true;
-        if (equippedChestPlate != null && equippedChestPlate.itemID == itemID) return true;
-        if (equippedGloves != null && equippedGloves.itemID == itemID) return true;
-        if (equippedBoots != null && equippedBoots.itemID == itemID) return true;
-        if (equippedAccessory1 != null && equippedAccessory1.itemID == itemID) return true;
-        if (equippedAccessory2 != null && equippedAccessory2.itemID == itemID) return true;
-        if (normalSkill1 != null && normalSkill1.itemID == itemID) return true;
-        if (normalSkill2 != null && normalSkill2.itemID == itemID) return true;
-        if (ultimateSkill != null && ultimateSkill.itemID == itemID) return true;
-        if (hotbarItem1 != null && hotbarItem1.itemID == itemID) return true;
-        if (hotbarItem2 != null && hotbarItem2.itemID == itemID) return true;
-        if (hotbarItem3 != null && hotbarItem3.itemID == itemID) return true;
+        if (equippedWeapon != null && equippedWeapon.ItemID == itemID) return true;
+        if (equippedHelmet != null && equippedHelmet.ItemID == itemID) return true;
+        if (equippedChestPlate != null && equippedChestPlate.ItemID == itemID) return true;
+        if (equippedGloves != null && equippedGloves.ItemID == itemID) return true;
+        if (equippedBoots != null && equippedBoots.ItemID == itemID) return true;
+        if (equippedAccessory1 != null && equippedAccessory1.ItemID == itemID) return true;
+        if (equippedAccessory2 != null && equippedAccessory2.ItemID == itemID) return true;
+        if (normalSkill1 != null && normalSkill1.ItemID == itemID) return true;
+        if (normalSkill2 != null && normalSkill2.ItemID == itemID) return true;
+        if (ultimateSkill != null && ultimateSkill.ItemID == itemID) return true;
+        if (hotbarItem1 != null && hotbarItem1.ItemID == itemID) return true;
+        if (hotbarItem2 != null && hotbarItem2.ItemID == itemID) return true;
+        if (hotbarItem3 != null && hotbarItem3.ItemID == itemID) return true;
         
         return false;
     }
@@ -466,52 +468,51 @@ public class EquipmentManager : MonoBehaviour
     public PlayerItemStats GetTotalItemStats()
     {
         PlayerItemStats stats = new PlayerItemStats();
-        
-        // Add weapon stats using AddStat method
+
+        // Add weapon stats using public properties
         if (equippedWeapon != null)
         {
-            stats.AddStat(BonusStatType.AttackDamage, equippedWeapon.bonusAD);
-            stats.AddStat(BonusStatType.AbilityPower, equippedWeapon.bonusAP);
-            stats.AddStat(BonusStatType.Health, equippedWeapon.bonusHP);
-            stats.AddStat(BonusStatType.Defense, equippedWeapon.bonusDefense);
-            stats.AddStat(BonusStatType.AttackSpeed, equippedWeapon.bonusAttackSpeed);
-            stats.AddStat(BonusStatType.CritRate, equippedWeapon.bonusCritRate);
-            stats.AddStat(BonusStatType.CritDamage, equippedWeapon.bonusCritDamage);
-            stats.AddStat(BonusStatType.Evasion, equippedWeapon.bonusEvasion);
-            stats.AddStat(BonusStatType.Tenacity, equippedWeapon.bonusTenacity);
-            stats.AddStat(BonusStatType.Lethality, equippedWeapon.bonusLethality);
-            stats.AddStat(BonusStatType.Penetration, equippedWeapon.bonusPenetration);
-            stats.AddStat(BonusStatType.Lifesteal, equippedWeapon.bonusLifesteal);
+            stats.AddStat(BonusStatType.AttackDamage, equippedWeapon.BonusAD);
+            stats.AddStat(BonusStatType.AbilityPower, equippedWeapon.BonusAP);
+            stats.AddStat(BonusStatType.Health, equippedWeapon.BonusHP);
+            stats.AddStat(BonusStatType.Defense, equippedWeapon.BonusDefense);
+            stats.AddStat(BonusStatType.AttackSpeed, equippedWeapon.BonusAttackSpeed);
+            stats.AddStat(BonusStatType.CritRate, equippedWeapon.BonusCritRate);
+            stats.AddStat(BonusStatType.CritDamage, equippedWeapon.BonusCritDamage);
+            stats.AddStat(BonusStatType.Evasion, equippedWeapon.BonusEvasion);
+            stats.AddStat(BonusStatType.Tenacity, equippedWeapon.BonusTenacity);
+            stats.AddStat(BonusStatType.Lethality, equippedWeapon.BonusLethality);
+            stats.AddStat(BonusStatType.Penetration, equippedWeapon.BonusPenetration);
+            stats.AddStat(BonusStatType.Lifesteal, equippedWeapon.BonusLifesteal);
         }
-        
-        // Add gear stats
+
+        // Add gear stats using public properties
         AddGearStats(equippedHelmet, stats);
         AddGearStats(equippedChestPlate, stats);
         AddGearStats(equippedGloves, stats);
         AddGearStats(equippedBoots, stats);
         AddGearStats(equippedAccessory1, stats);
         AddGearStats(equippedAccessory2, stats);
-        
+
         return stats;
     }
 
     private void AddGearStats(GearSO gear, PlayerItemStats stats)
     {
         if (gear == null) return;
-        
-        // Use AddStat method instead of direct assignment
-        if (gear.bonusHP > 0) stats.AddStat(BonusStatType.Health, gear.bonusHP);
-        if (gear.bonusDefense > 0) stats.AddStat(BonusStatType.Defense, gear.bonusDefense);
-        if (gear.bonusAD > 0) stats.AddStat(BonusStatType.AttackDamage, gear.bonusAD);
-        if (gear.bonusAP > 0) stats.AddStat(BonusStatType.AbilityPower, gear.bonusAP);
-        if (gear.bonusAttackSpeed > 0) stats.AddStat(BonusStatType.AttackSpeed, gear.bonusAttackSpeed);
-        if (gear.bonusCritRate > 0) stats.AddStat(BonusStatType.CritRate, gear.bonusCritRate);
-        if (gear.bonusCritDamage > 0) stats.AddStat(BonusStatType.CritDamage, gear.bonusCritDamage);
-        if (gear.bonusEvasion > 0) stats.AddStat(BonusStatType.Evasion, gear.bonusEvasion);
-        if (gear.bonusTenacity > 0) stats.AddStat(BonusStatType.Tenacity, gear.bonusTenacity);
-        if (gear.bonusLethality > 0) stats.AddStat(BonusStatType.Lethality, gear.bonusLethality);
-        if (gear.bonusPenetration > 0) stats.AddStat(BonusStatType.Penetration, gear.bonusPenetration);
-        if (gear.bonusLifesteal > 0) stats.AddStat(BonusStatType.Lifesteal, gear.bonusLifesteal);
+
+        if (gear.BonusHP > 0) stats.AddStat(BonusStatType.Health, gear.BonusHP);
+        if (gear.BonusDefense > 0) stats.AddStat(BonusStatType.Defense, gear.BonusDefense);
+        if (gear.BonusAD > 0) stats.AddStat(BonusStatType.AttackDamage, gear.BonusAD);
+        if (gear.BonusAP > 0) stats.AddStat(BonusStatType.AbilityPower, gear.BonusAP);
+        if (gear.BonusAttackSpeed > 0) stats.AddStat(BonusStatType.AttackSpeed, gear.BonusAttackSpeed);
+        if (gear.BonusCritRate > 0) stats.AddStat(BonusStatType.CritRate, gear.BonusCritRate);
+        if (gear.BonusCritDamage > 0) stats.AddStat(BonusStatType.CritDamage, gear.BonusCritDamage);
+        if (gear.BonusEvasion > 0) stats.AddStat(BonusStatType.Evasion, gear.BonusEvasion);
+        if (gear.BonusTenacity > 0) stats.AddStat(BonusStatType.Tenacity, gear.BonusTenacity);
+        if (gear.BonusLethality > 0) stats.AddStat(BonusStatType.Lethality, gear.BonusLethality);
+        if (gear.BonusPenetration > 0) stats.AddStat(BonusStatType.Penetration, gear.BonusPenetration);
+        if (gear.BonusLifesteal > 0) stats.AddStat(BonusStatType.Lifesteal, gear.BonusLifesteal);
     }
     
     private ItemBaseSO GetItemFromInventory(string itemID)
@@ -528,16 +529,16 @@ public class EquipmentManager : MonoBehaviour
     private void DebugPrintEquipment()
     {
         Debug.Log("=== CURRENT EQUIPMENT ===");
-        Debug.Log($"Weapon: {(equippedWeapon != null ? equippedWeapon.weaponName : "None")}");
-        Debug.Log($"Helmet: {(equippedHelmet != null ? equippedHelmet.gearName : "None")}");
-        Debug.Log($"ChestPlate: {(equippedChestPlate != null ? equippedChestPlate.gearName : "None")}");
-        Debug.Log($"Gloves: {(equippedGloves != null ? equippedGloves.gearName : "None")}");
-        Debug.Log($"Boots: {(equippedBoots != null ? equippedBoots.gearName : "None")}");
-        Debug.Log($"Accessory1: {(equippedAccessory1 != null ? equippedAccessory1.gearName : "None")}");
-        Debug.Log($"Accessory2: {(equippedAccessory2 != null ? equippedAccessory2.gearName : "None")}");
-        Debug.Log($"Normal Skill 1: {(normalSkill1 != null ? normalSkill1.skillName : "None")}");
-        Debug.Log($"Normal Skill 2: {(normalSkill2 != null ? normalSkill2.skillName : "None")}");
-        Debug.Log($"Ultimate: {(ultimateSkill != null ? ultimateSkill.skillName : "None")}");
+        Debug.Log($"Weapon: {(equippedWeapon != null ? equippedWeapon.WeaponName : "None")}");
+        Debug.Log($"Helmet: {(equippedHelmet != null ? equippedHelmet.GearName : "None")}");
+        Debug.Log($"ChestPlate: {(equippedChestPlate != null ? equippedChestPlate.GearName : "None")}");
+        Debug.Log($"Gloves: {(equippedGloves != null ? equippedGloves.GearName : "None")}");
+        Debug.Log($"Boots: {(equippedBoots != null ? equippedBoots.GearName : "None")}");
+        Debug.Log($"Accessory1: {(equippedAccessory1 != null ? equippedAccessory1.GearName : "None")}");
+        Debug.Log($"Accessory2: {(equippedAccessory2 != null ? equippedAccessory2.GearName : "None")}");
+        Debug.Log($"Normal Skill 1: {(normalSkill1 != null ? normalSkill1.AbilityName : "None")}");
+        Debug.Log($"Normal Skill 2: {(normalSkill2 != null ? normalSkill2.AbilityName : "None")}");
+        Debug.Log($"Ultimate: {(ultimateSkill != null ? ultimateSkill.AbilityName : "None")}");
     }
     
     #endregion

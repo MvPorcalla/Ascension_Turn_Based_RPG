@@ -7,6 +7,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
+using Ascension.Managers;
+using Ascension.Systems;
+using Ascension.Data.SO;
 
 public class PotionPopupUI : MonoBehaviour
 {
@@ -77,14 +80,14 @@ public class PotionPopupUI : MonoBehaviour
         popupContainer.SetActive(true);
 
         // Setup header
-        itemName.text = potion.itemName;
+        itemName.text = potion.ItemName;
 
         // Setup icon
         if (potionIcon != null)
         {
-            if (potion.icon != null)
+            if (potion.Icon != null)
             {
-                potionIcon.sprite = potion.icon;
+                potionIcon.sprite = potion.Icon;
                 potionIcon.enabled = true;
             }
             else
@@ -102,7 +105,7 @@ public class PotionPopupUI : MonoBehaviour
 
         // Setup description
         if (potionDescription != null)
-            potionDescription.text = potion.description;
+            potionDescription.text = potion.Description;
 
         // Setup quantity controls
         SetupQuantityControls(item.quantity);
@@ -160,8 +163,8 @@ public class PotionPopupUI : MonoBehaviour
                 break;
 
             case PotionType.Elixir:
-                AddBuffLine("HP & Mana", $"+{potion.healthRestore} / +{potion.manaRestore}", "Instant");
-                if (potion.grantsBuff)
+                AddBuffLine("HP & Mana", $"+{potion.HealthRestore} / +{potion.ManaRestore}", "Instant");
+                if (potion.GrantsBuff)
                 {
                     DisplayBuffPotionEffects(potion);
                 }
@@ -179,14 +182,14 @@ public class PotionPopupUI : MonoBehaviour
 
     private void DisplayHealthPotionEffect(PotionSO potion)
     {
-        string valueText = GetRestoreValueText(potion.restoreType, potion.healthRestore);
+        string valueText = GetRestoreValueText(potion.restoreType, potion.HealthRestore);
         string durationText = GetDurationText(potion.durationType, potion.restoreDuration);
         AddBuffLine("HP Restore", valueText, durationText);
     }
 
     private void DisplayManaPotionEffect(PotionSO potion)
     {
-        string valueText = GetRestoreValueText(potion.restoreType, potion.manaRestore);
+        string valueText = GetRestoreValueText(potion.restoreType, potion.ManaRestore);
         string durationText = GetDurationText(potion.durationType, potion.restoreDuration);
         AddBuffLine("Mana Restore", valueText, durationText);
     }
@@ -196,14 +199,14 @@ public class PotionPopupUI : MonoBehaviour
         if (potion.IsTurnBased)
         {
             int turns = potion.TurnDuration;
-            float perTurn = potion.healthRestore / turns;
+            float perTurn = potion.HealthRestore / turns;
             string perTurnText = GetRestoreValueText(potion.restoreType, perTurn);
-            string totalText = GetRestoreValueText(potion.restoreType, potion.healthRestore);
+            string totalText = GetRestoreValueText(potion.restoreType, potion.HealthRestore);
             AddBuffLine("HP Restore", $"{perTurnText}/turn", $"{turns} turns (Total: {totalText})");
         }
         else
         {
-            string valueText = GetRestoreValueText(potion.restoreType, potion.healthRestore);
+            string valueText = GetRestoreValueText(potion.restoreType, potion.HealthRestore);
             string durationText = GetDurationText(potion.durationType, potion.restoreDuration);
             AddBuffLine("HP Restore", valueText, durationText);
         }
@@ -474,7 +477,7 @@ public class PotionPopupUI : MonoBehaviour
         if (successfulUses > 0)
         {
             InventoryManager.Instance.Inventory.RemoveItem(currentItem, successfulUses);
-            Debug.Log($"[PotionPopupUI] Used {successfulUses}x {currentPotion.itemName}");
+            Debug.Log($"[PotionPopupUI] Used {successfulUses}x {currentPotion.ItemName}");
             
             // HUD will auto-update via CharacterManager events (OnHealthChanged)
             
@@ -492,7 +495,7 @@ public class PotionPopupUI : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"[PotionPopupUI] Failed to use {currentPotion.itemName}");
+            Debug.LogWarning($"[PotionPopupUI] Failed to use {currentPotion.ItemName}");
         }
     }
 
@@ -505,7 +508,7 @@ public class PotionPopupUI : MonoBehaviour
             // From storage or bag: Move to pocket
             if (InventoryManager.Instance.Inventory.MoveToPocket(currentItem, selectedQuantity))
             {
-                Debug.Log($"Moved {selectedQuantity}x {currentPotion.itemName} to pocket");
+                Debug.Log($"Moved {selectedQuantity}x {currentPotion.ItemName} to pocket");
                 ClosePopup();
             }
         }
@@ -514,7 +517,7 @@ public class PotionPopupUI : MonoBehaviour
             // From pocket: Move to storage
             if (InventoryManager.Instance.Inventory.MoveToStorage(currentItem, selectedQuantity))
             {
-                Debug.Log($"Stored {selectedQuantity}x {currentPotion.itemName}");
+                Debug.Log($"Stored {selectedQuantity}x {currentPotion.ItemName}");
                 ClosePopup();
             }
         }
@@ -529,7 +532,7 @@ public class PotionPopupUI : MonoBehaviour
             // From storage or pocket: Move to bag
             if (InventoryManager.Instance.Inventory.MoveToBag(currentItem, selectedQuantity))
             {
-                Debug.Log($"Moved {selectedQuantity}x {currentPotion.itemName} to bag");
+                Debug.Log($"Moved {selectedQuantity}x {currentPotion.ItemName} to bag");
                 ClosePopup();
             }
         }
@@ -538,7 +541,7 @@ public class PotionPopupUI : MonoBehaviour
             // From bag: Move to storage
             if (InventoryManager.Instance.Inventory.MoveToStorage(currentItem, selectedQuantity))
             {
-                Debug.Log($"Stored {selectedQuantity}x {currentPotion.itemName}");
+                Debug.Log($"Stored {selectedQuantity}x {currentPotion.ItemName}");
                 ClosePopup();
             }
         }

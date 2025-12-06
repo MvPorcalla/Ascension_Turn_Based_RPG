@@ -5,6 +5,8 @@
 // ──────────────────────────────────────────────────
 
 using UnityEngine;
+using Ascension.Data.SO;
+using Ascension.Systems;
 
 [System.Serializable]
 public class PlayerStats
@@ -98,7 +100,7 @@ public class PlayerStats
     {
         equippedWeapon = weapon;
         RecalculateStats(baseStats, fullHeal: false);
-        Debug.Log($"[PlayerStats] Equipped: {weapon.weaponName}");
+        Debug.Log($"[PlayerStats] Equipped: {weapon.WeaponName}");
     }
 
     /// <summary>

@@ -8,6 +8,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
+using Ascension.Data.SO;
+using Ascension.Managers;
 
 public class ItemSlotUI : MonoBehaviour
 {
@@ -40,9 +42,9 @@ public class ItemSlotUI : MonoBehaviour
         // Set icon (CRITICAL: Clear previous icon if null to prevent caching bug)
         if (itemIcon != null)
         {
-            if (data.icon != null)
+            if (data.Icon != null)
             {
-                itemIcon.sprite = data.icon;
+                itemIcon.sprite = data.Icon;
                 itemIcon.color = Color.white; // Keep icon at full color
                 itemIcon.enabled = true;
             }
@@ -57,12 +59,12 @@ public class ItemSlotUI : MonoBehaviour
         // Apply rarity color to background
         if (rarityBackground != null)
         {
-            Color rarityColor = GetRarityColor(data.rarity);
+            Color rarityColor = GetRarityColor(data.Rarity);
 
             // Optional: Add glow effect for higher rarities
-            if (useGlowEffect && (data.rarity == Rarity.Epic || 
-                                   data.rarity == Rarity.Legendary || 
-                                   data.rarity == Rarity.Mythic))
+            if (useGlowEffect && (data.Rarity == Rarity.Epic || 
+                                   data.Rarity == Rarity.Legendary || 
+                                   data.Rarity == Rarity.Mythic))
             {
                 rarityColor = rarityColor * glowIntensity;
             }
@@ -75,7 +77,7 @@ public class ItemSlotUI : MonoBehaviour
         }
 
         // Set quantity
-        if (data.isStackable && instance.quantity > 1)
+        if (data.IsStackable && instance.quantity > 1)
         {
             quantityText.gameObject.SetActive(true);
             quantityText.text = $"x{instance.quantity}";

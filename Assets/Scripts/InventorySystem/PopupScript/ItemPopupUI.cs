@@ -6,6 +6,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using Ascension.Data.SO;
+using Ascension.Managers;
 
 public class ItemPopupUI : MonoBehaviour
 {
@@ -71,14 +73,14 @@ public class ItemPopupUI : MonoBehaviour
         popupContainer.SetActive(true);
 
         // Setup header
-        itemName.text = item.itemName;
+        itemName.text = item.ItemName;
 
         // Setup icon
         if (itemIcon != null)
         {
-            if (item.icon != null)
+            if (item.Icon != null)
             {
-                itemIcon.sprite = item.icon;
+                itemIcon.sprite = item.Icon;
                 itemIcon.enabled = true;
             }
             else
@@ -90,7 +92,7 @@ public class ItemPopupUI : MonoBehaviour
 
         // Setup description
         if (itemDescription != null)
-            itemDescription.text = item.description;
+            itemDescription.text = item.Description;
 
         // Setup quantity display
         if (quantityText != null)
@@ -198,7 +200,7 @@ public class ItemPopupUI : MonoBehaviour
             // From storage or bag: Move to pocket
             if (InventoryManager.Instance.Inventory.MoveToPocket(currentItemInstance, selectedQuantity))
             {
-                Debug.Log($"Moved {selectedQuantity}x {currentItem.itemName} to pocket");
+                Debug.Log($"Moved {selectedQuantity}x {currentItem.ItemName} to pocket");
                 ClosePopup();
             }
         }
@@ -207,7 +209,7 @@ public class ItemPopupUI : MonoBehaviour
             // From pocket: Move to bag
             if (InventoryManager.Instance.Inventory.MoveToBag(currentItemInstance, selectedQuantity))
             {
-                Debug.Log($"Moved {selectedQuantity}x {currentItem.itemName} to bag");
+                Debug.Log($"Moved {selectedQuantity}x {currentItem.ItemName} to bag");
                 ClosePopup();
             }
         }
@@ -222,7 +224,7 @@ public class ItemPopupUI : MonoBehaviour
             // From storage or pocket: Move to bag
             if (InventoryManager.Instance.Inventory.MoveToBag(currentItemInstance, selectedQuantity))
             {
-                Debug.Log($"Moved {selectedQuantity}x {currentItem.itemName} to bag");
+                Debug.Log($"Moved {selectedQuantity}x {currentItem.ItemName} to bag");
                 ClosePopup();
             }
         }
@@ -231,7 +233,7 @@ public class ItemPopupUI : MonoBehaviour
             // From bag or pocket: Move to storage
             if (InventoryManager.Instance.Inventory.MoveToStorage(currentItemInstance, selectedQuantity))
             {
-                Debug.Log($"Stored {selectedQuantity}x {currentItem.itemName}");
+                Debug.Log($"Stored {selectedQuantity}x {currentItem.ItemName}");
                 ClosePopup();
             }
         }

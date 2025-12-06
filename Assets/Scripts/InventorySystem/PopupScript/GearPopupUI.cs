@@ -6,6 +6,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using Ascension.Data.SO;
+using Ascension.Systems;
 
 public class GearPopupUI : MonoBehaviour
 {
@@ -55,14 +57,14 @@ public class GearPopupUI : MonoBehaviour
         popupContainer.SetActive(true);
 
         // Setup header
-        itemName.text = item.itemName;
+        itemName.text = item.ItemName;
 
         // Setup icon
         if (itemImage != null)
         {
-            if (item.icon != null)
+            if (item.Icon != null)
             {
-                itemImage.sprite = item.icon;
+                itemImage.sprite = item.Icon;
                 itemImage.enabled = true;
             }
             else
@@ -74,7 +76,7 @@ public class GearPopupUI : MonoBehaviour
 
         // Setup description
         if (descriptionText != null)
-            descriptionText.text = item.description;
+            descriptionText.text = item.Description;
 
         // Display stats based on item type
         if (item is WeaponSO weapon)
@@ -95,29 +97,29 @@ public class GearPopupUI : MonoBehaviour
         ClearStats();
 
         // PRIMARY STATS - Displayed first with emphasis
-        if (weapon.bonusAD > 0) AddStatLine("Attack Damage", $"+{weapon.bonusAD}", "#ff6b6b");
-        if (weapon.bonusAP > 0) AddStatLine("Ability Power", $"+{weapon.bonusAP}", "#4ecdc4");
+        if (weapon.BonusAD > 0) AddStatLine("Attack Damage", $"+{weapon.BonusAD}", "#ff6b6b");
+        if (weapon.BonusAP > 0) AddStatLine("Ability Power", $"+{weapon.BonusAP}", "#4ecdc4");
 
         // DEFENSIVE STATS
-        if (weapon.bonusHP > 0) AddStatLine("Health", $"+{weapon.bonusHP}");
-        if (weapon.bonusDefense > 0) AddStatLine("Defense", $"+{weapon.bonusDefense}");
+        if (weapon.BonusHP > 0) AddStatLine("Health", $"+{weapon.BonusHP}");
+        if (weapon.BonusDefense > 0) AddStatLine("Defense", $"+{weapon.BonusDefense}");
 
         // OFFENSIVE STATS
-        if (weapon.bonusAttackSpeed > 0) AddStatLine("Attack Speed", $"+{weapon.bonusAttackSpeed}");
-        if (weapon.bonusCritRate > 0) AddStatLine("Crit Rate", $"+{weapon.bonusCritRate}%");
-        if (weapon.bonusCritDamage > 0) AddStatLine("Crit Damage", $"+{weapon.bonusCritDamage}%");
+        if (weapon.BonusAttackSpeed > 0) AddStatLine("Attack Speed", $"+{weapon.BonusAttackSpeed}");
+        if (weapon.BonusCritRate > 0) AddStatLine("Crit Rate", $"+{weapon.BonusCritRate}%");
+        if (weapon.BonusCritDamage > 0) AddStatLine("Crit Damage", $"+{weapon.BonusCritDamage}%");
 
         // UTILITY STATS
-        if (weapon.bonusEvasion > 0) AddStatLine("Evasion", $"+{weapon.bonusEvasion}%");
-        if (weapon.bonusTenacity > 0) AddStatLine("Tenacity", $"+{weapon.bonusTenacity}%");
-        if (weapon.bonusLethality > 0) AddStatLine("Lethality", $"+{weapon.bonusLethality}");
-        if (weapon.bonusPenetration > 0) AddStatLine("Penetration", $"+{weapon.bonusPenetration}%");
-        if (weapon.bonusLifesteal > 0) AddStatLine("Lifesteal", $"+{weapon.bonusLifesteal}%");
+        if (weapon.BonusEvasion > 0) AddStatLine("Evasion", $"+{weapon.BonusEvasion}%");
+        if (weapon.BonusTenacity > 0) AddStatLine("Tenacity", $"+{weapon.BonusTenacity}%");
+        if (weapon.BonusLethality > 0) AddStatLine("Lethality", $"+{weapon.BonusLethality}");
+        if (weapon.BonusPenetration > 0) AddStatLine("Penetration", $"+{weapon.BonusPenetration}%");
+        if (weapon.BonusLifesteal > 0) AddStatLine("Lifesteal", $"+{weapon.BonusLifesteal}%");
 
         // Display weapon skill if available
-        if (weapon.defaultWeaponSkill != null)
+        if (weapon.DefaultWeaponSkill != null)
         {
-            AddEffectLine($"[Skill] : {weapon.defaultWeaponSkill.skillName}");
+            AddEffectLine($"[Skill] : {weapon.DefaultWeaponSkill.AbilityName}");
         }
     }
 
@@ -217,7 +219,6 @@ public class GearPopupUI : MonoBehaviour
                 break;
         }
 
-        // TODO: When in EquipmentRoomPanel, show "Equip"/"Unequip" buttons instead
     }
 
     #region Action Handlers
@@ -231,7 +232,7 @@ public class GearPopupUI : MonoBehaviour
             // From storage: Move to bag
             if (InventoryManager.Instance.Inventory.MoveToBag(currentItemInstance, 1))
             {
-                Debug.Log($"Moved {currentItem.itemName} to bag");
+                Debug.Log($"Moved {currentItem.ItemName} to bag");
                 ClosePopup();
             }
         }
@@ -240,12 +241,10 @@ public class GearPopupUI : MonoBehaviour
             // From bag or pocket: Move to storage
             if (InventoryManager.Instance.Inventory.MoveToStorage(currentItemInstance, 1))
             {
-                Debug.Log($"Stored {currentItem.itemName}");
+                Debug.Log($"Stored {currentItem.ItemName}");
                 ClosePopup();
             }
         }
-
-        // TODO: Handle "Equip" and "Unequip" when called from EquipmentRoomPanel
     }
 
     private void ClosePopup()

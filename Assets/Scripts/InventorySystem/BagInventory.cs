@@ -7,6 +7,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Ascension.Data.SO;
+using Ascension.Systems;
 
 [Serializable]
 public class BagInventory
@@ -70,7 +72,7 @@ public class BagInventory
         return storageItems.Where(item => 
         {
             ItemBaseSO itemData = database.GetItem(item.itemID);
-            return itemData != null && itemData.itemType == filterType.Value;
+            return itemData != null && itemData.ItemType == filterType.Value;
         }).ToList();
     }
 
@@ -151,7 +153,7 @@ public class BagInventory
         }
 
         // Check if item is stackable
-        if (itemData.isStackable)
+        if (itemData.IsStackable)
         {
             // Try to stack with existing item
             ItemInstance existing = allItems.FirstOrDefault(i => i.itemID == itemID && i.isInBag == addToBag);
@@ -163,7 +165,7 @@ public class BagInventory
                 
                 while (remainder > 0)
                 {
-                    int spaceInStack = itemData.maxStackSize - existing.quantity;
+                    int spaceInStack = itemData.MaxStackSize - existing.quantity;
                     int amountToAdd = Mathf.Min(spaceInStack, remainder);
                     
                     existing.quantity += amountToAdd;
@@ -194,7 +196,7 @@ public class BagInventory
                         addToBag = false;
                     }
                     
-                    int stackSize = Mathf.Min(quantity, itemData.maxStackSize);
+                    int stackSize = Mathf.Min(quantity, itemData.MaxStackSize);
                     allItems.Add(new ItemInstance(itemID, stackSize, addToBag));
                     quantity -= stackSize;
                 }
@@ -258,20 +260,20 @@ public class BagInventory
         // Get item data to check if stackable
         ItemBaseSO itemData = InventoryManager.Instance.Database.GetItem(item.itemID);
         
-        if (itemData.isStackable)
+        if (itemData.IsStackable)
         {
             // Try to find existing stack in bag
             ItemInstance existingInBag = allItems.FirstOrDefault(i => 
                 i.itemID == item.itemID && 
                 i.isInBag && 
                 !i.isInPocket &&
-                i.quantity < itemData.maxStackSize
+                i.quantity < itemData.MaxStackSize
             );
 
             if (existingInBag != null)
             {
                 // Stack with existing
-                int spaceInStack = itemData.maxStackSize - existingInBag.quantity;
+                int spaceInStack = itemData.MaxStackSize - existingInBag.quantity;
                 int amountToMove = Mathf.Min(spaceInStack, quantity);
                 
                 existingInBag.quantity += amountToMove;
@@ -350,19 +352,19 @@ public class BagInventory
         // Get item data to check if stackable
         ItemBaseSO itemData = InventoryManager.Instance.Database.GetItem(item.itemID);
         
-        if (itemData.isStackable)
+        if (itemData.IsStackable)
         {
             // Try to find existing stack in pocket
             ItemInstance existingInPocket = allItems.FirstOrDefault(i => 
                 i.itemID == item.itemID && 
                 i.isInPocket && 
-                i.quantity < itemData.maxStackSize
+                i.quantity < itemData.MaxStackSize
             );
 
             if (existingInPocket != null)
             {
                 // Stack with existing
-                int spaceInStack = itemData.maxStackSize - existingInPocket.quantity;
+                int spaceInStack = itemData.MaxStackSize - existingInPocket.quantity;
                 int amountToMove = Mathf.Min(spaceInStack, quantity);
                 
                 existingInPocket.quantity += amountToMove;
@@ -435,20 +437,20 @@ public class BagInventory
         // Get item data to check if stackable
         ItemBaseSO itemData = InventoryManager.Instance.Database.GetItem(item.itemID);
         
-        if (itemData.isStackable)
+        if (itemData.IsStackable)
         {
             // Try to find existing stack in storage
             ItemInstance existingInStorage = allItems.FirstOrDefault(i => 
                 i.itemID == item.itemID && 
                 !i.isInBag && 
                 !i.isInPocket &&
-                i.quantity < itemData.maxStackSize
+                i.quantity < itemData.MaxStackSize
             );
 
             if (existingInStorage != null)
             {
                 // Stack with existing
-                int spaceInStack = itemData.maxStackSize - existingInStorage.quantity;
+                int spaceInStack = itemData.MaxStackSize - existingInStorage.quantity;
                 int amountToMove = Mathf.Min(spaceInStack, quantity);
                 
                 existingInStorage.quantity += amountToMove;

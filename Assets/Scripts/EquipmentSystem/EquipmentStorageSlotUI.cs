@@ -8,6 +8,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
+using Ascension.Data.SO;
+using Ascension.Managers;
 
 public class EquipmentStorageSlotUI : MonoBehaviour
 {
@@ -38,22 +40,22 @@ public class EquipmentStorageSlotUI : MonoBehaviour
             // Set icon
             if (itemIcon != null)
             {
-                itemIcon.sprite = item.icon;
+                itemIcon.sprite = item.Icon;
                 itemIcon.enabled = true;
             }
             
             // Set rarity
             if (rarityBorder != null)
             {
-                rarityBorder.color = GetRarityColor(item.rarity);
+                rarityBorder.color = GetRarityColor(item.Rarity);
             }
             
             // Set quantity (only for stackable items)
             if (quantityText != null)
             {
-                if (item.isStackable)
+                if (item.IsStackable)
                 {
-                    int quantity = GetItemQuantity(item.itemID);
+                    int quantity = GetItemQuantity(item.ItemID);
                     quantityText.text = quantity > 999 ? "999+" : quantity.ToString();
                     quantityText.gameObject.SetActive(true);
                 }

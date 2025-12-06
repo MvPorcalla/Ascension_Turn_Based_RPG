@@ -7,6 +7,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
+using Ascension.Data.SO;
+using Ascension.Managers;
 
 public class EquipmentSlotUI : MonoBehaviour
 {
@@ -43,14 +45,14 @@ public class EquipmentSlotUI : MonoBehaviour
             // Show item
             if (itemIcon != null)
             {
-                itemIcon.sprite = item.icon;
+                itemIcon.sprite = item.Icon;
                 itemIcon.enabled = true;
             }
             
             // Set rarity color
             if (rarityBorder != null)
             {
-                rarityBorder.color = GetRarityColor(item.rarity);
+                rarityBorder.color = GetRarityColor(item.Rarity);
                 rarityBorder.enabled = true;
             }
             

@@ -4,6 +4,8 @@
 // ──────────────────────────────────────────────────
 
 using UnityEngine;
+using Ascension.Data.SO;
+using Ascension.Systems;
 
 public class InventoryManager : MonoBehaviour
 {
@@ -83,22 +85,22 @@ public class InventoryManager : MonoBehaviour
             return;
         }
 
-        // Add 10 of each stackable item to storage (excluding skills)
+        // Add 10 of each stackable item to storage (excluding Abilities)
         foreach (var item in database.GetAllItems())
         {
-            // Skip skills - they have their own system
-            if (item.itemType == ItemType.Skill)
+            // Skip Abilities - they have their own system
+            if (item.ItemType == ItemType.Ability)
                 continue;
 
-            if (item.isStackable)
+            if (item.IsStackable)
             {
-                AddItem(item.itemID, 10, false);
-                Debug.Log($"Added 10x {item.itemName} to storage");
+                AddItem(item.ItemID, 10, false);
+                Debug.Log($"Added 10x {item.ItemName} to storage");
             }
             else
             {
-                AddItem(item.itemID, 1, false);
-                Debug.Log($"Added 1x {item.itemName} to storage");
+                AddItem(item.ItemID, 1, false);
+                Debug.Log($"Added 1x {item.ItemName} to storage");
             }
         }
 
@@ -106,12 +108,12 @@ public class InventoryManager : MonoBehaviour
         var weapons = database.GetAllWeapons();
         if (weapons.Count > 0)
         {
-            AddItem(weapons[0].itemID, 1, true);
-            Debug.Log($"Added {weapons[0].itemName} to bag");
+            AddItem(weapons[0].ItemID, 1, true);
+            Debug.Log($"Added {weapons[0].ItemName} to bag");
         }
 
         Debug.Log($"[InventoryManager] Test items added! Total: {Inventory.allItems.Count}");
-        Debug.Log($"[InventoryManager] Skills excluded from storage (managed separately)");
+        Debug.Log($"[InventoryManager] Abilities excluded from storage (managed separately)");
     }
 
     [ContextMenu("Debug: Clear All Items")]

@@ -5,7 +5,7 @@
 
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "NewCharacterStats", menuName = "RPG/CharacterStats")]
+[CreateAssetMenu(fileName = "NewCharacterStats", menuName = "BaseStats/CharacterStats")]
 public class CharacterBaseStatsSO : ScriptableObject
 {
     [Header("Character Info")]
