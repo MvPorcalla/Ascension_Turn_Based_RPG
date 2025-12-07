@@ -8,7 +8,7 @@ using UnityEngine.UI;
 using TMPro;
 using System;
 using Ascension.Data.SO;
-using Ascension.Managers;
+using Ascension.Manager;
 
 public class EquipmentSlotUI : MonoBehaviour
 {

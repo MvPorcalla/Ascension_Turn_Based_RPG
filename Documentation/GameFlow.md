@@ -18,6 +18,27 @@
                     (Never returns here)
 
 
+        ┌──────────────────────────────────┐
+        │           UI Layer               │
+        │   (Ascension.UI)                 │
+        └────────────┬─────────────────────┘
+                     │ depends on
+        ┌────────────▼─────────────────────┐
+        │        Manager Layer             │
+        │   (Ascension.Manager)            │
+        └────────────┬─────────────────────┘
+                     │ depends on
+        ┌────────────▼─────────────────────┐
+        │    Character | Inventory |       │
+        │    GameSystem                    │
+        └────────────┬─────────────────────┘
+                     │ depends on
+        ┌────────────▼─────────────────────┐
+        │         Data Layer               │
+        │    (Ascension.Data)              │
+        │    ScriptableObjects, Models     │
+        └──────────────────────────────────┘
+
 
 00_Disclaimer (first launch only)
 01_Bootstrap (initialization)

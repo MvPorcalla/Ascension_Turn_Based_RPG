@@ -8,7 +8,9 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using Ascension.Data.SO;
-using Ascension.Systems;
+using Ascension.GameSystem;
+using Ascension.Character.Stat;
+using Ascension.Data.Enums;
 
 public class EquipmentManager : MonoBehaviour
 {
@@ -529,9 +531,9 @@ public class EquipmentManager : MonoBehaviour
     /// <summary>
     /// Get total item stats from all equipped gear
     /// </summary>
-    public PlayerItemStats GetTotalItemStats()
+    public CharacterItemStats GetTotalItemStats()
     {
-        PlayerItemStats stats = new PlayerItemStats();
+        CharacterItemStats stats = new CharacterItemStats();
 
         // Add weapon stats using public properties
         if (equippedWeapon != null)
@@ -561,7 +563,7 @@ public class EquipmentManager : MonoBehaviour
         return stats;
     }
 
-    private void AddGearStats(GearSO gear, PlayerItemStats stats)
+    private void AddGearStats(GearSO gear, CharacterItemStats stats)
     {
         if (gear == null) return;
 

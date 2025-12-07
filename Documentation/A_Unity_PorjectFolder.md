@@ -48,7 +48,7 @@ Scripts/
 ├── CharacterSystem/
 │   ├── Manager/
 │   │   └── CharacterManager.cs
-│   ├── Stat/
+│   ├── Stats/
 │   │   ├── CharacterStats.cs
 │   │   ├── CharacterAttributes.cs
 │   │   ├── CharacterItemStats.cs
@@ -63,7 +63,7 @@ Scripts/
 │       ├── PlayerPreviewUI.cs
 │       ├── ProfilePanelManager.cs
 │       ├── LevelUpManager.cs
-│       └── AvatarCreationManager.cs
+│       └── CharacterCreationManager.cs
 │
 ├── InventorySystem/
 │   ├── Manager/
@@ -95,7 +95,7 @@ Scripts/
 └── Data/
     ├── Model/
     │   └── SaveData.cs
-    ├── Enum/
+    ├── Enums/
     │   └── WeaponEnums.cs
     └── ScriptableObject/
         ├── Item/
@@ -119,54 +119,56 @@ Scripts/
 Move files to these EXACT locations:
 
 ```
-Bootstrap.cs                    → Core/
-GameSystemHub.cs                → Core/
+Bootstrap.cs                    → Core/                                                         ✅
+GameSystemHub.cs                → Core/                                                         ✅
 
-GameManager.cs                  → Manager/
-SaveManager.cs                  → Manager/
+GameManager.cs                  → Manager/                                                      ✅
+SaveManager.cs                  → Manager/                                                      ✅
 
-CharacterManager.cs             → CharacterSystem/Manager/
-PlayerStats.cs                  → CharacterSystem/Stat/ (rename: CharacterStats.cs)
-PlayerAttributes.cs             → CharacterSystem/Stat/ (rename: CharacterAttributes.cs)
-PlayerItemStats.cs              → CharacterSystem/Stat/ (rename: CharacterItemStats.cs)
-PlayerDerivedStats.cs           → CharacterSystem/Stat/ (rename: CharacterDerivedStats.cs)
-PlayerCombatRuntime.cs          → CharacterSystem/Runtime/ (rename: CharacterCombatRuntime.cs)
-PlayerLevelSystem.cs            → CharacterSystem/Runtime/ (rename: CharacterLevelSystem.cs)
-PlayerData.cs                   → CharacterSystem/Model/ (rename: CharacterData.cs)
-PlayerHUD.cs                    → CharacterSystem/UI/
-PlayerPreviewUI.cs              → CharacterSystem/UI/
-ProfilePanelManager.cs          → CharacterSystem/UI/
-LevelUpManager.cs               → CharacterSystem/UI/
-AvatarCreationManager.cs        → CharacterSystem/UI/
+CharacterManager.cs             → CharacterSystem/Manager/                                      ✅
+PlayerStats.cs                  → CharacterSystem/Stat/ (rename: CharacterStats.cs)             ✅
+PlayerAttributes.cs             → CharacterSystem/Stat/ (rename: CharacterAttributes.cs)        ✅
+PlayerItemStats.cs              → CharacterSystem/Stat/ (rename: CharacterItemStats.cs)         ✅
+PlayerDerivedStats.cs           → CharacterSystem/Stat/ (rename: CharacterDerivedStats.cs)      ✅
+PlayerCombatRuntime.cs          → CharacterSystem/Runtime/ (rename: CharacterCombatRuntime.cs)  ✅
+PlayerLevelSystem.cs            → CharacterSystem/Runtime/ (rename: CharacterLevelSystem.cs)    ✅
+PlayerData.cs                   → CharacterSystem/Model/ (rename: CharacterData.cs)             ✅
+PlayerHUD.cs                    → CharacterSystem/UI/                                           ✅
+PlayerPreviewUI.cs              → CharacterSystem/UI/                                           ✅
+ProfilePanelManager.cs          → CharacterSystem/UI/                                           ✅
+LevelUpManager.cs               → CharacterSystem/UI/                                           ✅
+CharacterCreationManager.cs        → CharacterSystem/UI/                                        ✅
 
-InventoryManager.cs             → InventorySystem/Manager/
-BagInventory.cs                 → InventorySystem/Data/
-ItemInstance.cs                 → InventorySystem/Data/
-BagInventoryData.cs             → InventorySystem/Data/
-InventoryEnums.cs               → InventorySystem/Enum/
-StorageRoomUI.cs                → InventorySystem/UI/
-ItemSlotUI.cs                   → InventorySystem/UI/
-BuffLineUI.cs                   → InventorySystem/UI/
-InventoryPotionPopup.cs         → InventorySystem/UI/Popup/
-InventoryItemPopup.cs           → InventorySystem/UI/Popup/
-InventoryGearPopup.cs           → InventorySystem/UI/Popup/
+InventoryManager.cs             → InventorySystem/Manager/                                      
+BagInventory.cs                 → InventorySystem/Data/                                         
+ItemInstance.cs                 → InventorySystem/Data/                                                                 
+BagInventoryData.cs             → InventorySystem/Data/                                         
+InventoryEnums.cs               → InventorySystem/Enums/                                         
+StorageRoomUI.cs                → InventorySystem/UI/                                           
+ItemSlotUI.cs                   → InventorySystem/UI/                                           
+BuffLineUI.cs                   → InventorySystem/UI/                                           
+InventoryPotionPopup.cs         → InventorySystem/UI/Popup/                                     
+InventoryItemPopup.cs           → InventorySystem/UI/Popup/                                     
+InventoryGearPopup.cs           → InventorySystem/UI/Popup/                                     
 
-PotionManager.cs                → GameSystem/
+**EquipmentSystem** "on going work"
 
-UIManager.cs                    → UI/Core/
-DisclaimerController.cs         → UI/Panel/
+PotionManager.cs                → GameSystem/                                                   ✅
 
-SaveData.cs                     → Data/Model/
-WeaponEnums.cs                  → Data/Enum/
-ItemBaseSO.cs                   → Data/ScriptableObject/Item/
-WeaponSO.cs                     → Data/ScriptableObject/Item/
-WeaponRaritySO.cs               → Data/ScriptableObject/Item/
-GearSO.cs                       → Data/ScriptableObject/Item/
-PotionSO.cs                     → Data/ScriptableObject/Item/
-MaterialSO.cs                   → Data/ScriptableObject/Item/
-AbilitySO.cs                    → Data/ScriptableObject/Item/
-CharacterBaseStatsSO.cs         → Data/ScriptableObject/Character/
-GameDatabaseSO.cs               → Data/ScriptableObject/Database/
+UIManager.cs                    → UI/Core/                                                      
+DisclaimerController.cs         → UI/Panel/                                                     
+
+SaveData.cs                     → Data/Model/                                                   ✅
+WeaponEnums.cs                  → Data/Enums/                                                   ✅
+ItemBaseSO.cs                   → Data/ScriptableObject/Item/                                   -
+WeaponSO.cs                     → Data/ScriptableObject/Item/                                   -
+WeaponRaritySO.cs               → Data/ScriptableObject/Item/                                   -
+GearSO.cs                       → Data/ScriptableObject/Item/                                   -
+PotionSO.cs                     → Data/ScriptableObject/Item/                                   -
+MaterialSO.cs                   → Data/ScriptableObject/Item/                                   -
+AbilitySO.cs                    → Data/ScriptableObject/Item/                                   -
+CharacterBaseStatsSO.cs         → Data/ScriptableObject/Character/                              ✅
+GameDatabaseSO.cs               → Data/ScriptableObject/Database/                               ✅
 ```
 
 ---
@@ -187,7 +189,7 @@ CharacterSystem/UI/*                    → namespace Ascension.Character.UI
 
 InventorySystem/Manager/*               → namespace Ascension.Inventory.Manager
 InventorySystem/Data/*                  → namespace Ascension.Inventory.Data
-InventorySystem/Enum/*                  → namespace Ascension.Inventory.Enum
+InventorySystem/Enums/*                  → namespace Ascension.Inventory.Enums
 InventorySystem/UI/*                    → namespace Ascension.Inventory.UI
 InventorySystem/UI/Popup/*              → namespace Ascension.Inventory.UI.Popup
 
@@ -197,7 +199,7 @@ UI/Core/*                               → namespace Ascension.UI.Core
 UI/Panel/*                              → namespace Ascension.UI.Panel
 
 Data/Model/*                            → namespace Ascension.Data.Model
-Data/Enum/*                             → namespace Ascension.Data.Enum
+Data/Enums/*                             → namespace Ascension.Data.Enums
 Data/ScriptableObject/Item/*            → namespace Ascension.Data.SO.Item
 Data/ScriptableObject/Character/*       → namespace Ascension.Data.SO.Character
 Data/ScriptableObject/Database/*        → namespace Ascension.Data.SO.Database
@@ -280,6 +282,7 @@ Create these 7 .asmdef files with exact content:
     "versionDefines": [],
     "noEngineReferences": false
 }
+
 ```
 
 ### File: `Scripts/InventorySystem/Ascension.Inventory.asmdef`

@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Ascension.Data.SO;
-using Ascension.Systems;
+using Ascension.GameSystem;
 
 public class InventoryGearPopup : MonoBehaviour
 {

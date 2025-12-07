@@ -6,7 +6,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using Ascension.Managers;
+using Ascension.Manager;
+using Ascension.Character.Stat;
+using Ascension.Data.SO.Character;
 
 namespace Ascension.UI
 {
@@ -61,7 +63,7 @@ namespace Ascension.UI
         
         #region Properties
         private CharacterBaseStatsSO BaseStats => GameManager.Instance.BaseStats;
-        private PlayerStats Player => GameManager.Instance.CurrentPlayer;
+        private CharacterStats Player => GameManager.Instance.CurrentPlayer;
         #endregion
         
         #region Unity Callbacks
@@ -262,7 +264,7 @@ namespace Ascension.UI
             if (debugMode)
                 Debug.Log($"[ProfilePanelManager] UpdatePlayerPreview - STR:{tempSTR} INT:{tempINT}");
             
-            PlayerAttributes tempAttributes = new PlayerAttributes(tempSTR, tempINT, tempAGI, tempEND, tempWIS);
+            CharacterAttributes tempAttributes = new CharacterAttributes(tempSTR, tempINT, tempAGI, tempEND, tempWIS);
             
             playerPreview.PreviewStats(
                 BaseStats, 

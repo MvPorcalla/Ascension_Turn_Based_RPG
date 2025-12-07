@@ -7,9 +7,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
-using Ascension.Managers;
-using Ascension.Systems;
+using Ascension.Manager;
+using Ascension.GameSystem;
 using Ascension.Data.SO;
+using Ascension.Character.Stat;
+using Ascension.Data.SO.Character;
 
 public class InventoryPotionPopup : MonoBehaviour
 {
@@ -443,10 +445,10 @@ public class InventoryPotionPopup : MonoBehaviour
         }
 
         // Get player stats from CharacterManager
-        PlayerStats playerStats = CharacterManager.Instance.CurrentPlayer;
+        CharacterStats CharacterStats = CharacterManager.Instance.CurrentPlayer;
         CharacterBaseStatsSO baseStats = CharacterManager.Instance.BaseStats;
 
-        if (playerStats == null || baseStats == null)
+        if (CharacterStats == null || baseStats == null)
         {
             Debug.LogError("[PotionPopupUI] Player stats not initialized!");
             return;
@@ -456,7 +458,7 @@ public class InventoryPotionPopup : MonoBehaviour
         int successfulUses = 0;
         for (int i = 0; i < selectedQuantity; i++)
         {
-            bool success = PotionManager.Instance.UsePotion(currentPotion, playerStats, baseStats);
+            bool success = PotionManager.Instance.UsePotion(currentPotion, CharacterStats, baseStats);
             
             if (success)
             {

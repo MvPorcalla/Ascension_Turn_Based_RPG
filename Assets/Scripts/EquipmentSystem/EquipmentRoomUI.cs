@@ -8,9 +8,10 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
 using System.Linq;
-using Ascension.Managers;
+using Ascension.Manager;
 using Ascension.Data.SO;
 using Ascension.UI;
+using Ascension.Character.Stat;
 
 public class EquipmentRoomUI : MonoBehaviour
 {
@@ -588,7 +589,7 @@ public class EquipmentRoomUI : MonoBehaviour
         
         // TODO: Get actual player stats
         // For now, just recalculate from equipment
-        PlayerItemStats itemStats = EquipmentManager.Instance.GetTotalItemStats();
+        CharacterItemStats itemStats = EquipmentManager.Instance.GetTotalItemStats();
         
         // You'll need to get these from PlayerDataManager or similar
         // playerPreview.PreviewStats(baseStats, level, attributes, itemStats, equippedWeapon);

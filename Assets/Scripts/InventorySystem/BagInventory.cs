@@ -8,7 +8,8 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Ascension.Data.SO;
-using Ascension.Systems;
+using Ascension.Data.SO.Database;
+using Ascension.GameSystem;
 
 [Serializable]
 public class BagInventory

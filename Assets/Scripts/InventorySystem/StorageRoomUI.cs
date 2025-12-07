@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
-using Ascension.Managers;
+using Ascension.Manager;
 using Ascension.Data.SO;
 
 public class StorageRoomUI : MonoBehaviour
