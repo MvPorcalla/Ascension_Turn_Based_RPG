@@ -5,7 +5,7 @@
 
 using UnityEngine;
 
-namespace Ascension.Data.SO
+namespace Ascension.Data.SO.Item
 {
     public abstract class ItemBaseSO : ScriptableObject
     {

@@ -7,7 +7,7 @@ using UnityEngine;
 using System;
 using Ascension.Data.Enums;
 
-namespace Ascension.Data.SO
+namespace Ascension.Data.SO.Item
 {
     [CreateAssetMenu(fileName = "NewWeaponRarity", menuName = "Items/Weapon Rarity")]
     public class WeaponRaritySO : ScriptableObject

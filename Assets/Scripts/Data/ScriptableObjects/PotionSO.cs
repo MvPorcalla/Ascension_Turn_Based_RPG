@@ -7,9 +7,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Ascension.Manager;
-using Ascension.Data.SO;
+using Ascension.Data.SO.Item;
 
-namespace Ascension.Data.SO
+namespace Ascension.Data.SO.Item
 {
     [CreateAssetMenu(fileName = "New Potion", menuName = "Items/Potion")]
     public class PotionSO : ItemBaseSO

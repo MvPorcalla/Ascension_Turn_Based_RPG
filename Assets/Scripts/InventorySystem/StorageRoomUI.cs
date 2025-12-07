@@ -8,7 +8,7 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
 using Ascension.Manager;
-using Ascension.Data.SO;
+using Ascension.Data.SO.Item;
 
 public class StorageRoomUI : MonoBehaviour
 {

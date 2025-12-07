@@ -9,7 +9,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Ascension.Manager;
-using Ascension.Data.SO;
+using Ascension.Data.SO.Item;
 using Ascension.Character.Stat;
 using Ascension.Data.SO.Character;
 

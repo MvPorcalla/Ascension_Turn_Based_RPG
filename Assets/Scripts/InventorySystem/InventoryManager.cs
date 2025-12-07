@@ -4,9 +4,9 @@
 // ──────────────────────────────────────────────────
 
 using UnityEngine;
-using Ascension.Data.SO;
-using Ascension.Data.SO.Database;
 using Ascension.GameSystem;
+using Ascension.Data.SO.Item;
+using Ascension.Data.SO.Database;
 
 public class InventoryManager : MonoBehaviour
 {

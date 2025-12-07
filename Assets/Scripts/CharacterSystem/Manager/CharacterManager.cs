@@ -7,7 +7,7 @@ using UnityEngine;
 using System;
 using Ascension.Data;
 using Ascension.Data.Model;
-using Ascension.Data.SO;
+using Ascension.Data.SO.Item;
 using Ascension.Data.SO.Character;
 using Ascension.Character.Stat;
 

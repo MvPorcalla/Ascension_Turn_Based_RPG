@@ -9,7 +9,7 @@ using TMPro;
 using System.Collections.Generic;
 using Ascension.Manager;
 using Ascension.GameSystem;
-using Ascension.Data.SO;
+using Ascension.Data.SO.Item;
 using Ascension.Character.Stat;
 using Ascension.Data.SO.Character;
 

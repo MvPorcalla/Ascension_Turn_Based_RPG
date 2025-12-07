@@ -7,8 +7,8 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
-using Ascension.Data.SO;
 using Ascension.GameSystem;
+using Ascension.Data.SO.Item;
 using Ascension.Character.Stat;
 using Ascension.Data.Enums;
 

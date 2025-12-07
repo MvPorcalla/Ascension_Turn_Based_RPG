@@ -5,9 +5,9 @@
 
 using UnityEngine;
 using Ascension.Manager;
-using Ascension.Data.SO;
+using Ascension.Data.SO.Item;
 
-namespace Ascension.Data.SO
+namespace Ascension.Data.SO.Item
 {
     [CreateAssetMenu(fileName = "New Material", menuName = "Items/Material")]
     public class MaterialSO : ItemBaseSO

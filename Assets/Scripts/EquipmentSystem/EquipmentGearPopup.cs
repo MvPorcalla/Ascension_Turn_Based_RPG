@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
-using Ascension.Data.SO;
+using Ascension.Data.SO.Item;
 
 public class EquipmentGearPopup : MonoBehaviour
 {

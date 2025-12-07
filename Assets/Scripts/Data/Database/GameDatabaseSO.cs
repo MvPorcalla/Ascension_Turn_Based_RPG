@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Ascension.Data.Enums;
+using Ascension.Data.SO.Item;
 
 namespace Ascension.Data.SO.Database
 {

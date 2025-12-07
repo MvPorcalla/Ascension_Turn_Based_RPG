@@ -6,8 +6,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using Ascension.Data.SO;
 using Ascension.Manager;
+using Ascension.Data.SO.Item;
 
 public class InventoryItemPopup : MonoBehaviour
 {

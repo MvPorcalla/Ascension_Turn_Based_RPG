@@ -8,7 +8,7 @@ using UnityEngine;
 using Ascension.GameSystem; 
 using Ascension.Data.Enums;
 
-namespace Ascension.Data.SO
+namespace Ascension.Data.SO.Item
 {
     [CreateAssetMenu(fileName = "New Ability", menuName = "Abilities/Ability")]
     public class AbilitySO : ItemBaseSO

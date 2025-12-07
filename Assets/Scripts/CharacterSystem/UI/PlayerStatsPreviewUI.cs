@@ -5,8 +5,8 @@
 
 using UnityEngine;
 using TMPro;
-using Ascension.Data.SO;
 using Ascension.GameSystem;
+using Ascension.Data.SO.Item;
 using Ascension.Character.Stat;
 using Ascension.Data.SO.Character;
 

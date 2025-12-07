@@ -8,9 +8,9 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
 using System.Linq;
-using Ascension.Manager;
-using Ascension.Data.SO;
 using Ascension.UI;
+using Ascension.Manager;
+using Ascension.Data.SO.Item;
 using Ascension.Character.Stat;
 
 public class EquipmentRoomUI : MonoBehaviour

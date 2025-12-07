@@ -4,8 +4,8 @@
 // ════════════════════════════════════════════
 
 using UnityEngine;
-using Ascension.Data.SO;
 using Ascension.GameSystem;
+using Ascension.Data.SO.Item;
 using Ascension.Character.Runtime;
 using Ascension.Data.SO.Character;
 

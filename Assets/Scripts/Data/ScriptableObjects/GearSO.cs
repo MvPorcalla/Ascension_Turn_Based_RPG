@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Ascension.Data.Enums;
 
-namespace Ascension.Data.SO
+namespace Ascension.Data.SO.Item
 {
     [CreateAssetMenu(fileName = "NewGear", menuName = "Items/Gear")]
     public class GearSO : ItemBaseSO
