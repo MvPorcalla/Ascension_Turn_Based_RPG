@@ -37,15 +37,23 @@ Create this exact folder structure (NO additional subfolders):
 
 ```
 Scripts/
-├── Core/
+├── AppFlow/                                // High-level orchestration
+│   ├── Ascension.Appflow.asmdef
+│   ├── GameManager.cs                      // References Manager + Character + Inventory
+│   └── SaveManager.cs                      // References Manager + Character + Inventory
+│
+├── Core/                                   // Core engine / bootstrap
+│   ├── Ascension.Core.asmdef
 │   ├── Bootstrap.cs
 │   └── GameSystemHub.cs
 │
-├── Manager/
-│   ├── GameManager.cs
-│   └── SaveManager.cs
+├── Manager/                                // Pure manager logic, no cross-module calls
+│   ├── Ascension.Manager.asmdef
+│   └── Model/
+│       └── SaveData.cs                     // Only data structures, no references to Character/Inventory
 │
-├── CharacterSystem/
+├── CharacterSystem/                        // Character module
+│   ├── Ascension.Character.asmdef          // not included for now
 │   ├── Manager/
 │   │   └── CharacterManager.cs
 │   ├── Stats/
@@ -65,7 +73,8 @@ Scripts/
 │       ├── LevelUpManager.cs
 │       └── CharacterCreationManager.cs
 │
-├── InventorySystem/
+├── InventorySystem/                        // Inventory module
+│   ├── Ascension.Inventory.asmdef          // not included for now
 │   ├── Manager/
 │   │   └── InventoryManager.cs
 │   ├── Data/
@@ -74,27 +83,28 @@ Scripts/
 │   │   └── BagInventoryData.cs
 │   ├── Enum/
 │   │   └── InventoryEnums.cs
+│   ├── Popup/
+│   │   ├── InventoryPotionPopup.cs
+│   │   ├── InventoryItemPopup.cs
+│   │   └── InventoryGearPopup.cs
 │   └── UI/
 │       ├── StorageRoomUI.cs
 │       ├── ItemSlotUI.cs
-│       ├── BuffLineUI.cs
-│       └── Popup/
-│           ├── InventoryPotionPopup.cs
-│           ├── InventoryItemPopup.cs
-│           └── InventoryGearPopup.cs
+│       └── BuffLineUI.cs
+
 │
-├── GameSystem/
+├── GameSystem/                             // Game-wide systems, optional for cross-module logic
+│   ├── Ascension.GameSystem.asmdef         // not included for now
 │   └── PotionManager.cs
-│
-├── UI/
+├── UI/                                     // UI module
+│   ├── Ascension.UI.asmdef
 │   ├── Core/
 │   │   └── UIManager.cs
 │   └── Panel/
 │       └── DisclaimerController.cs
 │
-└── Data/
-    ├── Model/
-    │   └── SaveData.cs
+├── Data/                                   // Pure data / scriptable objects
+    ├── Ascension.Data.asmdef               // not included for now
     ├── Enums/
     │   └── WeaponEnums.cs
     └── ScriptableObject/
@@ -110,6 +120,7 @@ Scripts/
         │   └── CharacterBaseStatsSO.cs
         └── Database/
             └── GameDatabaseSO.cs
+
 ```
 
 ---
@@ -119,11 +130,13 @@ Scripts/
 Move files to these EXACT locations:
 
 ```
+GameManager.cs                  → AppFlow/                                                      ✅
+SaveManager.cs                  → AppFlow/                                                      ✅
+
 Bootstrap.cs                    → Core/                                                         ✅
 GameSystemHub.cs                → Core/                                                         ✅
 
-GameManager.cs                  → Manager/                                                      ✅
-SaveManager.cs                  → Manager/                                                      ✅
+SaveData.cs                     → Manager/Model/                                                ✅
 
 CharacterManager.cs             → CharacterSystem/Manager/                                      ✅
 PlayerStats.cs                  → CharacterSystem/Stat/ (rename: CharacterStats.cs)             ✅
@@ -152,21 +165,26 @@ InventoryItemPopup.cs           → InventorySystem/UI/Popup/
 InventoryGearPopup.cs           → InventorySystem/UI/Popup/                                     
 
 **EquipmentSystem** "on going work"
+- 
+- 
+- 
+- 
+- 
+- 
 
-PotionManager.cs                → GameSystem/                                                   ✅
+PotionManager.cs                → GameSystem/                                                   - rename to CombatSystem; rework not to be dependent to inventory system
 
 UIManager.cs                    → UI/Core/                                                      
 DisclaimerController.cs         → UI/Panel/                                                     
 
-SaveData.cs                     → Data/Model/                                                   ✅
 WeaponEnums.cs                  → Data/Enums/                                                   ✅
-ItemBaseSO.cs                   → Data/ScriptableObject/Item/                                   -
-WeaponSO.cs                     → Data/ScriptableObject/Item/                                   -
-WeaponRaritySO.cs               → Data/ScriptableObject/Item/                                   -
-GearSO.cs                       → Data/ScriptableObject/Item/                                   -
-PotionSO.cs                     → Data/ScriptableObject/Item/                                   -
-MaterialSO.cs                   → Data/ScriptableObject/Item/                                   -
-AbilitySO.cs                    → Data/ScriptableObject/Item/                                   -
+ItemBaseSO.cs                   → Data/ScriptableObject/Item/                                   ✅
+WeaponSO.cs                     → Data/ScriptableObject/Item/                                   ✅
+WeaponRaritySO.cs               → Data/ScriptableObject/Item/                                   ✅
+GearSO.cs                       → Data/ScriptableObject/Item/                                   ✅
+PotionSO.cs                     → Data/ScriptableObject/Item/                                   ✅
+MaterialSO.cs                   → Data/ScriptableObject/Item/                                   ✅
+AbilitySO.cs                    → Data/ScriptableObject/Item/                                   ✅
 CharacterBaseStatsSO.cs         → Data/ScriptableObject/Character/                              ✅
 GameDatabaseSO.cs               → Data/ScriptableObject/Database/                               ✅
 ```
@@ -178,8 +196,10 @@ GameDatabaseSO.cs               → Data/ScriptableObject/Database/             
 Apply these namespaces to files based on their folder:
 
 ```
+AppFlow/*                               → namespace Ascension.AppFlow
 Core/*                                  → namespace Ascension.Core
 Manager/*                               → namespace Ascension.Manager
+Manager/Model/*                         → namespace Ascension.Manager.Model
 
 CharacterSystem/Manager/*               → namespace Ascension.Character.Manager
 CharacterSystem/Stat/*                  → namespace Ascension.Character.Stat
@@ -191,14 +211,13 @@ InventorySystem/Manager/*               → namespace Ascension.Inventory.Manage
 InventorySystem/Data/*                  → namespace Ascension.Inventory.Data
 InventorySystem/Enums/*                  → namespace Ascension.Inventory.Enums
 InventorySystem/UI/*                    → namespace Ascension.Inventory.UI
-InventorySystem/UI/Popup/*              → namespace Ascension.Inventory.UI.Popup
+InventorySystem/Popup/*              → namespace Ascension.Inventory.Popup
 
 GameSystem/*                            → namespace Ascension.GameSystem
 
 UI/Core/*                               → namespace Ascension.UI.Core
 UI/Panel/*                              → namespace Ascension.UI.Panel
 
-Data/Model/*                            → namespace Ascension.Data.Model
 Data/Enums/*                             → namespace Ascension.Data.Enums
 Data/ScriptableObject/Item/*            → namespace Ascension.Data.SO.Item
 Data/ScriptableObject/Character/*       → namespace Ascension.Data.SO.Character

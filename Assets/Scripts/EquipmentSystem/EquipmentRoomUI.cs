@@ -9,9 +9,9 @@ using TMPro;
 using System.Collections.Generic;
 using System.Linq;
 using Ascension.UI;
-using Ascension.Manager;
 using Ascension.Data.SO.Item;
 using Ascension.Character.Stat;
+using Ascension.Inventory.Manager;
 
 public class EquipmentRoomUI : MonoBehaviour
 {

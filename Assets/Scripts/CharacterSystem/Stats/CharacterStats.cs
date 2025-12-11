@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════
-// CharacterStats.cs
+// Assets\Scripts\CharacterSystem\Stats\CharacterStats.cs
 // Core character stats wrapper and recalculation pipeline
 // ════════════════════════════════════════════
 

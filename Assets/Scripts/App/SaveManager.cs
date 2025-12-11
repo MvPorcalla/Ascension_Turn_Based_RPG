@@ -1,16 +1,14 @@
 // ════════════════════════════════════════════
-// SaveManager.cs
+// Assets\Scripts\GameCore\SaveManager.cs
 // Manages game state persistence with backup system
 // ════════════════════════════════════════════
 
 using System;
 using System.IO;
 using UnityEngine;
-using Ascension.Data.Model;
-using Ascension.Character.Model;
-using Ascension.Character.Stat;
+using Ascension.Manager.Model;
 
-namespace Ascension.Manager
+namespace Ascension.App
 {
     public class SaveManager : MonoBehaviour
     {
@@ -64,13 +62,13 @@ namespace Ascension.Manager
         
         #region Public Methods - Save/Load API
 
-        public bool SaveGame(CharacterStats CharacterStats, BagInventoryData inventoryData, EquipmentData equipmentData, float playTime)
+        public bool SaveGame(CharacterSaveData characterData, InventorySaveData inventoryData, EquipmentSaveData equipmentData, float playTime)
         {
             try
             {
                 CreateBackupIfNeeded();
                 
-                SaveData saveData = BuildSaveData(CharacterStats, inventoryData, equipmentData, playTime);
+                SaveData saveData = BuildSaveData(characterData, inventoryData, equipmentData, playTime);
                 saveData.UpdateMetaData();
                 
                 WriteSaveFile(saveData);
@@ -168,13 +166,12 @@ namespace Ascension.Manager
                 Directory.CreateDirectory(path);
         }
         
-        
-        private SaveData BuildSaveData(CharacterStats CharacterStats, BagInventoryData inventoryData, EquipmentData equipmentData, float playTime)
+        private SaveData BuildSaveData(CharacterSaveData characterData, InventorySaveData inventoryData, EquipmentSaveData equipmentData, float playTime)
         {
             SaveData save = new SaveData
             {
                 metaData = SaveMetaData.CreateNew(),
-                CharacterData = CharacterData.FromCharacterStats(CharacterStats),
+                characterData = characterData,
                 inventoryData = inventoryData,
                 equipmentData = equipmentData
             };
@@ -182,26 +179,6 @@ namespace Ascension.Manager
             save.metaData.totalPlayTimeSeconds += playTime;
             
             return save;
-        }
-        
-        private BagInventoryData GetInventoryData()
-        {
-            if (InventoryManager.Instance != null)
-            {
-                return InventoryManager.Instance.SaveInventory();
-            }
-            
-            Log("InventoryManager not found, saving empty inventory");
-            return CreateEmptyInventory();
-        }
-        
-        private BagInventoryData CreateEmptyInventory()
-        {
-            return new BagInventoryData
-            {
-                items = new System.Collections.Generic.List<ItemInstance>(),
-                maxBagSlots = 12
-            };
         }
         
         private void WriteSaveFile(SaveData saveData)
@@ -375,7 +352,7 @@ namespace Ascension.Manager
         
         private bool IsValidSaveData(SaveData data)
         {
-            return data != null && data.CharacterData != null;
+            return data != null && data.characterData != null;
         }
         
         private void DeleteMainSave()

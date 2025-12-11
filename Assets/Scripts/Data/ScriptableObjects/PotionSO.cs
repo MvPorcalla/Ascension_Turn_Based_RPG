@@ -4,9 +4,9 @@
 // Supports buffs, duration types, and usage restrictions
 // ════════════════════════════════════════════
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-using Ascension.Manager;
 using Ascension.Data.SO.Item;
 
 namespace Ascension.Data.SO.Item
@@ -173,19 +173,19 @@ namespace Ascension.Data.SO.Item
 #endif
         }
 
-        [ContextMenu("Test: Add to Inventory")]
-        private void DebugAddToInventory()
-        {
-            if (Application.isPlaying && InventoryManager.Instance != null)
-            {
-                InventoryManager.Instance.AddItem(itemID, 5);
-                Debug.Log($"[PotionSO] Added 5x {itemName} to inventory");
-            }
-            else
-            {
-                Debug.LogWarning("Can only test in Play Mode with InventoryManager present");
-            }
-        }
+        // [ContextMenu("Test: Add to Inventory")]
+        // private void DebugAddToInventory()
+        // {
+        //     if (Application.isPlaying && InventoryManager.Instance != null)
+        //     {
+        //         InventoryManager.Instance.AddItem(itemID, 5);
+        //         Debug.Log($"[PotionSO] Added 5x {itemName} to inventory");
+        //     }
+        //     else
+        //     {
+        //         Debug.LogWarning("Can only test in Play Mode with InventoryManager present");
+        //     }
+        // }
 
         [ContextMenu("Print Potion Info")]
         private void DebugPrintInfo()

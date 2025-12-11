@@ -6,7 +6,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using Ascension.Manager;
+using Ascension.App;
 using Ascension.Character.Stat;
 using Ascension.Data.SO.Character;
 

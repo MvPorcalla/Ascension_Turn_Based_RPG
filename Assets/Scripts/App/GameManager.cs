@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════
-// GameManager.cs
+// Assets\Scripts\AppFlow\GameManager.cs
 // Central game controller - uses GameSystemHub for system access
 // Handles: Game flow, saves, scene management
 // ════════════════════════════════════════════
@@ -7,12 +7,15 @@
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Ascension.Data.Model;
 using Ascension.Core;
+using Ascension.Manager.Model;
 using Ascension.Character.Stat;
+using Ascension.Character.Manager;
+using Ascension.Inventory.Manager;
+using Ascension.Inventory.Data;  // ✅ ADDED: For BagInventoryData
 using Ascension.Data.SO.Character;
 
-namespace Ascension.Manager
+namespace Ascension.App
 {
     public class GameManager : MonoBehaviour
     {
@@ -28,9 +31,14 @@ namespace Ascension.Manager
         
         #region Properties (Through Hub)
         private GameSystemHub Hub => GameSystemHub.Instance;
-        public CharacterStats CurrentPlayer => Hub?.CharacterManager?.CurrentPlayer;
-        public CharacterBaseStatsSO BaseStats => Hub?.CharacterManager?.BaseStats;
-        public bool HasActivePlayer => Hub?.CharacterManager != null && Hub.CharacterManager.HasActivePlayer;
+        private CharacterManager CharManager => Hub?.GetSystem<CharacterManager>();
+        private SaveManager SManager => Hub?.GetSystem<SaveManager>();
+        private InventoryManager InvManager => Hub?.GetSystem<InventoryManager>();
+        private EquipmentManager EqManager => Hub?.GetSystem<EquipmentManager>();
+        
+        public CharacterStats CurrentPlayer => CharManager?.CurrentPlayer;
+        public CharacterBaseStatsSO BaseStats => CharManager?.BaseStats;
+        public bool HasActivePlayer => CharManager != null && CharManager.HasActivePlayer;
         #endregion
         
         #region Events
@@ -92,7 +100,7 @@ namespace Ascension.Manager
             if (!ValidateSystemsReady())
                 return;
 
-            Hub.CharacterManager.CreateNewPlayer("Adventurer");
+            CharManager.CreateNewPlayer("Adventurer");
             
             sessionPlayTime = 0f;
             isAvatarCreationComplete = false;
@@ -123,11 +131,12 @@ namespace Ascension.Manager
                 return false;
             }
             
-            CharacterStats playerToSave = Hub.CharacterManager.GetCharacterDataForSave();
-            BagInventoryData inventoryData = Hub.InventoryManager.SaveInventory();
-            EquipmentData equipmentData = GetEquipmentData();
+            // Convert real data to save data format
+            CharacterSaveData charSaveData = ConvertToCharacterSaveData(CurrentPlayer);
+            InventorySaveData invSaveData = ConvertToInventorySaveData();
+            EquipmentSaveData eqSaveData = ConvertToEquipmentSaveData();
             
-            bool success = Hub.SaveManager.SaveGame(playerToSave, inventoryData, equipmentData, sessionPlayTime);
+            bool success = SManager.SaveGame(charSaveData, invSaveData, eqSaveData, sessionPlayTime);
             
             if (success)
             {
@@ -142,7 +151,7 @@ namespace Ascension.Manager
             if (!ValidateSystemsReady())
                 return false;
 
-            SaveData saveData = Hub.SaveManager.LoadGame();
+            SaveData saveData = SManager.LoadGame();
             
             if (saveData == null)
             {
@@ -164,32 +173,32 @@ namespace Ascension.Manager
         
         public bool SaveExists()
         {
-            return Hub?.SaveManager != null && Hub.SaveManager.SaveExists();
+            return SManager != null && SManager.SaveExists();
         }
         
         public bool DeleteSave()
         {
-            if (Hub?.SaveManager == null) return false;
+            if (SManager == null) return false;
             
-            bool success = Hub.SaveManager.DeleteSave();
+            bool success = SManager.DeleteSave();
             
-            if (success && Hub.CharacterManager != null)
+            if (success && CharManager != null)
             {
-                Hub.CharacterManager.UnloadPlayer();
+                CharManager.UnloadPlayer();
             }
             
             return success;
         }
         #endregion
         
-        #region Public Methods - Player Actions (Delegate to CharacterManager)
+        #region Public Methods - Player Actions
         public bool AddExperience(int amount)
         {
-            if (!HasActivePlayer || Hub.CharacterManager == null)
+            if (!HasActivePlayer || CharManager == null)
                 return false;
             
             int oldLevel = CurrentPlayer.Level;
-            Hub.CharacterManager.AddExperience(amount);
+            CharManager.AddExperience(amount);
             
             bool leveledUp = CurrentPlayer.Level > oldLevel;
             
@@ -204,17 +213,17 @@ namespace Ascension.Manager
 
         public void Heal(float amount)
         {
-            Hub?.CharacterManager?.Heal(amount);
+            CharManager?.Heal(amount);
         }
 
         public void TakeDamage(float amount)
         {
-            Hub?.CharacterManager?.TakeDamage(amount);
+            CharManager?.TakeDamage(amount);
         }
 
         public void FullHeal()
         {
-            Hub?.CharacterManager?.FullHeal();
+            CharManager?.FullHeal();
         }
         #endregion
         
@@ -255,7 +264,74 @@ namespace Ascension.Manager
         }
         #endregion
         
-        #region Private Methods
+        #region Private Methods - Conversion
+        private CharacterSaveData ConvertToCharacterSaveData(CharacterStats stats)
+        {
+            return new CharacterSaveData
+            {
+                playerName = stats.playerName,
+                level = stats.Level,
+                currentExperience = stats.CurrentEXP,          // ✅ FIXED: Was CurrentExperience
+                currentHealth = stats.CurrentHP,               // ✅ FIXED: Was CurrentHealth
+                currentMana = 0f,                              // ✅ FIXED: You don't have mana yet
+                attributePoints = stats.UnallocatedPoints,     // ✅ FIXED: Was AttributePoints
+                strength = stats.attributes.STR,               // ✅ FIXED: Was Attributes.Strength
+                dexterity = stats.attributes.AGI,              // ✅ FIXED: Was Attributes.Dexterity
+                intelligence = stats.attributes.INT,           // ✅ FIXED: Was Attributes.Intelligence
+                vitality = stats.attributes.END,               // ✅ FIXED: Was Attributes.Vitality
+                luck = stats.attributes.WIS                    // ✅ FIXED: Was Attributes.Luck (mapped to WIS)
+            };
+        }
+
+        private InventorySaveData ConvertToInventorySaveData()
+        {
+            if (InvManager == null)
+            {
+                return new InventorySaveData { items = new ItemInstanceData[0], maxBagSlots = 12 };
+            }
+
+            BagInventoryData bagData = InvManager.SaveInventory();
+            
+            // Convert BagInventoryData to InventorySaveData
+            ItemInstanceData[] itemArray = new ItemInstanceData[bagData.items.Count];
+            
+            for (int i = 0; i < bagData.items.Count; i++)
+            {
+                itemArray[i] = new ItemInstanceData
+                {
+                    itemId = bagData.items[i].itemID,
+                    quantity = bagData.items[i].quantity
+                };
+            }
+            
+            return new InventorySaveData
+            {
+                maxBagSlots = bagData.maxBagSlots,
+                items = itemArray
+            };
+        }
+
+        private EquipmentSaveData ConvertToEquipmentSaveData()
+        {
+            if (EqManager == null)
+            {
+                // Return empty equipment data
+                return new EquipmentSaveData
+                {
+                    weaponId = "",
+                    helmetId = "",
+                    chestId = "",
+                    glovesId = "",
+                    bootsId = ""
+                };
+            }
+
+            // TODO: Implement when EquipmentManager exists
+            return new EquipmentSaveData();
+        }
+        #endregion
+        
+        #region Private Methods - Loading
         private void WaitForSystemsAndSubscribe()
         {
             if (Hub == null || !Hub.IsInitialized)
@@ -270,9 +346,9 @@ namespace Ascension.Manager
         
         private void SubscribeToCharacterManager()
         {
-            if (Hub?.CharacterManager != null)
+            if (CharManager != null)
             {
-                Hub.CharacterManager.OnPlayerLoaded += OnCharacterLoaded;
+                CharManager.OnPlayerLoaded += OnCharacterLoaded;
                 Debug.Log("[GameManager] Subscribed to CharacterManager");
             }
             else
@@ -283,9 +359,9 @@ namespace Ascension.Manager
 
         private void UnsubscribeFromCharacterManager()
         {
-            if (Hub?.CharacterManager != null)
+            if (CharManager != null)
             {
-                Hub.CharacterManager.OnPlayerLoaded -= OnCharacterLoaded;
+                CharManager.OnPlayerLoaded -= OnCharacterLoaded;
             }
         }
         
@@ -323,35 +399,62 @@ namespace Ascension.Manager
         
         private void LoadPlayerFromSave(SaveData saveData)
         {
-            CharacterStats loadedPlayer = saveData.CharacterData.ToCharacterStats(Hub.CharacterManager.BaseStats);
-            Hub.CharacterManager.LoadPlayer(loadedPlayer);
+            // Create new character stats
+            CharacterStats stats = new CharacterStats();
+            stats.Initialize(CharManager.BaseStats);
+            
+            // Restore saved values
+            stats.playerName = saveData.characterData.playerName;
+            stats.guildRank = "Unranked"; // TODO: Save/load guild rank
+            
+            // Restore level
+            stats.levelSystem.level = saveData.characterData.level;
+            stats.levelSystem.currentEXP = saveData.characterData.currentExperience;
+            stats.levelSystem.unallocatedPoints = saveData.characterData.attributePoints;
+            
+            // Restore attributes
+            stats.attributes.STR = saveData.characterData.strength;
+            stats.attributes.AGI = saveData.characterData.dexterity;
+            stats.attributes.INT = saveData.characterData.intelligence;
+            stats.attributes.END = saveData.characterData.vitality;
+            stats.attributes.WIS = saveData.characterData.luck;
+            
+            // Recalculate stats
+            stats.RecalculateStats(CharManager.BaseStats, fullHeal: false);
+            
+            // Restore HP
+            stats.combatRuntime.currentHP = saveData.characterData.currentHealth;
+            
+            // Load player
+            CharManager.LoadPlayer(stats);
         }
         
         private void LoadInventoryFromSave(SaveData saveData)
         {
-            if (Hub.InventoryManager != null && saveData.inventoryData != null)
+            if (InvManager != null && saveData.inventoryData != null)
             {
-                Hub.InventoryManager.LoadInventory(saveData.inventoryData);
+                // Convert InventorySaveData back to BagInventoryData
+                BagInventoryData bagData = new BagInventoryData();
+                bagData.maxBagSlots = saveData.inventoryData.maxBagSlots;
+                bagData.items = new System.Collections.Generic.List<ItemInstance>();
+                
+                foreach (var itemData in saveData.inventoryData.items)
+                {
+                    bagData.items.Add(new ItemInstance(itemData.itemId, itemData.quantity, false));
+                }
+                
+                InvManager.LoadInventory(bagData);
             }
         }
         
         private void LoadEquipmentFromSave(SaveData saveData)
         {
-            if (Hub.EquipmentManager != null && saveData.equipmentData != null)
+            if (EqManager != null && saveData.equipmentData != null)
             {
-                Hub.EquipmentManager.LoadEquipment(saveData.equipmentData);
-                // Update CharacterManager stats after loading equipment
-                Hub.CharacterManager.UpdateStatsFromEquipment();
+                // TODO: Implement when EquipmentManager exists
+                // EqManager.LoadEquipment(convertedData);
+                CharManager.UpdateStatsFromEquipment();
             }
-        }
-        
-        private EquipmentData GetEquipmentData()
-        {
-            if (Hub.EquipmentManager != null)
-            {
-                return Hub.EquipmentManager.SaveEquipment();
-            }
-            return new EquipmentData(); // Empty equipment data
         }
         #endregion
     }

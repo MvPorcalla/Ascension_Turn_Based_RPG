@@ -7,7 +7,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Ascension.Manager;
+using Ascension.App;
 
 namespace Ascension.Core
 {

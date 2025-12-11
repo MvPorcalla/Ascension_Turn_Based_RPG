@@ -1,12 +1,10 @@
-// ════════════════════════════════════════════════════════════════════════
-// GameSystemHub.cs
+// ═══════════════════════════════════════════════════════════════════════════════
+// Assets\Scripts\Core\GameSystemHub.cs
 // Central coordinator for all game systems
-// Place as parent GameObject with all managers as children
-// ════════════════════════════════════════════════════════════════════════
+// Uses generic Component storage - actual types resolved by GameCore layer
+// ═══════════════════════════════════════════════════════════════════════════════
 
 using UnityEngine;
-using Ascension.Manager;
-using Ascension.GameSystem;
 
 namespace Ascension.Core
 {
@@ -16,13 +14,13 @@ namespace Ascension.Core
         public static GameSystemHub Instance { get; private set; }
         #endregion
 
-        #region System References
-        public CharacterManager CharacterManager { get; private set; }
-        public SaveManager SaveManager { get; private set; }
-        public InventoryManager InventoryManager { get; private set; }
-        public EquipmentManager EquipmentManager { get; private set; }
-        public PotionManager PotionManager { get; private set; }
-        public GameManager GameManager { get; private set; }
+        #region System References (Generic Components)
+        private Component characterManager;
+        private Component saveManager;
+        private Component inventoryManager;
+        private Component equipmentManager;
+        private Component potionManager;
+        private Component gameManager;
         #endregion
 
         #region Initialization State
@@ -36,16 +34,14 @@ namespace Ascension.Core
             if (!InitializeSingleton())
                 return;
 
-            FindSystemsFromChildren();
+            // Delay finding systems slightly to ensure they initialize first
+            Invoke(nameof(FindSystemsFromChildren), 0.05f);
         }
 
         private void Start()
         {
-            ValidateCriticalSystems();
-            ConnectSystemEvents();
-            
             isInitialized = true;
-            Log($"All systems ready ({CountSystems()}/6 initialized)");
+            Log($"Hub ready - {CountSystems()} systems found");
         }
         #endregion
 
@@ -69,67 +65,63 @@ namespace Ascension.Core
         {
             Log("Finding systems from children...");
 
-            CharacterManager = GetComponentInChildren<CharacterManager>();
-            SaveManager = GetComponentInChildren<SaveManager>();
-            InventoryManager = GetComponentInChildren<InventoryManager>();
-            EquipmentManager = GetComponentInChildren<EquipmentManager>();
-            PotionManager = GetComponentInChildren<PotionManager>();
-            GameManager = GetComponentInChildren<GameManager>();
+            characterManager = FindManagerByName("CharacterManager");
+            saveManager = FindManagerByName("SaveManager");
+            inventoryManager = FindManagerByName("InventoryManager");
+            equipmentManager = FindManagerByName("EquipmentManager");
+            potionManager = FindManagerByName("PotionManager");
+            gameManager = FindManagerByName("GameManager");
 
             LogSystemStatus();
         }
 
-        private void ValidateCriticalSystems()
+        private Component FindManagerByName(string typeName)
         {
-            if (CharacterManager == null)
-                Debug.LogError("[GameSystemHub] CRITICAL: CharacterManager missing!");
+            Component[] components = GetComponentsInChildren<Component>(true);
             
-            if (SaveManager == null)
-                Debug.LogError("[GameSystemHub] CRITICAL: SaveManager missing!");
-            
-            if (InventoryManager == null)
-                Debug.LogWarning("[GameSystemHub] InventoryManager missing");
-            
-            if (EquipmentManager == null)
-                Debug.LogWarning("[GameSystemHub] EquipmentManager missing");
-        }
-
-        private void ConnectSystemEvents()
-        {
-            Log("Connecting system events...");
-
-            // Equipment → Character stats
-            if (EquipmentManager != null && CharacterManager != null)
+            foreach (Component comp in components)
             {
-                EquipmentManager.OnEquipmentChanged += OnEquipmentChanged;
-                Log("✓ EquipmentManager → CharacterManager connected");
+                if (comp.GetType().Name == typeName)
+                {
+                    Log($"✓ Found {typeName}");
+                    return comp;
+                }
             }
-
-            // Add more event connections here as systems grow
-        }
-        #endregion
-
-        #region Event Handlers
-        private void OnEquipmentChanged()
-        {
-            if (CharacterManager.HasActivePlayer)
-            {
-                CharacterManager.UpdateStatsFromEquipment();
-            }
+            
+            Log($"✗ {typeName} not found");
+            return null;
         }
         #endregion
 
         #region Public API
         /// <summary>
-        /// Check if all critical systems are initialized and ready
+        /// Get a system by type - called from higher-level code (GameCore)
+        /// </summary>
+        public T GetSystem<T>() where T : Component
+        {
+            string typeName = typeof(T).Name;
+            
+            switch (typeName)
+            {
+                case "CharacterManager": return characterManager as T;
+                case "SaveManager": return saveManager as T;
+                case "InventoryManager": return inventoryManager as T;
+                case "EquipmentManager": return equipmentManager as T;
+                case "PotionManager": return potionManager as T;
+                case "GameManager": return gameManager as T;
+                default: return null;
+            }
+        }
+
+        /// <summary>
+        /// Check if all critical systems are ready
         /// </summary>
         public bool AreAllSystemsReady()
         {
             return isInitialized &&
-                   CharacterManager != null &&
-                   SaveManager != null &&
-                   //EquipmentManager != null &&
-                   InventoryManager != null;
+                   characterManager != null &&
+                   saveManager != null &&
+                   inventoryManager != null;
         }
 
         /// <summary>
@@ -139,12 +131,12 @@ namespace Ascension.Core
         {
             return $"=== GAME SYSTEMS STATUS ===\n" +
                    $"Hub Initialized: {(isInitialized ? "✓" : "✗")}\n" +
-                   $"CharacterManager: {GetStatusIcon(CharacterManager)}\n" +
-                   $"SaveManager: {GetStatusIcon(SaveManager)}\n" +
-                   $"InventoryManager: {GetStatusIcon(InventoryManager)}\n" +
-                   // $"EquipmentManager: {GetStatusIcon(EquipmentManager)}\n" +
-                   $"PotionManager: {GetStatusIcon(PotionManager)}\n" +
-                   $"GameManager: {GetStatusIcon(GameManager)}";
+                   $"CharacterManager: {GetStatusIcon(characterManager)}\n" +
+                   $"SaveManager: {GetStatusIcon(saveManager)}\n" +
+                   $"InventoryManager: {GetStatusIcon(inventoryManager)}\n" +
+                   $"EquipmentManager: {GetStatusIcon(equipmentManager)}\n" +
+                   $"PotionManager: {GetStatusIcon(potionManager)}\n" +
+                   $"GameManager: {GetStatusIcon(gameManager)}";
         }
         #endregion
 
@@ -152,12 +144,12 @@ namespace Ascension.Core
         private int CountSystems()
         {
             int count = 0;
-            if (CharacterManager != null) count++;
-            if (SaveManager != null) count++;
-            if (InventoryManager != null) count++;
-            // if (EquipmentManager != null) count++;
-            if (PotionManager != null) count++;
-            if (GameManager != null) count++;
+            if (characterManager != null) count++;
+            if (saveManager != null) count++;
+            if (inventoryManager != null) count++;
+            if (equipmentManager != null) count++;
+            if (potionManager != null) count++;
+            if (gameManager != null) count++;
             return count;
         }
 
@@ -168,12 +160,12 @@ namespace Ascension.Core
 
         private void LogSystemStatus()
         {
-            Log($"CharacterManager: {GetStatusIcon(CharacterManager)}");
-            Log($"SaveManager: {GetStatusIcon(SaveManager)}");
-            Log($"InventoryManager: {GetStatusIcon(InventoryManager)}");
-            // Log($"EquipmentManager: {GetStatusIcon(EquipmentManager)}");
-            Log($"PotionManager: {GetStatusIcon(PotionManager)}");
-            Log($"GameManager: {GetStatusIcon(GameManager)}");
+            Log($"CharacterManager: {GetStatusIcon(characterManager)}");
+            Log($"SaveManager: {GetStatusIcon(saveManager)}");
+            Log($"InventoryManager: {GetStatusIcon(inventoryManager)}");
+            Log($"EquipmentManager: {GetStatusIcon(equipmentManager)}");
+            Log($"PotionManager: {GetStatusIcon(potionManager)}");
+            Log($"GameManager: {GetStatusIcon(gameManager)}");
         }
 
         private void Log(string message)
@@ -189,22 +181,10 @@ namespace Ascension.Core
             Debug.Log(GetSystemStatus());
         }
 
-        [ContextMenu("Validate All Systems")]
-        private void DebugValidateAllSystems()
+        [ContextMenu("Count Systems")]
+        private void DebugCountSystems()
         {
-            ValidateCriticalSystems();
-            Debug.Log($"Systems Ready: {AreAllSystemsReady()}");
-        }
-        #endregion
-
-        #region Cleanup
-        private void OnDestroy()
-        {
-            // Unsubscribe from events
-            // if (EquipmentManager != null)
-            // {
-            //     EquipmentManager.OnEquipmentChanged -= OnEquipmentChanged;
-            // }
+            Debug.Log($"Systems found: {CountSystems()}/6");
         }
         #endregion
     }

@@ -4,8 +4,8 @@
 // ════════════════════════════════════════════
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
-using Ascension.GameSystem; 
 using Ascension.Data.Enums;
 
 namespace Ascension.Data.SO.Item
@@ -87,24 +87,24 @@ namespace Ascension.Data.SO.Item
         #endregion
 
         #region Debug Helpers
-        [ContextMenu("Test: Add to Inventory")]
-        private void DebugAddToInventory()
-        {
-            if (!Application.isPlaying)
-            {
-                Debug.LogWarning("[AbilitySO] Enter Play Mode first!");
-                return;
-            }
+        // [ContextMenu("Test: Add to Inventory")]
+        // private void DebugAddToInventory()
+        // {
+        //     if (!Application.isPlaying)
+        //     {
+        //         Debug.LogWarning("[AbilitySO] Enter Play Mode first!");
+        //         return;
+        //     }
 
-            if (InventoryManager.Instance == null)
-            {
-                Debug.LogError("[AbilitySO] InventoryManager not found!");
-                return;
-            }
+        //     if (InventoryManager.Instance == null)
+        //     {
+        //         Debug.LogError("[AbilitySO] InventoryManager not found!");
+        //         return;
+        //     }
 
-            InventoryManager.Instance.AddItem(itemID, 1, false);
-            Debug.Log($"[AbilitySO] Added {abilityName} to storage");
-        }
+        //     InventoryManager.Instance.AddItem(itemID, 1, false);
+        //     Debug.Log($"[AbilitySO] Added {abilityName} to storage");
+        // }
 
         [ContextMenu("Print Ability Info")]
         private void DebugPrintInfo()

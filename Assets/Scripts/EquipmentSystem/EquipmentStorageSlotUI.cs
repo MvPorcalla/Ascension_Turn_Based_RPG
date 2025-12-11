@@ -8,8 +8,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
-using Ascension.Manager;
 using Ascension.Data.SO.Item;
+using Ascension.Inventory.Manager;
 
 public class EquipmentStorageSlotUI : MonoBehaviour
 {

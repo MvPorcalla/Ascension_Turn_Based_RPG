@@ -1,9 +1,8 @@
 {
-    "name": "Ascension.Character",
-    "rootNamespace": "Ascension.Character",
+    "name": "Ascension.Core",
+    "rootNamespace": "Ascension.Core",
     "references": [
-        "Ascension.Data",
-        "Ascension.Core"
+        "Ascension.Data"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

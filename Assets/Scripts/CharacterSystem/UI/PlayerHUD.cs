@@ -6,8 +6,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using Ascension.Manager;
 using Ascension.Character.Stat;
+using Ascension.Character.Manager;
 
 namespace Ascension.UI
 {

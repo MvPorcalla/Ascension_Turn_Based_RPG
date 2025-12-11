@@ -126,43 +126,22 @@ what is ideal for base stats cap? for
 - Mythic = 
 
 
+TODO:
 
-Heirarchy
-├── GameSystems (GameSystemHub.cs) (Prefab)
-│   ├── GameManager
-│   ├── CharacterManager
-│   ├── SaveManager
-│   ├── InventoryManager
-│   ├── EquipmentManager
-│   └── PotionManager
-│
-├── Bootstrap
+---
 
-
-
-DontDestroyOnLoad only works for root GameObjects or components on root GameObjects.
-UnityEngine.StackTraceUtility:ExtractStackTrace ()
-Ascension.Systems.PotionManager:Awake () (at Assets/Scripts/PotionManager.cs:46)
-
-DontDestroyOnLoad only works for root GameObjects or components on root GameObjects.
-UnityEngine.StackTraceUtility:ExtractStackTrace ()
-Ascension.Managers.SaveManager:InitializeSingleton () (at Assets/Scripts/SaveManager.cs:154)
-Ascension.Managers.SaveManager:Awake () (at Assets/Scripts/SaveManager.cs:51)
-
-DontDestroyOnLoad only works for root GameObjects or components on root GameObjects.
-UnityEngine.StackTraceUtility:ExtractStackTrace ()
-Ascension.Managers.CharacterManager:InitializeSingleton () (at Assets/Scripts/CharacterManager.cs:283)
-Ascension.Managers.CharacterManager:Awake () (at Assets/Scripts/CharacterManager.cs:46)
-
-DontDestroyOnLoad only works for root GameObjects or components on root GameObjects.
-UnityEngine.StackTraceUtility:ExtractStackTrace ()
-InventoryManager:Awake () (at Assets/Scripts/InventorySystem/InventoryManager.cs:32)
-
-DontDestroyOnLoad only works for root GameObjects or components on root GameObjects.
-UnityEngine.StackTraceUtility:ExtractStackTrace ()
-Ascension.Managers.GameManager:Awake () (at Assets/Scripts/GameManager.cs:50)
-
-[GameSystemHub] EquipmentManager missing
+[GameManager] CharacterManager not found!
 UnityEngine.Debug:LogWarning (object)
-Ascension.Core.GameSystemHub:ValidateCriticalSystems () (at Assets/Scripts/GameSystemHub.cs:94)
-Ascension.Core.GameSystemHub:Start () (at Assets/Scripts/GameSystemHub.cs:44)
+Ascension.App.GameManager:SubscribeToCharacterManager () (at Assets/Scripts/App/GameManager.cs:356)
+Ascension.App.GameManager:WaitForSystemsAndSubscribe () (at Assets/Scripts/App/GameManager.cs:344)
+Ascension.App.GameManager:Start () (at Assets/Scripts/App/GameManager.cs:64)
+
+the GameSytemHub is the parent right? and the singletons managers e.g. 
+GameManager, SaveManager, CharacterManager, PotionManager, InventoryManager, EquipmentManager,
+are the children, why do you think this is showing warning? is this bad?
+you can ask me if you want to see my script
+
+---
+
+Should I organize the `InventorySystem`, `CharacterSystem`, and `EquipmentSystem` folders inside a `Modules` folder for better project structure?
+Should I create a separate `UI` folder for each module’s interface and have the UI reference its respective module, like having a central UI folder at the root, separate from the module folders, rather than putting a UI folder inside each module.

@@ -1,14 +1,15 @@
 // ════════════════════════════════════════════
-// LevelUpManager.cs
+// Assets\Scripts\CharacterSystem\UI\LevelUpManager.cs
 // Manages the level-up UI and attribute allocation
 // ════════════════════════════════════════════
 
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using Ascension.Manager;
 using Ascension.Character.Stat;
 using Ascension.Data.SO.Character;
+using Ascension.Character.Manager;
+using Ascension.App;
 
 namespace Ascension.Character.UI
 {

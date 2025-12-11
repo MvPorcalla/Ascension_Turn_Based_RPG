@@ -1,17 +1,16 @@
 // ════════════════════════════════════════════
-// CharacterManager.cs
+// Assets\Scripts\CharacterSystem\Manager\CharacterManager.cs
 // Single source of truth for player character data
 // ════════════════════════════════════════════
 
 using UnityEngine;
 using System;
-using Ascension.Data;
-using Ascension.Data.Model;
+using Ascension.Manager.Model;
 using Ascension.Data.SO.Item;
 using Ascension.Data.SO.Character;
 using Ascension.Character.Stat;
 
-namespace Ascension.Manager
+namespace Ascension.Character.Manager
 {
     public class CharacterManager : MonoBehaviour
     {

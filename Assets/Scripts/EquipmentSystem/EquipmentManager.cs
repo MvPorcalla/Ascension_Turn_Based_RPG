@@ -8,9 +8,10 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using Ascension.GameSystem;
+using Ascension.Data.Enums;
 using Ascension.Data.SO.Item;
 using Ascension.Character.Stat;
-using Ascension.Data.Enums;
+using Ascension.Inventory.Manager;
 
 public class EquipmentManager : MonoBehaviour
 {

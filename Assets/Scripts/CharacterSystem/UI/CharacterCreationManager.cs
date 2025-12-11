@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════
-// CharacterCreationManager.cs
+// Assets\Scripts\CharacterSystem\UI\CharacterCreationManager.cs
 // Manages the character creation process and UI
 // ════════════════════════════════════════════
 
@@ -7,9 +7,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
-using Ascension.Manager;
 using Ascension.Character.Stat;
 using Ascension.Data.SO.Character;
+using Ascension.Character.Manager;
+using Ascension.App;
 
 namespace Ascension.Character.UI
 {
