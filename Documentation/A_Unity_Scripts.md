@@ -38,64 +38,68 @@ Create this exact folder structure (NO additional subfolders):
 ```
 Scripts/
 ├── AppFlow/                                // High-level orchestration
-│   ├── Ascension.Appflow.asmdef
-│   ├── GameManager.cs                      // References Manager + Character + Inventory
-│   └── SaveManager.cs                      // References Manager + Character + Inventory
+│   ├── Ascension.Appflow.asmdef            // Future once all are solidified
+│   ├── GameManager.cs
+│   └── SaveManager.cs
 │
 ├── Core/                                   // Core engine / bootstrap
-│   ├── Ascension.Core.asmdef
+│   ├── Ascension.Core.asmdef               // Future once all are solidified
 │   ├── Bootstrap.cs
 │   └── GameSystemHub.cs
 │
 ├── Manager/                                // Pure manager logic, no cross-module calls
 │   ├── Ascension.Manager.asmdef
 │   └── Model/
-│       └── SaveData.cs                     // Only data structures, no references to Character/Inventory
+│       └── SaveData.cs
 │
-├── CharacterSystem/                        // Character module
-│   ├── Ascension.Character.asmdef          // not included for now
-│   ├── Manager/
-│   │   └── CharacterManager.cs
-│   ├── Stats/
-│   │   ├── CharacterStats.cs
-│   │   ├── CharacterAttributes.cs
-│   │   ├── CharacterItemStats.cs
-│   │   └── CharacterDerivedStats.cs
-│   ├── Runtime/
-│   │   ├── CharacterCombatRuntime.cs
-│   │   └── CharacterLevelSystem.cs
-│   ├── Model/
-│   │   └── CharacterData.cs
-│   └── UI/
-│       ├── PlayerHUD.cs
-│       ├── PlayerPreviewUI.cs
-│       ├── ProfilePanelManager.cs
-│       ├── LevelUpManager.cs
-│       └── CharacterCreationManager.cs
+├── Modules/                                // All gameplay modules
+│   ├── CharacterSystem/
+│   │   ├── Ascension.Character.asmdef      // Future once all are solidified
+│   │   ├── Manager/
+│   │   │   └── CharacterManager.cs
+│   │   ├── Stats/
+│   │   │   ├── CharacterStats.cs
+│   │   │   ├── CharacterAttributes.cs
+│   │   │   ├── CharacterItemStats.cs
+│   │   │   └── CharacterDerivedStats.cs
+│   │   ├── Runtime/
+│   │   │   ├── CharacterCombatRuntime.cs
+│   │   │   └── CharacterLevelSystem.cs
+│   │   ├── Model/
+│   │   │   └── CharacterData.cs
+│   │   └── UI/
+│   │       ├── PlayerHUD.cs
+│   │       ├── PlayerPreviewUI.cs
+│   │       ├── ProfilePanelManager.cs
+│   │       ├── LevelUpManager.cs
+│   │       └── CharacterCreationManager.cs
+│   │
+│   ├── InventorySystem/
+│   │   ├── Ascension.Inventory.asmdef      // Future once all are solidified
+│   │   ├── Manager/
+│   │   │   └── InventoryManager.cs
+│   │   ├── Data/
+│   │   │   ├── BagInventory.cs
+│   │   │   ├── ItemInstance.cs
+│   │   │   └── BagInventoryData.cs
+│   │   ├── Enum/
+│   │   │   └── InventoryEnums.cs
+│   │   ├── Popup/
+│   │   │   ├── InventoryPotionPopup.cs
+│   │   │   ├── InventoryItemPopup.cs
+│   │   │   └── InventoryGearPopup.cs
+│   │   └── UI/
+│   │       ├── StorageRoomUI.cs
+│   │       ├── ItemSlotUI.cs
+│   │       └── BuffLineUI.cs
+│   │
+│   └── EquipmentSystem/                     // In-progress module
+│       └── (files to come)
 │
-├── InventorySystem/                        // Inventory module
-│   ├── Ascension.Inventory.asmdef          // not included for now
-│   ├── Manager/
-│   │   └── InventoryManager.cs
-│   ├── Data/
-│   │   ├── BagInventory.cs
-│   │   ├── ItemInstance.cs
-│   │   └── BagInventoryData.cs
-│   ├── Enum/
-│   │   └── InventoryEnums.cs
-│   ├── Popup/
-│   │   ├── InventoryPotionPopup.cs
-│   │   ├── InventoryItemPopup.cs
-│   │   └── InventoryGearPopup.cs
-│   └── UI/
-│       ├── StorageRoomUI.cs
-│       ├── ItemSlotUI.cs
-│       └── BuffLineUI.cs
-
+├── GameSystem/                             // Game-wide systems, optional cross-module logic
+│   ├── Ascension.GameSystem.asmdef
+│   └── PotionManager.cs                     // Will be reworked into CombatSystem later
 │
-├── GameSystem/                             // Game-wide systems, optional for cross-module logic
-│   ├── Ascension.GameSystem.asmdef         // not included for now
-│   └── PotionManager.cs
 ├── UI/                                     // UI module
 │   ├── Ascension.UI.asmdef
 │   ├── Core/
@@ -104,22 +108,22 @@ Scripts/
 │       └── DisclaimerController.cs
 │
 ├── Data/                                   // Pure data / scriptable objects
-    ├── Ascension.Data.asmdef               // not included for now
-    ├── Enums/
-    │   └── WeaponEnums.cs
-    └── ScriptableObject/
-        ├── Item/
-        │   ├── ItemBaseSO.cs
-        │   ├── WeaponSO.cs
-        │   ├── WeaponRaritySO.cs
-        │   ├── GearSO.cs
-        │   ├── PotionSO.cs
-        │   ├── MaterialSO.cs
-        │   └── AbilitySO.cs
-        ├── Character/
-        │   └── CharacterBaseStatsSO.cs
-        └── Database/
-            └── GameDatabaseSO.cs
+│   ├── Ascension.Data.asmdef
+│   ├── Enums/
+│   │   └── WeaponEnums.cs
+│   └── ScriptableObject/
+│       ├── Item/
+│       │   ├── ItemBaseSO.cs
+│       │   ├── WeaponSO.cs
+│       │   ├── WeaponRaritySO.cs
+│       │   ├── GearSO.cs
+│       │   ├── PotionSO.cs
+│       │   ├── MaterialSO.cs
+│       │   └── AbilitySO.cs
+│       ├── Character/
+│       │   └── CharacterBaseStatsSO.cs
+│       └── Database/
+│           └── GameDatabaseSO.cs
 
 ```
 

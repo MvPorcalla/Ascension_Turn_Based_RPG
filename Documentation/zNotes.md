@@ -126,50 +126,6 @@ what is ideal for base stats cap? for
 - Mythic = 
 
 
-TODO: fix rthis first
-
----
-
-warning when i start
-
-[GameManager] CharacterManager not found!
-UnityEngine.Debug:LogWarning (object)
-Ascension.App.GameManager:SubscribeToCharacterManager () (at Assets/Scripts/App/GameManager.cs:356)
-Ascension.App.GameManager:WaitForSystemsAndSubscribe () (at Assets/Scripts/App/GameManager.cs:344)
-Ascension.App.GameManager:Start () (at Assets/Scripts/App/GameManager.cs:64)
-[Bootstrap] Initializing...
-[Bootstrap] Waiting for GameSystemHub...
-[Bootstrap] GameSystemHub found, checking systems...
-[GameSystemHub] Finding systems from children...
-[GameSystemHub] ✓ Found CharacterManager
-[GameSystemHub] ✓ Found SaveManager
-[GameSystemHub] ✓ Found InventoryManager
-[GameSystemHub] ✗ EquipmentManager not found
-[GameSystemHub] ✓ Found PotionManager
-[GameSystemHub] ✓ Found GameManager
-[GameSystemHub] CharacterManager: ✓ Ready
-[GameSystemHub] SaveManager: ✓ Ready
-[GameSystemHub] InventoryManager: ✓ Ready
-[GameSystemHub] EquipmentManager: ✗ Missing
-[GameSystemHub] PotionManager: ✓ Ready
-[GameSystemHub] GameManager: ✓ Ready
-[GameManager] Subscribed to CharacterManager
-[Bootstrap] ✓ All systems ready!
-[Bootstrap] All systems initialized
-[Bootstrap] Waiting 0.9s to meet minimum load time...
-[Bootstrap] Save found — attempting to load...
-[SaveManager] Game loaded successfully
-
-
-GameSystemHub (parent; in SEO at -200) (prefab)
-├── GameManager
-├── CharacterManager
-├── PotionManager
-├── InventoryManager
-├── EquipmentManager
-├── SaveManager
-
-
 ---
 
 Should I organize the `InventorySystem`, `CharacterSystem`, and `EquipmentSystem` folders inside a `Modules` folder for better project structure?
@@ -179,7 +135,7 @@ Should I create a separate `UI` folder for each module’s interface and have th
 
 ---
 
-TODO: also im other say my current GameSystemHUB is Inefficient and not robust
+TODO: also other say my current GameSystemHUB is Inefficient and not robust
 
 Currently, I’m using a Component-Based Architecture (CBA) with a Service Locator (SL) pattern. Would it make sense to switch to Dependency Injection (DI) or implement a hybrid approach combining SL and DI for better modularity and decoupling? Also, what naming convention do you recommend for system references and injected dependencies—for example, using _inventorySystem for private fields or InventorySystem for public properties?
 
