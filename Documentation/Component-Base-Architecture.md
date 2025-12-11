@@ -98,30 +98,43 @@ Scripts/
 
 ## 5. Diagram
 
-               ┌───────────────┐
-               │  SaveManager  │
-               └───────┬───────┘
+
+        ┌─────────────────────────────┐
+        │  GameManager & SaveManager  │  ← Central Brain / Global Game State
+        └──────────────┬──────────────┘
                        │
                        ▼
                ┌───────────────┐
-               │  GameManager  │  ← Central Brain / Global Game State
+               │ GameSystemHub │  ← Orchestrator / Coordinator
                └───────┬───────┘
                        │
-                       ▼
-               ┌───────────────┐
-               │    GameHub    │  ← Orchestrator / Coordinator
-               └───────┬───────┘
-                       │
-    ┌──────────────────┼───────────────────┐
-    │                  │                   │
-    ▼                  ▼                   ▼
-CharacterSystem  InventorySystem  CombatSystem
+    ┌──────────────────┼───────────────────┐───────────────────┐
+    │                  │                   │                   │
+    ▼                  ▼                   ▼                   ▼
+CharacterSystem  InventorySystem  CombatSystem               ETC...
    (.asmdef)        (.asmdef)      (.asmdef)
-     │                 │                 │
-     └─────────────────┴─────────────────┘
-                 (Other modules…)
+
 
 This diagram illustrates module orchestration and allowed dependencies.
+
+---
+
+**Cross-Module Communication Rule:**
+
+All game modules (CharacterSystem, InventorySystem, CombatSystem, etc.) are **independent**. If a module needs functionality from another module:
+
+1. It **requests the target system from `GameSystemHub`**.
+2. It calls the required method on that system.
+3. The result is returned to the requesting module.
+
+**Example:**
+
+* InventorySystem wants to use a potion to heal a player or apply a buff.
+* InventorySystem **does not directly call** `PotionManager`.
+* Instead, it asks `GameSystemHub` for `PotionManager` and calls `UsePotion(...)`.
+* Any effect (healing, buff) is applied through `PotionManager` and the results flow back to InventorySystem.
+
+This ensures **loose coupling**, **centralized orchestration**, and **easy swapping/testing** of modules without breaking dependencies.
 
 ---
 

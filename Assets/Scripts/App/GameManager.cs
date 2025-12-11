@@ -341,6 +341,14 @@ namespace Ascension.App
                 return;
             }
             
+            // ✅ ADD THIS: Wait for CharacterManager specifically
+            if (CharManager == null)
+            {
+                Debug.LogWarning("[GameManager] Waiting for CharacterManager...");
+                Invoke(nameof(WaitForSystemsAndSubscribe), 0.1f);
+                return;
+            }
+            
             SubscribeToCharacterManager();
         }
         

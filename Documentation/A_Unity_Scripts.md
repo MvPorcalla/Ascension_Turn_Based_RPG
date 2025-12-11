@@ -8,8 +8,8 @@ You are refactoring a Unity C# project using FEATURE-BASED organization with lay
 
 | Folder Path                           | Namespace                         | Type          |
 |---------------------------------------|-----------------------------------|---------------|
+| `App/`                                | `Ascension.App`                   | Global Mgrs   |
 | `Core/`                               | `Ascension.Core`                  | Bootstrap     |
-| `Manager/`                            | `Ascension.Manager`               | Global Mgrs   |
 | `CharacterSystem/Manager/`            | `Ascension.Character.Manager`     | Char Manager  |
 | `CharacterSystem/Stat/`               | `Ascension.Character.Stat`        | Runtime stats |
 | `CharacterSystem/Runtime/`            | `Ascension.Character.Runtime`     | Combat/buffs  |
@@ -209,204 +209,19 @@ CharacterSystem/UI/*                    → namespace Ascension.Character.UI
 
 InventorySystem/Manager/*               → namespace Ascension.Inventory.Manager
 InventorySystem/Data/*                  → namespace Ascension.Inventory.Data
-InventorySystem/Enums/*                  → namespace Ascension.Inventory.Enums
+InventorySystem/Enums/*                 → namespace Ascension.Inventory.Enums
 InventorySystem/UI/*                    → namespace Ascension.Inventory.UI
-InventorySystem/Popup/*              → namespace Ascension.Inventory.Popup
+InventorySystem/Popup/*                 → namespace Ascension.Inventory.Popup
 
 GameSystem/*                            → namespace Ascension.GameSystem
 
 UI/Core/*                               → namespace Ascension.UI.Core
 UI/Panel/*                              → namespace Ascension.UI.Panel
 
-Data/Enums/*                             → namespace Ascension.Data.Enums
+Data/Enums/*                            → namespace Ascension.Data.Enums
 Data/ScriptableObject/Item/*            → namespace Ascension.Data.SO.Item
 Data/ScriptableObject/Character/*       → namespace Ascension.Data.SO.Character
 Data/ScriptableObject/Database/*        → namespace Ascension.Data.SO.Database
-```
-
----
-
-## RULE 4: CLASS RENAMES
-
-Rename these classes inside the files:
-
-```
-PlayerStats           → CharacterStats
-PlayerAttributes      → CharacterAttributes
-PlayerItemStats       → CharacterItemStats
-PlayerDerivedStats    → CharacterDerivedStats
-PlayerCombatRuntime   → CharacterCombatRuntime
-PlayerLevelSystem     → CharacterLevelSystem
-PlayerData            → CharacterData
-```
-
----
-
-## RULE 5: NAMESPACE REPLACEMENT IN USING STATEMENTS
-
-Replace old using statements with new ones throughout ALL files:
-
-```
-OLD                                 NEW
-using Ascension.Managers;       → using Ascension.Manager;
-                                → OR using Ascension.Character.Manager;
-                                → OR using Ascension.Inventory.Manager;
-
-using Ascension.Systems;        → using Ascension.GameSystem;
-
-using Ascension.Data.Models;    → using Ascension.Data.Model;
-
-using Ascension.UI;             → using Ascension.UI.Core;
-                                → OR using Ascension.Character.UI;
-                                → OR using Ascension.Inventory.UI;
-```
-
----
-
-## RULE 6: ASSEMBLY DEFINITIONS
-
-Create these 7 .asmdef files with exact content:
-
-### File: `Scripts/Data/Ascension.Data.asmdef`
-```json
-{
-    "name": "Ascension.Data",
-    "rootNamespace": "Ascension.Data",
-    "references": [],
-    "includePlatforms": [],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
-}
-```
-
-### File: `Scripts/CharacterSystem/Ascension.Character.asmdef`
-```json
-{
-    "name": "Ascension.Character",
-    "rootNamespace": "Ascension.Character",
-    "references": ["Ascension.Data"],
-    "includePlatforms": [],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
-}
-
-```
-
-### File: `Scripts/InventorySystem/Ascension.Inventory.asmdef`
-```json
-{
-    "name": "Ascension.Inventory",
-    "rootNamespace": "Ascension.Inventory",
-    "references": ["Ascension.Data", "Ascension.Character"],
-    "includePlatforms": [],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
-}
-```
-
-### File: `Scripts/GameSystem/Ascension.GameSystem.asmdef`
-```json
-{
-    "name": "Ascension.GameSystem",
-    "rootNamespace": "Ascension.GameSystem",
-    "references": ["Ascension.Data", "Ascension.Character"],
-    "includePlatforms": [],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
-}
-```
-
-### File: `Scripts/Manager/Ascension.Manager.asmdef`
-```json
-{
-    "name": "Ascension.Manager",
-    "rootNamespace": "Ascension.Manager",
-    "references": [
-        "Ascension.Data",
-        "Ascension.Character",
-        "Ascension.Inventory",
-        "Ascension.GameSystem"
-    ],
-    "includePlatforms": [],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
-}
-```
-
-### File: `Scripts/Core/Ascension.Core.asmdef`
-```json
-{
-    "name": "Ascension.Core",
-    "rootNamespace": "Ascension.Core",
-    "references": [
-        "Ascension.Manager",
-        "Ascension.Character",
-        "Ascension.Inventory",
-        "Ascension.GameSystem"
-    ],
-    "includePlatforms": [],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
-}
-```
-
-### File: `Scripts/UI/Ascension.UI.asmdef`
-```json
-{
-    "name": "Ascension.UI",
-    "rootNamespace": "Ascension.UI",
-    "references": [
-        "Ascension.Manager",
-        "Ascension.Character",
-        "Ascension.Inventory",
-        "Ascension.Data"
-    ],
-    "includePlatforms": [],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
-}
 ```
 
 ---
@@ -420,116 +235,6 @@ Create these 7 .asmdef files with exact content:
 5. ✅ Fix using statements (RULE 5)
 6. ✅ Create .asmdef files (RULE 6)
 7. ✅ Compile and fix errors
-
----
-
-## EXAMPLE TRANSFORMATIONS
-
-### Example 1: CharacterManager.cs
-
-**Before:**
-```csharp
-using Ascension.Data.Models;
-using Ascension.Data.SO;
-
-namespace Ascension.Managers
-{
-    public class CharacterManager
-    {
-        // code
-    }
-}
-```
-
-**After:**
-```csharp
-using Ascension.Data.Model;
-using Ascension.Data.SO;
-
-namespace Ascension.Character.Manager
-{
-    public class CharacterManager
-    {
-        // code
-    }
-}
-```
-
-### Example 2: StorageRoomUI.cs
-
-**Before:**
-```csharp
-using UnityEngine;
-using Ascension.Managers;
-
-public class StorageRoomUI : MonoBehaviour
-{
-    // code
-}
-```
-
-**After:**
-```csharp
-using UnityEngine;
-using Ascension.Inventory.Manager;
-
-namespace Ascension.Inventory.UI
-{
-    public class StorageRoomUI : MonoBehaviour
-    {
-        // code
-    }
-}
-```
-
-### Example 3: WeaponEnums.cs
-
-**Before:**
-```csharp
-public enum WeaponType
-{
-    // values
-}
-```
-
-**After:**
-```csharp
-namespace Ascension.Data.Enum
-{
-    public enum WeaponType
-    {
-        // values
-    }
-}
-```
-
-### Example 4: AbilitySO.cs
-
-**Before:**
-```csharp
-using Ascension.Systems;
-
-namespace Ascension.Data.SO
-{
-    public class AbilitySO : ScriptableObject
-    {
-        // code
-    }
-}
-```
-
-**After:**
-```csharp
-using Ascension.GameSystem;
-
-namespace Ascension.Data.SO.Item
-{
-    public class AbilitySO : ScriptableObject
-    {
-        // code
-    }
-}
-```
 
 ---
 

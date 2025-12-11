@@ -34,8 +34,7 @@ namespace Ascension.Core
             if (!InitializeSingleton())
                 return;
 
-            // Delay finding systems slightly to ensure they initialize first
-            Invoke(nameof(FindSystemsFromChildren), 0.05f);
+            FindSystemsFromChildren();
         }
 
         private void Start()

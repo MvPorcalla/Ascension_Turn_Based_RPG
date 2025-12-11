@@ -126,22 +126,101 @@ what is ideal for base stats cap? for
 - Mythic = 
 
 
-TODO:
+TODO: fix rthis first
 
 ---
+
+warning when i start
 
 [GameManager] CharacterManager not found!
 UnityEngine.Debug:LogWarning (object)
 Ascension.App.GameManager:SubscribeToCharacterManager () (at Assets/Scripts/App/GameManager.cs:356)
 Ascension.App.GameManager:WaitForSystemsAndSubscribe () (at Assets/Scripts/App/GameManager.cs:344)
 Ascension.App.GameManager:Start () (at Assets/Scripts/App/GameManager.cs:64)
+[Bootstrap] Initializing...
+[Bootstrap] Waiting for GameSystemHub...
+[Bootstrap] GameSystemHub found, checking systems...
+[GameSystemHub] Finding systems from children...
+[GameSystemHub] ✓ Found CharacterManager
+[GameSystemHub] ✓ Found SaveManager
+[GameSystemHub] ✓ Found InventoryManager
+[GameSystemHub] ✗ EquipmentManager not found
+[GameSystemHub] ✓ Found PotionManager
+[GameSystemHub] ✓ Found GameManager
+[GameSystemHub] CharacterManager: ✓ Ready
+[GameSystemHub] SaveManager: ✓ Ready
+[GameSystemHub] InventoryManager: ✓ Ready
+[GameSystemHub] EquipmentManager: ✗ Missing
+[GameSystemHub] PotionManager: ✓ Ready
+[GameSystemHub] GameManager: ✓ Ready
+[GameManager] Subscribed to CharacterManager
+[Bootstrap] ✓ All systems ready!
+[Bootstrap] All systems initialized
+[Bootstrap] Waiting 0.9s to meet minimum load time...
+[Bootstrap] Save found — attempting to load...
+[SaveManager] Game loaded successfully
 
-the GameSytemHub is the parent right? and the singletons managers e.g. 
-GameManager, SaveManager, CharacterManager, PotionManager, InventoryManager, EquipmentManager,
-are the children, why do you think this is showing warning? is this bad?
-you can ask me if you want to see my script
+
+GameSystemHub (parent; in SEO at -200) (prefab)
+├── GameManager
+├── CharacterManager
+├── PotionManager
+├── InventoryManager
+├── EquipmentManager
+├── SaveManager
+
 
 ---
 
 Should I organize the `InventorySystem`, `CharacterSystem`, and `EquipmentSystem` folders inside a `Modules` folder for better project structure?
+
 Should I create a separate `UI` folder for each module’s interface and have the UI reference its respective module, like having a central UI folder at the root, separate from the module folders, rather than putting a UI folder inside each module.
+
+
+---
+
+TODO: also im other say my current GameSystemHUB is Inefficient and not robust
+
+Currently, I’m using a Component-Based Architecture (CBA) with a Service Locator (SL) pattern. Would it make sense to switch to Dependency Injection (DI) or implement a hybrid approach combining SL and DI for better modularity and decoupling? Also, what naming convention do you recommend for system references and injected dependencies—for example, using _inventorySystem for private fields or InventorySystem for public properties?
+
+## 5. Diagram
+
+
+        ┌─────────────────────────────┐
+        │  GameManager & SaveManager  │  ← Central Brain / Global Game State
+        └──────────────┬──────────────┘
+                       │
+                       ▼
+               ┌───────────────┐
+               │ GameSystemHub │  ← Orchestrator / Coordinator
+               └───────┬───────┘
+                       │
+    ┌──────────────────┼───────────────────┐───────────────────┐
+    │                  │                   │                   │
+    ▼                  ▼                   ▼                   ▼
+CharacterSystem  InventorySystem  CombatSystem               ETC...
+   (.asmdef)        (.asmdef)      (.asmdef)
+
+
+This diagram illustrates module orchestration and allowed dependencies.
+
+---
+
+**Cross-Module Communication Rule:**
+
+All game modules (CharacterSystem, InventorySystem, CombatSystem, etc.) are **independent**. If a module needs functionality from another module:
+
+1. It **requests the target system from `GameSystemHub`**.
+2. It calls the required method on that system.
+3. The result is returned to the requesting module.
+
+**Example:**
+
+* InventorySystem wants to use a potion to heal a player or apply a buff.
+* InventorySystem **does not directly call** `PotionManager`.
+* Instead, it asks `GameSystemHub` for `PotionManager` and calls `UsePotion(...)`.
+* Any effect (healing, buff) is applied through `PotionManager` and the results flow back to InventorySystem.
+
+This ensures **loose coupling**, **centralized orchestration**, and **easy swapping/testing** of modules without breaking dependencies.
+
+---
