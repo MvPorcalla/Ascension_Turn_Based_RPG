@@ -148,15 +148,16 @@ Currently, I’m using a Component-Based Architecture (CBA) with a Service Locat
                        │
                        ▼
                ┌───────────────┐
-               │ GameSystemHub │  ← Orchestrator / Coordinator
+               │ GameSystemHub │  ← Orchestrator / Coordinator (shouild i make mini hubs to split the work?)
                └───────┬───────┘
                        │
-    ┌──────────────────┼───────────────────┐───────────────────┐
+    ┌──────────────────┼───────────────────┐───────────────────┐ 
     │                  │                   │                   │
     ▼                  ▼                   ▼                   ▼
 CharacterSystem  InventorySystem  CombatSystem               ETC...
    (.asmdef)        (.asmdef)      (.asmdef)
 
+(currently using Service Locator (SL) which is not good they said, is Dependency Injection Hybrid with SL better?)
 
 This diagram illustrates module orchestration and allowed dependencies.
 

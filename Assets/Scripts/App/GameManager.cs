@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\AppFlow\GameManager.cs
-// Central game controller - uses GameSystemHub for system access
+// Central game controller - uses ServiceContainer for system access
 // Handles: Game flow, saves, scene management
 // ════════════════════════════════════════════
 
@@ -30,11 +30,11 @@ namespace Ascension.App
         #endregion
         
         #region Properties (Through Hub)
-        private GameSystemHub Hub => GameSystemHub.Instance;
-        private CharacterManager CharManager => Hub?.GetSystem<CharacterManager>();
-        private SaveManager SManager => Hub?.GetSystem<SaveManager>();
-        private InventoryManager InvManager => Hub?.GetSystem<InventoryManager>();
-        private EquipmentManager EqManager => Hub?.GetSystem<EquipmentManager>();
+        private ServiceContainer Hub => ServiceContainer.Instance;
+        private CharacterManager CharManager => Hub?.Get<CharacterManager>();
+        private SaveManager SManager => Hub?.Get<SaveManager>();
+        private InventoryManager InvManager => Hub?.Get<InventoryManager>();
+        private EquipmentManager EqManager => Hub?.Get<EquipmentManager>();
         
         public CharacterStats CurrentPlayer => CharManager?.CurrentPlayer;
         public CharacterBaseStatsSO BaseStats => CharManager?.BaseStats;
@@ -336,7 +336,7 @@ namespace Ascension.App
         {
             if (Hub == null || !Hub.IsInitialized)
             {
-                Debug.LogWarning("[GameManager] Waiting for GameSystemHub...");
+                Debug.LogWarning("[GameManager] Waiting for ServiceContainer...");
                 Invoke(nameof(WaitForSystemsAndSubscribe), 0.1f);
                 return;
             }
@@ -380,9 +380,9 @@ namespace Ascension.App
         
         private bool ValidateSystemsReady()
         {
-            if (Hub == null || !Hub.AreAllSystemsReady())
+            if (Hub == null || !Hub.IsInitialized)
             {
-                Debug.LogError("[GameManager] Systems not ready!");
+                Debug.LogError("[GameManager] ServiceContainer not initialized!");
                 return false;
             }
             return true;

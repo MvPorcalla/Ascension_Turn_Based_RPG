@@ -1,10 +1,11 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\CharacterSystem\Manager\CharacterManager.cs
-// Single source of truth for player character data
+// REFACTORED: Uses ServiceContainer for optional EquipmentManager dependency
 // ════════════════════════════════════════════
 
 using UnityEngine;
 using System;
+using Ascension.Core;
 using Ascension.Manager.Model;
 using Ascension.Data.SO.Item;
 using Ascension.Data.SO.Character;
@@ -24,14 +25,17 @@ namespace Ascension.Character.Manager
         #endregion
 
         #region Private Fields
-        private CharacterStats currentPlayer;
-        private bool isInitialized = false;
+        private CharacterStats _currentPlayer;
+        private bool _isInitialized = false;
+        
+        // Optional dependency - resolved lazily when needed
+        // private EquipmentManager _equipmentManager;
         #endregion
 
         #region Properties
-        public CharacterStats CurrentPlayer => currentPlayer;
+        public CharacterStats CurrentPlayer => _currentPlayer;
         public CharacterBaseStatsSO BaseStats => baseStats;
-        public bool HasActivePlayer => isInitialized && currentPlayer != null;
+        public bool HasActivePlayer => _isInitialized && _currentPlayer != null;
         #endregion
 
         #region Events
@@ -52,11 +56,11 @@ namespace Ascension.Character.Manager
         #region Public Methods - Player Initialization
         public void CreateNewPlayer(string playerName)
         {
-            currentPlayer = new CharacterStats();
-            currentPlayer.playerName = playerName;
-            currentPlayer.Initialize(baseStats);
+            _currentPlayer = new CharacterStats();
+            _currentPlayer.playerName = playerName;
+            _currentPlayer.Initialize(baseStats);
             
-            isInitialized = true;
+            _isInitialized = true;
 
             Debug.Log($"[CharacterManager] Created new player: {playerName}");
             
@@ -71,87 +75,111 @@ namespace Ascension.Character.Manager
                 return;
             }
 
-            currentPlayer = loadedStats;
-            currentPlayer.RecalculateStats(baseStats, fullHeal: false);
+            _currentPlayer = loadedStats;
+            _currentPlayer.RecalculateStats(baseStats, fullHeal: false);
             
-            isInitialized = true;
+            _isInitialized = true;
 
-            Debug.Log($"[CharacterManager] Loaded player: {currentPlayer.playerName}");
+            Debug.Log($"[CharacterManager] Loaded player: {_currentPlayer.playerName}");
             
             TriggerPlayerLoadedEvents();
         }
 
         public void UnloadPlayer()
         {
-            currentPlayer = null;
-            isInitialized = false;
+            _currentPlayer = null;
+            _isInitialized = false;
             Debug.Log("[CharacterManager] Player unloaded");
         }
         #endregion
 
-        #region Equipment Integration (NEW)
-
+        #region Equipment Integration
         /// <summary>
         /// Update player stats from equipped items
-        /// Called by EquipmentManager when equipment changes
+        /// Lazy-loads EquipmentManager from ServiceContainer
         /// </summary>
         public void UpdateStatsFromEquipment()
         {
             if (!HasActivePlayer) return;
             
-            // Get equipment stats from EquipmentManager
-            if (EquipmentManager.Instance != null)
+            // TODO: Uncomment when EquipmentManager is ready
+            /*
+            var equipmentManager = GetEquipmentManager();
+            
+            if (equipmentManager != null)
             {
-                CharacterItemStats equipmentStats = EquipmentManager.Instance.GetTotalItemStats();
-                currentPlayer.ApplyItemStats(equipmentStats, baseStats);
+                CharacterItemStats equipmentStats = equipmentManager.GetTotalItemStats();
+                _currentPlayer.ApplyItemStats(equipmentStats, baseStats);
                 
                 Debug.Log("[CharacterManager] Stats updated from equipment");
-                OnCharacterStatsChanged?.Invoke(currentPlayer);
+                OnCharacterStatsChanged?.Invoke(_currentPlayer);
             }
+            */
+            
+            Debug.Log("[CharacterManager] UpdateStatsFromEquipment called (EquipmentManager not implemented yet)");
         }
 
-        /// <summary>
-        /// Equip weapon (delegates to EquipmentManager, then updates stats)
-        /// </summary>
         public bool EquipWeaponFromInventory(string itemID)
         {
             if (!HasActivePlayer) return false;
             
-            if (EquipmentManager.Instance == null)
+            // TODO: Implement when EquipmentManager ready
+            /*
+            var equipmentManager = GetEquipmentManager();
+            
+            if (equipmentManager == null)
             {
                 Debug.LogError("[CharacterManager] EquipmentManager not found!");
                 return false;
             }
             
-            bool success = EquipmentManager.Instance.EquipWeapon(itemID);
+            bool success = equipmentManager.EquipWeapon(itemID);
             
             if (success)
             {
-                // Update CharacterStats weapon reference
-                WeaponSO weapon = EquipmentManager.Instance.GetEquippedWeapon();
-                currentPlayer.equippedWeapon = weapon;
-                
-                // Recalculate stats
+                WeaponSO weapon = equipmentManager.GetEquippedWeapon();
+                _currentPlayer.equippedWeapon = weapon;
                 UpdateStatsFromEquipment();
             }
             
             return success;
+            */
+            
+            Debug.LogWarning("[CharacterManager] EquipWeaponFromInventory not implemented yet");
+            return false;
         }
 
-        /// <summary>
-        /// Unequip weapon
-        /// </summary>
         public void UnequipWeaponFromInventory()
         {
             if (!HasActivePlayer) return;
             
-            if (EquipmentManager.Instance != null)
+            // TODO: Implement when EquipmentManager ready
+            /*
+            var equipmentManager = GetEquipmentManager();
+            
+            if (equipmentManager != null)
             {
-                EquipmentManager.Instance.UnequipWeapon();
-                currentPlayer.equippedWeapon = null;
+                equipmentManager.UnequipWeapon();
+                _currentPlayer.equippedWeapon = null;
                 UpdateStatsFromEquipment();
             }
+            */
+            
+            Debug.LogWarning("[CharacterManager] UnequipWeaponFromInventory not implemented yet");
         }
+
+        // TODO: Uncomment when EquipmentManager is ready
+        /*
+        private EquipmentManager GetEquipmentManager()
+        {
+            if (_equipmentManager == null && ServiceContainer.Instance != null)
+            {
+                _equipmentManager = ServiceContainer.Instance.Get<EquipmentManager>();
+            }
+            
+            return _equipmentManager;
+        }
+        */
         #endregion
 
         #region Public Methods - Player Actions
@@ -161,49 +189,49 @@ namespace Ascension.Character.Manager
 
             OnExperienceGained?.Invoke(amount);
 
-            bool leveledUp = currentPlayer.AddExperience(amount, baseStats);
+            bool leveledUp = _currentPlayer.AddExperience(amount, baseStats);
 
             if (leveledUp)
             {
                 HandleLevelUp();
             }
 
-            OnCharacterStatsChanged?.Invoke(currentPlayer);
+            OnCharacterStatsChanged?.Invoke(_currentPlayer);
         }
 
         public void Heal(float amount)
         {
             if (!HasActivePlayer) return;
 
-            float oldHP = currentPlayer.CurrentHP;
-            currentPlayer.combatRuntime.Heal(amount, currentPlayer.MaxHP);
+            float oldHP = _currentPlayer.CurrentHP;
+            _currentPlayer.combatRuntime.Heal(amount, _currentPlayer.MaxHP);
             
-            Debug.Log($"[CharacterManager] Healed {amount} HP ({oldHP:F0} → {currentPlayer.CurrentHP:F0})");
-            OnHealthChanged?.Invoke(currentPlayer.CurrentHP, currentPlayer.MaxHP);
+            Debug.Log($"[CharacterManager] Healed {amount} HP ({oldHP:F0} → {_currentPlayer.CurrentHP:F0})");
+            OnHealthChanged?.Invoke(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
         }
 
         public void ApplyHeal(float amount)
         {
             if (!HasActivePlayer) return;
             
-            float oldHP = currentPlayer.CurrentHP;
-            currentPlayer.combatRuntime.Heal(amount, currentPlayer.MaxHP);
+            float oldHP = _currentPlayer.CurrentHP;
+            _currentPlayer.combatRuntime.Heal(amount, _currentPlayer.MaxHP);
             
-            Debug.Log($"[CharacterManager] Applied heal {amount} HP ({oldHP:F0} → {currentPlayer.CurrentHP:F0})");
-            OnHealthChanged?.Invoke(currentPlayer.CurrentHP, currentPlayer.MaxHP);
+            Debug.Log($"[CharacterManager] Applied heal {amount} HP ({oldHP:F0} → {_currentPlayer.CurrentHP:F0})");
+            OnHealthChanged?.Invoke(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
         }
 
         public void TakeDamage(float amount)
         {
             if (!HasActivePlayer) return;
 
-            float oldHP = currentPlayer.CurrentHP;
-            currentPlayer.combatRuntime.TakeDamage(amount, currentPlayer.MaxHP);
+            float oldHP = _currentPlayer.CurrentHP;
+            _currentPlayer.combatRuntime.TakeDamage(amount, _currentPlayer.MaxHP);
             
-            Debug.Log($"[CharacterManager] Took {amount} damage ({oldHP:F0} → {currentPlayer.CurrentHP:F0})");
-            OnHealthChanged?.Invoke(currentPlayer.CurrentHP, currentPlayer.MaxHP);
+            Debug.Log($"[CharacterManager] Took {amount} damage ({oldHP:F0} → {_currentPlayer.CurrentHP:F0})");
+            OnHealthChanged?.Invoke(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
 
-            if (currentPlayer.CurrentHP <= 0)
+            if (_currentPlayer.CurrentHP <= 0)
             {
                 HandlePlayerDeath();
             }
@@ -213,50 +241,50 @@ namespace Ascension.Character.Manager
         {
             if (!HasActivePlayer) return;
 
-            currentPlayer.combatRuntime.currentHP = currentPlayer.MaxHP;
+            _currentPlayer.combatRuntime.currentHP = _currentPlayer.MaxHP;
             Debug.Log("[CharacterManager] Full heal applied");
-            OnHealthChanged?.Invoke(currentPlayer.CurrentHP, currentPlayer.MaxHP);
+            OnHealthChanged?.Invoke(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
         }
 
         public void EquipWeapon(WeaponSO weapon)
         {
             if (!HasActivePlayer) return;
 
-            currentPlayer.EquipWeapon(weapon, baseStats);
-            OnCharacterStatsChanged?.Invoke(currentPlayer);
+            _currentPlayer.EquipWeapon(weapon, baseStats);
+            OnCharacterStatsChanged?.Invoke(_currentPlayer);
         }
 
         public void UnequipWeapon()
         {
             if (!HasActivePlayer) return;
 
-            currentPlayer.UnequipWeapon(baseStats);
-            OnCharacterStatsChanged?.Invoke(currentPlayer);
+            _currentPlayer.UnequipWeapon(baseStats);
+            OnCharacterStatsChanged?.Invoke(_currentPlayer);
         }
 
         public void SetGuildRank(string rank)
         {
             if (!HasActivePlayer) return;
 
-            currentPlayer.SetGuildRank(rank);
-            OnCharacterStatsChanged?.Invoke(currentPlayer);
+            _currentPlayer.SetGuildRank(rank);
+            OnCharacterStatsChanged?.Invoke(_currentPlayer);
         }
 
         public bool AllocateAttributePoint(string attributeName)
         {
             if (!HasActivePlayer) return false;
 
-            if (currentPlayer.UnallocatedPoints <= 0)
+            if (_currentPlayer.UnallocatedPoints <= 0)
             {
                 Debug.LogWarning("[CharacterManager] No unallocated points available!");
                 return false;
             }
 
-            currentPlayer.ModifyAttribute(attributeName, 1, baseStats);
-            currentPlayer.levelSystem.unallocatedPoints--;
+            _currentPlayer.ModifyAttribute(attributeName, 1, baseStats);
+            _currentPlayer.levelSystem.unallocatedPoints--;
             
             Debug.Log($"[CharacterManager] Allocated point to {attributeName}");
-            OnCharacterStatsChanged?.Invoke(currentPlayer);
+            OnCharacterStatsChanged?.Invoke(_currentPlayer);
             return true;
         }
         #endregion
@@ -266,13 +294,13 @@ namespace Ascension.Character.Manager
         {
             if (!HasActivePlayer) return;
 
-            currentPlayer.RecalculateStats(baseStats, fullHeal: false);
-            OnCharacterStatsChanged?.Invoke(currentPlayer);
+            _currentPlayer.RecalculateStats(baseStats, fullHeal: false);
+            OnCharacterStatsChanged?.Invoke(_currentPlayer);
         }
 
         public CharacterStats GetCharacterDataForSave()
         {
-            return currentPlayer;
+            return _currentPlayer;
         }
         #endregion
 
@@ -291,21 +319,21 @@ namespace Ascension.Character.Manager
 
         private void TriggerPlayerLoadedEvents()
         {
-            OnPlayerLoaded?.Invoke(currentPlayer);
-            OnCharacterStatsChanged?.Invoke(currentPlayer);
+            OnPlayerLoaded?.Invoke(_currentPlayer);
+            OnCharacterStatsChanged?.Invoke(_currentPlayer);
         }
 
         private void HandleLevelUp()
         {
-            Debug.Log($"[CharacterManager] Level up! Now level {currentPlayer.Level}");
-            OnLevelUp?.Invoke(currentPlayer.Level);
-            OnHealthChanged?.Invoke(currentPlayer.CurrentHP, currentPlayer.MaxHP);
+            Debug.Log($"[CharacterManager] Level up! Now level {_currentPlayer.Level}");
+            OnLevelUp?.Invoke(_currentPlayer.Level);
+            OnHealthChanged?.Invoke(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
         }
 
         private void HandlePlayerDeath()
         {
             Debug.Log("[CharacterManager] Player has died!");
-            // TODO: Implement death logic (respawn, game over, etc.)
+            // TODO: Implement death logic
         }
         #endregion
 
@@ -320,42 +348,25 @@ namespace Ascension.Character.Manager
             }
 
             Debug.Log("=== PLAYER STATS ===");
-            Debug.Log($"Name: {currentPlayer.playerName}");
-            Debug.Log($"Level: {currentPlayer.Level}");
-            Debug.Log($"HP: {currentPlayer.CurrentHP}/{currentPlayer.MaxHP}");
-            Debug.Log($"AD: {currentPlayer.AD}");
-            Debug.Log($"AP: {currentPlayer.AP}");
-            Debug.Log($"Attack Speed: {currentPlayer.AttackSpeed}");
-            Debug.Log($"STR: {currentPlayer.attributes.STR}");
-            Debug.Log($"INT: {currentPlayer.attributes.INT}");
-            Debug.Log($"AGI: {currentPlayer.attributes.AGI}");
-            Debug.Log($"END: {currentPlayer.attributes.END}");
-            Debug.Log($"WIS: {currentPlayer.attributes.WIS}");
+            Debug.Log($"Name: {_currentPlayer.playerName}");
+            Debug.Log($"Level: {_currentPlayer.Level}");
+            Debug.Log($"HP: {_currentPlayer.CurrentHP}/{_currentPlayer.MaxHP}");
+            Debug.Log($"AD: {_currentPlayer.AD}");
+            Debug.Log($"AP: {_currentPlayer.AP}");
+            Debug.Log($"Attack Speed: {_currentPlayer.AttackSpeed}");
         }
 
         [ContextMenu("Debug: Add 100 EXP")]
-        private void DebugAddExp()
-        {
-            AddExperience(100);
-        }
+        private void DebugAddExp() => AddExperience(100);
 
         [ContextMenu("Debug: Damage 50 HP")]
-        private void DebugDamage()
-        {
-            TakeDamage(50);
-        }
+        private void DebugDamage() => TakeDamage(50);
 
         [ContextMenu("Debug: Heal 50 HP")]
-        private void DebugHeal()
-        {
-            Heal(50);
-        }
+        private void DebugHeal() => Heal(50);
 
         [ContextMenu("Debug: Full Heal")]
-        private void DebugFullHeal()
-        {
-            FullHeal();
-        }
+        private void DebugFullHeal() => FullHeal();
         #endregion
     }
 }

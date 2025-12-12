@@ -1,13 +1,13 @@
 // ════════════════════════════════════════════
 // PotionManager.cs
-// Handles potion usage, effects, and turn-based HoT
-// Supports percentage and flat healing values
+// REFACTORED: Injects CharacterManager dependency
 // ════════════════════════════════════════════
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Ascension.Core;
 using Ascension.Data.SO.Item;
 using Ascension.Character.Stat;
 using Ascension.Data.SO.Character;
@@ -21,14 +21,18 @@ namespace Ascension.GameSystem
         public static PotionManager Instance { get; private set; }
         #endregion
         
+        #region Injected Dependencies
+        private CharacterManager _characterManager;
+        #endregion
+        
         #region Serialized Fields
         [Header("Runtime State")]
         [SerializeField] private bool isInCombat = false;
         #endregion
         
         #region Private Fields
-        private List<ActiveBuff> activeBuffs = new List<ActiveBuff>();
-        private List<ActiveHealOverTurn> activeHealOverTurns = new List<ActiveHealOverTurn>();
+        private List<ActiveBuff> _activeBuffs = new List<ActiveBuff>();
+        private List<ActiveHealOverTurn> _activeHealOverTurns = new List<ActiveHealOverTurn>();
         #endregion
         
         #region Properties
@@ -46,6 +50,11 @@ namespace Ascension.GameSystem
             
             Instance = this;
         }
+
+        private void Start()
+        {
+            InjectDependencies();
+        }
         
         private void Update()
         {
@@ -53,10 +62,34 @@ namespace Ascension.GameSystem
         }
         #endregion
         
-        #region Public Methods - Potion Usage
-        public bool UsePotion(PotionSO potion, CharacterStats CharacterStats, CharacterBaseStatsSO baseStats)
+        #region Dependency Injection
+        private void InjectDependencies()
         {
-            if (!ValidatePotionUsage(potion, CharacterStats))
+            ServiceContainer container = ServiceContainer.Instance;
+            
+            if (container == null || !container.IsInitialized)
+            {
+                Debug.LogWarning("[PotionManager] ServiceContainer not ready, retrying...");
+                Invoke(nameof(InjectDependencies), 0.1f);
+                return;
+            }
+
+            try
+            {
+                _characterManager = container.GetRequired<CharacterManager>();
+                Debug.Log("[PotionManager] Dependencies injected successfully");
+            }
+            catch (InvalidOperationException e)
+            {
+                Debug.LogError($"[PotionManager] Failed to inject dependencies: {e.Message}");
+            }
+        }
+        #endregion
+        
+        #region Public Methods - Potion Usage
+        public bool UsePotion(PotionSO potion, CharacterStats characterStats, CharacterBaseStatsSO baseStats)
+        {
+            if (!ValidatePotionUsage(potion, characterStats))
             {
                 return false;
             }
@@ -67,7 +100,7 @@ namespace Ascension.GameSystem
                 return false;
             }
 
-            ApplyPotionEffects(potion, CharacterStats, baseStats);
+            ApplyPotionEffects(potion, characterStats, baseStats);
             
             Debug.Log($"[PotionManager] Used {potion.ItemName}");
             return true;
@@ -98,17 +131,17 @@ namespace Ascension.GameSystem
         #region Public Methods - Query Active Effects
         public List<ActiveHealOverTurn> GetActiveHealOverTurns()
         {
-            return new List<ActiveHealOverTurn>(activeHealOverTurns);
+            return new List<ActiveHealOverTurn>(_activeHealOverTurns);
         }
         
         public List<ActiveBuff> GetActiveBuffs()
         {
-            return new List<ActiveBuff>(activeBuffs);
+            return new List<ActiveBuff>(_activeBuffs);
         }
         #endregion
         
         #region Private Methods - Validation
-        private bool ValidatePotionUsage(PotionSO potion, CharacterStats CharacterStats)
+        private bool ValidatePotionUsage(PotionSO potion, CharacterStats characterStats)
         {
             if (potion == null)
             {
@@ -116,7 +149,7 @@ namespace Ascension.GameSystem
                 return false;
             }
             
-            if (CharacterStats == null)
+            if (characterStats == null)
             {
                 Debug.LogWarning("[PotionManager] CharacterStats is null");
                 return false;
@@ -127,11 +160,11 @@ namespace Ascension.GameSystem
         #endregion
         
         #region Private Methods - Potion Effects
-        private void ApplyPotionEffects(PotionSO potion, CharacterStats CharacterStats, CharacterBaseStatsSO baseStats)
+        private void ApplyPotionEffects(PotionSO potion, CharacterStats characterStats, CharacterBaseStatsSO baseStats)
         {
             if (potion.HealthRestore > 0)
             {
-                ApplyHealthRestore(potion, CharacterStats);
+                ApplyHealthRestore(potion, characterStats);
             }
             
             if (potion.ManaRestore > 0)
@@ -141,26 +174,26 @@ namespace Ascension.GameSystem
             
             if (potion.buffs != null && potion.buffs.Count > 0)
             {
-                ApplyBuffs(potion.buffs, CharacterStats, baseStats);
+                ApplyBuffs(potion.buffs, characterStats, baseStats);
             }
         }
         
-        private void ApplyHealthRestore(PotionSO potion, CharacterStats CharacterStats)
+        private void ApplyHealthRestore(PotionSO potion, CharacterStats characterStats)
         {
-            float healAmount = potion.GetActualHealAmount(CharacterStats.MaxHP);
+            float healAmount = potion.GetActualHealAmount(characterStats.MaxHP);
             
             switch (potion.durationType)
             {
                 case DurationType.Instant:
-                    HealPlayer(CharacterStats, healAmount);
+                    HealPlayer(characterStats, healAmount);
                     break;
                     
                 case DurationType.RealTime:
-                    StartCoroutine(HealOverTime(CharacterStats, healAmount, potion.restoreDuration));
+                    StartCoroutine(HealOverTime(characterStats, healAmount, potion.restoreDuration));
                     break;
                     
                 case DurationType.TurnBased:
-                    AddHealOverTurn(potion.ItemName, CharacterStats, healAmount, potion.TurnDuration);
+                    AddHealOverTurn(potion.ItemName, characterStats, healAmount, potion.TurnDuration);
                     break;
             }
         }
@@ -172,24 +205,24 @@ namespace Ascension.GameSystem
             Debug.Log($"[PotionManager] Restored {manaAmount} mana (STUB - mana not implemented yet)");
         }
         
-        private void ApplyBuffs(List<PotionBuff> buffs, CharacterStats CharacterStats, CharacterBaseStatsSO baseStats)
+        private void ApplyBuffs(List<PotionBuff> buffs, CharacterStats characterStats, CharacterBaseStatsSO baseStats)
         {
             foreach (var buff in buffs)
             {
-                ApplyBuff(buff, CharacterStats, baseStats);
+                ApplyBuff(buff, characterStats, baseStats);
             }
         }
         #endregion
         
         #region Private Methods - Instant Healing
-        private void HealPlayer(CharacterStats CharacterStats, float amount)
+        private void HealPlayer(CharacterStats characterStats, float amount)
         {
-            float oldHP = CharacterStats.CurrentHP;
-            float maxHP = CharacterStats.MaxHP;
+            float oldHP = characterStats.CurrentHP;
+            float maxHP = characterStats.MaxHP;
             float newHP = Mathf.Min(oldHP + amount, maxHP);
             float actualHealed = newHP - oldHP;
             
-            CharacterStats.combatRuntime.currentHP = newHP;
+            characterStats.combatRuntime.currentHP = newHP;
             
             Debug.Log($"[PotionManager] Healed {actualHealed:F0} HP ({oldHP:F0} → {newHP:F0})");
             
@@ -198,15 +231,15 @@ namespace Ascension.GameSystem
         
         private void TriggerHealEvent(float amount)
         {
-            if (CharacterManager.Instance != null)
+            if (_characterManager != null)
             {
-                CharacterManager.Instance.ApplyHeal(amount);
+                _characterManager.ApplyHeal(amount);
             }
         }
         #endregion
         
         #region Private Methods - Real-Time Heal Over Time
-        private IEnumerator HealOverTime(CharacterStats CharacterStats, float totalAmount, float duration)
+        private IEnumerator HealOverTime(CharacterStats characterStats, float totalAmount, float duration)
         {
             float healPerSecond = totalAmount / duration;
             float elapsed = 0f;
@@ -216,7 +249,7 @@ namespace Ascension.GameSystem
             while (elapsed < duration)
             {
                 float deltaHeal = healPerSecond * Time.deltaTime;
-                HealPlayer(CharacterStats, deltaHeal);
+                HealPlayer(characterStats, deltaHeal);
                 
                 elapsed += Time.deltaTime;
                 yield return null;
@@ -227,31 +260,31 @@ namespace Ascension.GameSystem
         #endregion
         
         #region Private Methods - Turn-Based Heal Over Turn
-        private void AddHealOverTurn(string potionName, CharacterStats CharacterStats, float totalHeal, int turnCount)
+        private void AddHealOverTurn(string potionName, CharacterStats characterStats, float totalHeal, int turnCount)
         {
             float healPerTurn = totalHeal / turnCount;
             
             ActiveHealOverTurn hot = new ActiveHealOverTurn
             {
                 potionName = potionName,
-                CharacterStats = CharacterStats,
+                characterStats = characterStats,
                 healPerTurn = healPerTurn,
                 totalHealRemaining = totalHeal,
                 turnsRemaining = turnCount
             };
             
-            activeHealOverTurns.Add(hot);
+            _activeHealOverTurns.Add(hot);
             
             Debug.Log($"[PotionManager] Applied Heal over Turn: {healPerTurn:F0} HP/turn for {turnCount} turns (Total: {totalHeal:F0})");
         }
         
         private void ProcessHealOverTurns()
         {
-            for (int i = activeHealOverTurns.Count - 1; i >= 0; i--)
+            for (int i = _activeHealOverTurns.Count - 1; i >= 0; i--)
             {
-                var hot = activeHealOverTurns[i];
+                var hot = _activeHealOverTurns[i];
                 
-                HealPlayer(hot.CharacterStats, hot.healPerTurn);
+                HealPlayer(hot.characterStats, hot.healPerTurn);
                 
                 hot.turnsRemaining--;
                 hot.totalHealRemaining -= hot.healPerTurn;
@@ -259,14 +292,14 @@ namespace Ascension.GameSystem
                 if (hot.turnsRemaining <= 0)
                 {
                     Debug.Log($"[PotionManager] Heal over Turn expired: {hot.potionName}");
-                    activeHealOverTurns.RemoveAt(i);
+                    _activeHealOverTurns.RemoveAt(i);
                 }
             }
         }
         #endregion
         
         #region Private Methods - Buff System
-        private void ApplyBuff(PotionBuff buff, CharacterStats CharacterStats, CharacterBaseStatsSO baseStats)
+        private void ApplyBuff(PotionBuff buff, CharacterStats characterStats, CharacterBaseStatsSO baseStats)
         {
             Debug.Log($"[PotionManager] Applied buff: {buff.type} (+{buff.value}) for {buff.duration}");
             
@@ -279,21 +312,21 @@ namespace Ascension.GameSystem
                 durationType = buff.durationType
             };
             
-            activeBuffs.Add(activeBuff);
+            _activeBuffs.Add(activeBuff);
         }
         
         private void UpdateActiveBuffs()
         {
-            for (int i = activeBuffs.Count - 1; i >= 0; i--)
+            for (int i = _activeBuffs.Count - 1; i >= 0; i--)
             {
-                if (activeBuffs[i].durationType == DurationType.RealTime)
+                if (_activeBuffs[i].durationType == DurationType.RealTime)
                 {
-                    activeBuffs[i].remainingTime -= Time.deltaTime;
+                    _activeBuffs[i].remainingTime -= Time.deltaTime;
                     
-                    if (activeBuffs[i].remainingTime <= 0)
+                    if (_activeBuffs[i].remainingTime <= 0)
                     {
-                        Debug.Log($"[PotionManager] Buff expired: {activeBuffs[i].buffType}");
-                        activeBuffs.RemoveAt(i);
+                        Debug.Log($"[PotionManager] Buff expired: {_activeBuffs[i].buffType}");
+                        _activeBuffs.RemoveAt(i);
                     }
                 }
             }
@@ -301,16 +334,16 @@ namespace Ascension.GameSystem
         
         private void ProcessTurnBasedBuffs()
         {
-            for (int i = activeBuffs.Count - 1; i >= 0; i--)
+            for (int i = _activeBuffs.Count - 1; i >= 0; i--)
             {
-                if (activeBuffs[i].durationType == DurationType.TurnBased)
+                if (_activeBuffs[i].durationType == DurationType.TurnBased)
                 {
-                    activeBuffs[i].remainingTime--;
+                    _activeBuffs[i].remainingTime--;
                     
-                    if (activeBuffs[i].remainingTime <= 0)
+                    if (_activeBuffs[i].remainingTime <= 0)
                     {
-                        Debug.Log($"[PotionManager] Turn-based buff expired: {activeBuffs[i].buffType}");
-                        activeBuffs.RemoveAt(i);
+                        Debug.Log($"[PotionManager] Turn-based buff expired: {_activeBuffs[i].buffType}");
+                        _activeBuffs.RemoveAt(i);
                     }
                 }
             }
@@ -320,22 +353,16 @@ namespace Ascension.GameSystem
         #region Private Methods - Cleanup
         private void ClearTurnBasedEffects()
         {
-            activeHealOverTurns.Clear();
+            _activeHealOverTurns.Clear();
         }
         #endregion
         
         #region Debug Methods
         [ContextMenu("Debug: Enter Combat")]
-        private void DebugEnterCombat()
-        {
-            SetCombatState(true);
-        }
+        private void DebugEnterCombat() => SetCombatState(true);
         
         [ContextMenu("Debug: Exit Combat")]
-        private void DebugExitCombat()
-        {
-            SetCombatState(false);
-        }
+        private void DebugExitCombat() => SetCombatState(false);
         
         [ContextMenu("Debug: Trigger Turn")]
         private void DebugTriggerTurn()
@@ -348,16 +375,16 @@ namespace Ascension.GameSystem
         private void DebugPrintEffects()
         {
             Debug.Log("=== ACTIVE EFFECTS ===");
-            Debug.Log($"Heal over Turns: {activeHealOverTurns.Count}");
+            Debug.Log($"Heal over Turns: {_activeHealOverTurns.Count}");
             
-            foreach (var hot in activeHealOverTurns)
+            foreach (var hot in _activeHealOverTurns)
             {
                 Debug.Log($"  • {hot.potionName}: {hot.healPerTurn:F0} HP/turn for {hot.turnsRemaining} turns");
             }
             
-            Debug.Log($"Active Buffs: {activeBuffs.Count}");
+            Debug.Log($"Active Buffs: {_activeBuffs.Count}");
             
-            foreach (var buff in activeBuffs)
+            foreach (var buff in _activeBuffs)
             {
                 Debug.Log($"  • {buff.buffType} (+{buff.value}) - {buff.remainingTime:F1} remaining");
             }
@@ -383,7 +410,7 @@ namespace Ascension.GameSystem
     public class ActiveHealOverTurn
     {
         public string potionName;
-        public CharacterStats CharacterStats;
+        public CharacterStats characterStats;
         public float healPerTurn;
         public float totalHealRemaining;
         public int turnsRemaining;

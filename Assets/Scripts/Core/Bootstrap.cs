@@ -1,13 +1,9 @@
-// ════════════════════════════════════════════════════════════════════════
-// Bootstrap.cs
-// Entry point for game initialization and scene routing based on save state
-// Waits for GameSystemHub before proceeding
-// ════════════════════════════════════════════════════════════════════════
-
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Ascension.App;
+using Ascension.Character.Manager;
+using Ascension.Inventory.Manager;
 
 namespace Ascension.Core
 {
@@ -38,7 +34,7 @@ namespace Ascension.Core
             float startTime = Time.time;
             Log("Initializing...");
 
-            // Wait for GameSystemHub to be ready
+            // Wait for ServiceContainer and all critical systems to be ready
             yield return StartCoroutine(WaitForSystemsReady());
 
             Log("All systems initialized");
@@ -54,85 +50,69 @@ namespace Ascension.Core
         #endregion
 
         #region System Initialization
-        /// <summary>
-        /// Wait for GameSystemHub and all critical systems to initialize
-        /// </summary>
         private IEnumerator WaitForSystemsReady()
         {
-            Log("Waiting for GameSystemHub...");
-            
+            Log("Waiting for ServiceContainer...");
+
             float elapsedTime = 0f;
             int frameCount = 0;
 
-            // Wait for Hub to exist and initialize
-            while ((GameSystemHub.Instance == null || !GameSystemHub.Instance.IsInitialized) 
-                   && elapsedTime < systemTimeoutSeconds)
+            // Wait for ServiceContainer to exist and initialize
+            while (ServiceContainer.Instance == null || !ServiceContainer.Instance.IsInitialized)
             {
                 frameCount++;
-                
-                // Log progress every N frames
                 if (frameCount % FRAME_WAIT_INTERVAL == 0)
-                {
-                    Log($"Still waiting for Hub... ({elapsedTime:F1}s elapsed)");
-                }
+                    Log($"Still waiting for ServiceContainer... ({elapsedTime:F1}s elapsed)");
 
                 yield return null;
                 elapsedTime += Time.deltaTime;
+
+                if (elapsedTime >= systemTimeoutSeconds)
+                {
+                    LogError($"CRITICAL: ServiceContainer not ready after {systemTimeoutSeconds}s!");
+                    yield break;
+                }
             }
 
-            // Check for timeout
-            if (GameSystemHub.Instance == null)
-            {
-                LogError($"CRITICAL: GameSystemHub not found after {systemTimeoutSeconds}s!");
-                yield break;
-            }
+            Log("ServiceContainer found, checking critical systems...");
 
-            Log("GameSystemHub found, checking systems...");
-
-            // Wait for all critical systems to be ready
+            // Wait for all critical systems to be registered
             elapsedTime = 0f;
             frameCount = 0;
 
-            while (!GameSystemHub.Instance.AreAllSystemsReady() 
-                   && elapsedTime < systemTimeoutSeconds)
+            while (!(ServiceContainer.Instance.Has<SaveManager>() &&
+                    ServiceContainer.Instance.Has<CharacterManager>() &&
+                    ServiceContainer.Instance.Has<InventoryManager>()))
             {
                 frameCount++;
-                
                 if (frameCount % FRAME_WAIT_INTERVAL == 0)
-                {
-                    Log($"Waiting for systems... ({elapsedTime:F1}s elapsed)");
-                }
+                    Log($"Waiting for critical systems... ({elapsedTime:F1}s elapsed)");
 
                 yield return null;
                 elapsedTime += Time.deltaTime;
+
+                if (elapsedTime >= systemTimeoutSeconds)
+                {
+                    LogError("CRITICAL: Critical systems not ready after timeout!");
+                    LogError(ServiceContainer.Instance.GetSystemStatus());
+                    yield break;
+                }
             }
 
-            // Final validation
-            if (!GameSystemHub.Instance.AreAllSystemsReady())
-            {
-                LogError("CRITICAL: Systems not ready after timeout!");
-                LogError(GameSystemHub.Instance.GetSystemStatus());
-                yield break;
-            }
-
-            Log("✓ All systems ready!");
+            Log("✓ All critical systems ready!");
         }
+
         #endregion
 
         #region Scene Logic
-        /// <summary>
-        /// Determine which scene to load based on save state
-        /// </summary>
         private string DetermineTargetScene()
         {
-            // Validate managers exist
             if (!ValidateManagers())
             {
                 LogError("Critical managers missing, defaulting to avatar creation");
                 return avatarCreationScene;
             }
 
-            // Check for existing save
             if (!SaveManager.Instance.SaveExists())
             {
                 Log("No save found — creating new profile");
@@ -140,7 +120,6 @@ namespace Ascension.Core
                 return avatarCreationScene;
             }
 
-            // Attempt to load existing save
             Log("Save found — attempting to load...");
             if (GameManager.Instance.LoadGame())
             {
@@ -149,15 +128,11 @@ namespace Ascension.Core
                 return mainBaseScene;
             }
 
-            // Save corrupted or load failed
             Log("Save corrupted or load failed — creating new profile");
             GameManager.Instance.StartNewGame();
             return avatarCreationScene;
         }
 
-        /// <summary>
-        /// Validate that critical managers are present
-        /// </summary>
         private bool ValidateManagers()
         {
             bool valid = true;
@@ -179,13 +154,10 @@ namespace Ascension.Core
         #endregion
 
         #region Helper Methods
-        /// <summary>
-        /// Ensure minimum load time for smooth user experience
-        /// </summary>
         private IEnumerator EnsureMinimumLoadTime(float startTime)
         {
             float elapsed = Time.time - startTime;
-            
+
             if (elapsed < minimumLoadTime)
             {
                 float remaining = minimumLoadTime - elapsed;
@@ -196,10 +168,7 @@ namespace Ascension.Core
 
         private void Log(string message)
         {
-            if (showDebugLogs)
-            {
-                Debug.Log($"[Bootstrap] {message}");
-            }
+            if (showDebugLogs) Debug.Log($"[Bootstrap] {message}");
         }
 
         private void LogError(string message)
