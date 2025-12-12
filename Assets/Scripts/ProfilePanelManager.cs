@@ -1,11 +1,11 @@
 // ════════════════════════════════════════════
-// ProfilePanelManager.cs
-// Manages player profile panel UI with attribute allocation
+// ProfilePanelManager.cs - FIXED: GetOriginalValue
 // ════════════════════════════════════════════
 
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections.Generic;
 using Ascension.App;
 using Ascension.Character.Stat;
 using Ascension.Data.SO.Character;
@@ -59,6 +59,9 @@ namespace Ascension.UI
         #region Private Fields
         private int tempSTR, tempINT, tempAGI, tempEND, tempWIS;
         private int tempPointsSpent = 0;
+        
+        // ✅ FIX: Store original values in a dictionary
+        private Dictionary<string, int> _originalAttributes = new Dictionary<string, int>();
         #endregion
         
         #region Properties
@@ -103,20 +106,21 @@ namespace Ascension.UI
         
         private void SetupAttributeButtons()
         {
-            strMinusBtn?.onClick.AddListener(() => ModifyTempAttribute(ref tempSTR, -1));
-            strPlusBtn?.onClick.AddListener(() => ModifyTempAttribute(ref tempSTR, 1));
+            // ✅ FIX: Pass attribute name instead of ref int
+            strMinusBtn?.onClick.AddListener(() => ModifyAttribute("STR", -1));
+            strPlusBtn?.onClick.AddListener(() => ModifyAttribute("STR", 1));
             
-            intMinusBtn?.onClick.AddListener(() => ModifyTempAttribute(ref tempINT, -1));
-            intPlusBtn?.onClick.AddListener(() => ModifyTempAttribute(ref tempINT, 1));
+            intMinusBtn?.onClick.AddListener(() => ModifyAttribute("INT", -1));
+            intPlusBtn?.onClick.AddListener(() => ModifyAttribute("INT", 1));
             
-            agiMinusBtn?.onClick.AddListener(() => ModifyTempAttribute(ref tempAGI, -1));
-            agiPlusBtn?.onClick.AddListener(() => ModifyTempAttribute(ref tempAGI, 1));
+            agiMinusBtn?.onClick.AddListener(() => ModifyAttribute("AGI", -1));
+            agiPlusBtn?.onClick.AddListener(() => ModifyAttribute("AGI", 1));
             
-            endMinusBtn?.onClick.AddListener(() => ModifyTempAttribute(ref tempEND, -1));
-            endPlusBtn?.onClick.AddListener(() => ModifyTempAttribute(ref tempEND, 1));
+            endMinusBtn?.onClick.AddListener(() => ModifyAttribute("END", -1));
+            endPlusBtn?.onClick.AddListener(() => ModifyAttribute("END", 1));
             
-            wisMinusBtn?.onClick.AddListener(() => ModifyTempAttribute(ref tempWIS, -1));
-            wisPlusBtn?.onClick.AddListener(() => ModifyTempAttribute(ref tempWIS, 1));
+            wisMinusBtn?.onClick.AddListener(() => ModifyAttribute("WIS", -1));
+            wisPlusBtn?.onClick.AddListener(() => ModifyAttribute("WIS", 1));
         }
         
         private void SetupActionButtons()
@@ -152,10 +156,21 @@ namespace Ascension.UI
             tempEND = Player.attributes.END;
             tempWIS = Player.attributes.WIS;
             tempPointsSpent = 0;
+            
+            // ✅ FIX: Store original values for comparison
+            _originalAttributes["STR"] = Player.attributes.STR;
+            _originalAttributes["INT"] = Player.attributes.INT;
+            _originalAttributes["AGI"] = Player.attributes.AGI;
+            _originalAttributes["END"] = Player.attributes.END;
+            _originalAttributes["WIS"] = Player.attributes.WIS;
         }
         
-        private void ModifyTempAttribute(ref int tempAttribute, int change)
+        // ✅ FIX: Cleaner attribute modification with string key
+        private void ModifyAttribute(string attributeName, int change)
         {
+            ref int tempAttribute = ref GetTempAttribute(attributeName);
+            int originalValue = _originalAttributes[attributeName];
+            
             if (change > 0)
             {
                 if (!CanAllocatePoints()) return;
@@ -165,8 +180,6 @@ namespace Ascension.UI
             }
             else if (change < 0)
             {
-                int originalValue = GetOriginalValue(ref tempAttribute);
-                
                 if (tempAttribute <= originalValue) return;
                 
                 tempAttribute--;
@@ -176,19 +189,23 @@ namespace Ascension.UI
             RefreshUI();
         }
         
+        // Helper to get reference to temp attribute by name
+        private ref int GetTempAttribute(string attributeName)
+        {
+            switch (attributeName)
+            {
+                case "STR": return ref tempSTR;
+                case "INT": return ref tempINT;
+                case "AGI": return ref tempAGI;
+                case "END": return ref tempEND;
+                case "WIS": return ref tempWIS;
+                default: throw new System.ArgumentException($"Invalid attribute: {attributeName}");
+            }
+        }
+        
         private bool CanAllocatePoints()
         {
             return tempPointsSpent < Player.UnallocatedPoints;
-        }
-        
-        private int GetOriginalValue(ref int tempAttribute)
-        {
-            if (ReferenceEquals(tempAttribute, tempSTR)) return Player.attributes.STR;
-            if (ReferenceEquals(tempAttribute, tempINT)) return Player.attributes.INT;
-            if (ReferenceEquals(tempAttribute, tempAGI)) return Player.attributes.AGI;
-            if (ReferenceEquals(tempAttribute, tempEND)) return Player.attributes.END;
-            if (ReferenceEquals(tempAttribute, tempWIS)) return Player.attributes.WIS;
-            return 0;
         }
         #endregion
         
@@ -223,11 +240,11 @@ namespace Ascension.UI
         
         private void UpdateAttributeDisplay()
         {
-            if (strValueText) strValueText.text = FormatAttributeText(Player.attributes.STR, tempSTR);
-            if (intValueText) intValueText.text = FormatAttributeText(Player.attributes.INT, tempINT);
-            if (agiValueText) agiValueText.text = FormatAttributeText(Player.attributes.AGI, tempAGI);
-            if (endValueText) endValueText.text = FormatAttributeText(Player.attributes.END, tempEND);
-            if (wisValueText) wisValueText.text = FormatAttributeText(Player.attributes.WIS, tempWIS);
+            if (strValueText) strValueText.text = FormatAttributeText(_originalAttributes["STR"], tempSTR);
+            if (intValueText) intValueText.text = FormatAttributeText(_originalAttributes["INT"], tempINT);
+            if (agiValueText) agiValueText.text = FormatAttributeText(_originalAttributes["AGI"], tempAGI);
+            if (endValueText) endValueText.text = FormatAttributeText(_originalAttributes["END"], tempEND);
+            if (wisValueText) wisValueText.text = FormatAttributeText(_originalAttributes["WIS"], tempWIS);
             
             UpdatePointsDisplay();
         }
@@ -297,11 +314,11 @@ namespace Ascension.UI
         
         private void UpdateMinusButtons()
         {
-            strMinusBtn.interactable = tempSTR > Player.attributes.STR;
-            intMinusBtn.interactable = tempINT > Player.attributes.INT;
-            agiMinusBtn.interactable = tempAGI > Player.attributes.AGI;
-            endMinusBtn.interactable = tempEND > Player.attributes.END;
-            wisMinusBtn.interactable = tempWIS > Player.attributes.WIS;
+            strMinusBtn.interactable = tempSTR > _originalAttributes["STR"];
+            intMinusBtn.interactable = tempINT > _originalAttributes["INT"];
+            agiMinusBtn.interactable = tempAGI > _originalAttributes["AGI"];
+            endMinusBtn.interactable = tempEND > _originalAttributes["END"];
+            wisMinusBtn.interactable = tempWIS > _originalAttributes["WIS"];
         }
         #endregion
         
