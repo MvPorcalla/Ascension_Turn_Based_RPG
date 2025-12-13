@@ -227,15 +227,14 @@ namespace Ascension.Inventory.Popup
         }
 
         #region Action Handlers
-
         private void OnEquipButtonClicked()
         {
             var buttonText = equipButton.GetComponentInChildren<TMP_Text>()?.text;
+            var database = InventoryManager.Instance.Database;
 
             if (buttonText == "Add to Bag")
             {
-                // From storage: Move to bag
-                if (InventoryManager.Instance.Inventory.MoveToBag(currentItemInstance, 1))
+                if (InventoryManager.Instance.Inventory.MoveToBag(currentItemInstance, 1, database))
                 {
                     Debug.Log($"Moved {currentItem.ItemName} to bag");
                     ClosePopup();
@@ -243,8 +242,7 @@ namespace Ascension.Inventory.Popup
             }
             else if (buttonText == "Store")
             {
-                // From bag or pocket: Move to storage
-                if (InventoryManager.Instance.Inventory.MoveToStorage(currentItemInstance, 1))
+                if (InventoryManager.Instance.Inventory.MoveToStorage(currentItemInstance, 1, database))
                 {
                     Debug.Log($"Stored {currentItem.ItemName}");
                     ClosePopup();

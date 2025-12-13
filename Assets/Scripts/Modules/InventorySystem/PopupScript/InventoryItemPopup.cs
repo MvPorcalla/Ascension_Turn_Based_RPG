@@ -194,24 +194,22 @@ namespace Ascension.Inventory.Popup
         #endregion
 
         #region Action Handlers
-
         private void OnAddToPocketClicked()
         {
             var buttonText = addToPocketButton.GetComponentInChildren<TMP_Text>()?.text;
+            var database = InventoryManager.Instance.Database;
             
             if (buttonText == "Add to Pocket")
             {
-                // From storage or bag: Move to pocket
-                if (InventoryManager.Instance.Inventory.MoveToPocket(currentItemInstance, selectedQuantity))
+                if (InventoryManager.Instance.Inventory.MoveToPocket(currentItemInstance, selectedQuantity, database))
                 {
                     Debug.Log($"Moved {selectedQuantity}x {currentItem.ItemName} to pocket");
                     ClosePopup();
                 }
             }
-            else if (buttonText == "Add to Bag") // ✅ Add this case
+            else if (buttonText == "Add to Bag")
             {
-                // From pocket: Move to bag
-                if (InventoryManager.Instance.Inventory.MoveToBag(currentItemInstance, selectedQuantity))
+                if (InventoryManager.Instance.Inventory.MoveToBag(currentItemInstance, selectedQuantity, database))
                 {
                     Debug.Log($"Moved {selectedQuantity}x {currentItem.ItemName} to bag");
                     ClosePopup();
@@ -222,11 +220,11 @@ namespace Ascension.Inventory.Popup
         private void OnAddToBagClicked()
         {
             var buttonText = addToBagButton.GetComponentInChildren<TMP_Text>()?.text;
+            var database = InventoryManager.Instance.Database;
             
             if (buttonText == "Add to Bag")
             {
-                // From storage or pocket: Move to bag
-                if (InventoryManager.Instance.Inventory.MoveToBag(currentItemInstance, selectedQuantity))
+                if (InventoryManager.Instance.Inventory.MoveToBag(currentItemInstance, selectedQuantity, database))
                 {
                     Debug.Log($"Moved {selectedQuantity}x {currentItem.ItemName} to bag");
                     ClosePopup();
@@ -234,8 +232,7 @@ namespace Ascension.Inventory.Popup
             }
             else if (buttonText == "Store")
             {
-                // From bag or pocket: Move to storage
-                if (InventoryManager.Instance.Inventory.MoveToStorage(currentItemInstance, selectedQuantity))
+                if (InventoryManager.Instance.Inventory.MoveToStorage(currentItemInstance, selectedQuantity, database))
                 {
                     Debug.Log($"Stored {selectedQuantity}x {currentItem.ItemName}");
                     ClosePopup();

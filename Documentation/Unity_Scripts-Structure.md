@@ -67,6 +67,10 @@ Scripts/
 │   │   │   └── CharacterLevelSystem.cs
 │   │   ├── Model/
 │   │   │   └── CharacterData.cs
+│   │   ├── Services/
+│   │   │   ├── ItemQueryService.cs
+│   │   │   ├── ItemStackingService.cs
+│   │   │   └── ItemLocationService.cs
 │   │   └── UI/
 │   │       ├── PlayerHUD.cs
 │   │       ├── PlayerPreviewUI.cs

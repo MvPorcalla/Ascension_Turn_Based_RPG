@@ -1,143 +1,92 @@
-// ──────────────────────────────────────────────────
-// BagInventory.cs
-// Manages the bag and storage inventory system
-// ──────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+// Scripts/Modules/InventorySystem/Data/BagInventory.cs
+// STEP 4: Refactored to use services (much cleaner!)
+// ══════════════════════════════════════════════════════════════════
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using Ascension.GameSystem;
 using Ascension.Data.SO.Item;
 using Ascension.Data.SO.Database;
-using Ascension.Inventory.Manager;
+using Ascension.Inventory.Services;
 
 namespace Ascension.Inventory.Data
 {
-
     [Serializable]
     public class BagInventory
     {
+        #region Serialized Fields
         public List<ItemInstance> allItems = new List<ItemInstance>();
-        
-        [Header("Bag Settings")]
-        public int maxBagSlots = 12; // Can be increased by equipment
+        public int maxBagSlots = 12;
+        public int maxPocketSlots = 6;
+        #endregion
 
-        [Header("Pocket Settings")]
-        public int maxPocketSlots = 6; // Fixed size for quick access items
-
-        // Events
+        #region Events
         public event Action OnInventoryChanged;
+        #endregion
 
-        /// <summary>
-        /// Get all items currently in the bag (12 slots) - Excludes skills
-        /// </summary>
+        #region Services
+        private ItemQueryService _queryService;
+        private ItemStackingService _stackingService;
+        private ItemLocationService _locationService;
+        #endregion
+
+        #region Constructor
+        public BagInventory()
+        {
+            InitializeServices();
+        }
+
+        private void InitializeServices()
+        {
+            _queryService = new ItemQueryService();
+            _stackingService = new ItemStackingService();
+            _locationService = new ItemLocationService(_stackingService, _queryService);
+        }
+        #endregion
+
+        #region Query Methods (Delegate to QueryService)
+        
         public List<ItemInstance> GetBagItems()
-        {
-            return allItems.Where(item => 
-                item.isInBag && 
-                !item.isInPocket &&  // 🆕 ADD THIS
-                !IsSkill(item.itemID)
-            ).ToList();
-        }
+            => _queryService.GetBagItems(allItems);
 
-        /// <summary>
-        /// Get all items in pocket (6 slots) - Excludes skills
-        /// </summary>
         public List<ItemInstance> GetPocketItems()
-        {
-            return allItems.Where(item => 
-                item.isInPocket && 
-                !IsSkill(item.itemID)
-            ).ToList();
-        }
+            => _queryService.GetPocketItems(allItems);
 
-        /// <summary>
-        /// Get all items in storage (not in bag) - Excludes skills
-        /// </summary>
         public List<ItemInstance> GetStorageItems()
-        {
-            return allItems.Where(item => 
-                !item.isInBag && 
-                !item.isInPocket &&  // 🆕 ADD THIS
-                !IsSkill(item.itemID)
-            ).ToList();
-        }
+            => _queryService.GetStorageItems(allItems);
 
-        /// <summary>
-        /// Get storage items filtered by type - Excludes skills
-        /// </summary>
         public List<ItemInstance> GetStorageItemsByType(ItemType? filterType, GameDatabaseSO database)
-        {
-            var storageItems = GetStorageItems();
-            
-            if (filterType == null)
-                return storageItems;
-            
-            return storageItems.Where(item => 
-            {
-                ItemBaseSO itemData = database.GetItem(item.itemID);
-                return itemData != null && itemData.ItemType == filterType.Value;
-            }).ToList();
-        }
+            => _queryService.GetStorageItemsByType(allItems, filterType, database);
 
-        /// <summary>
-        /// Check if an item is a skill (skills are managed separately)
-        /// </summary>
-        private bool IsSkill(string itemID)
-        {
-            // Skills shouldn't appear in storage/bag
-            return itemID.StartsWith("skill_");
-        }
+        public int GetItemCount(string itemID)
+            => _queryService.GetItemCount(allItems, itemID);
 
-        /// <summary>
-        /// Get number of items currently in bag
-        /// </summary>
+        public bool HasItem(string itemID, int quantity = 1)
+            => _queryService.HasItem(allItems, itemID, quantity);
+
         public int GetBagItemCount()
-        {
-            return GetBagItems().Count;
-        }
+            => _queryService.GetBagItemCount(allItems);
 
-        /// <summary>
-        /// Get number of items currently in pocket
-        /// </summary>
         public int GetPocketItemCount()
-        {
-            return GetPocketItems().Count;
-        }
+            => _queryService.GetPocketItemCount(allItems);
 
-        /// <summary>
-        /// Check if bag has space
-        /// </summary>
         public bool HasBagSpace()
-        {
-            return GetBagItemCount() < maxBagSlots;
-        }
+            => _queryService.HasBagSpace(allItems, maxBagSlots);
 
-        /// <summary>
-        /// Check if pocket has space
-        /// </summary>
         public bool HasPocketSpace()
-        {
-            return GetPocketItemCount() < maxPocketSlots;
-        }
+            => _queryService.HasPocketSpace(allItems, maxPocketSlots);
 
-        /// <summary>
-        /// Get number of empty slots in bag
-        /// </summary>
         public int GetEmptyBagSlots()
-        {
-            return maxBagSlots - GetBagItemCount();
-        }
+            => _queryService.GetEmptyBagSlots(allItems, maxBagSlots);
 
-        /// <summary>
-        /// Get number of empty slots in pocket
-        /// </summary>
         public int GetEmptyPocketSlots()
-        {
-            return maxPocketSlots - GetPocketItemCount();
-        }
+            => _queryService.GetEmptyPocketSlots(allItems, maxPocketSlots);
 
+        #endregion
+
+        #region Add/Remove Methods
 
         /// <summary>
         /// Add item to inventory (goes to storage by default)
@@ -157,68 +106,38 @@ namespace Ascension.Inventory.Data
                 return false;
             }
 
-            // Check if item is stackable
+            // Check bag space for non-storage additions
+            if (addToBag && !HasBagSpace())
+            {
+                Debug.LogWarning("[BagInventory] Bag full, sending to storage");
+                addToBag = false;
+            }
+
             if (itemData.IsStackable)
             {
-                // Try to stack with existing item
-                ItemInstance existing = allItems.FirstOrDefault(i => i.itemID == itemID && i.isInBag == addToBag);
-                
-                if (existing != null)
-                {
-                    // Stack up to max, create new slots if needed
-                    int remainder = quantity;
-                    
-                    while (remainder > 0)
-                    {
-                        int spaceInStack = itemData.MaxStackSize - existing.quantity;
-                        int amountToAdd = Mathf.Min(spaceInStack, remainder);
-                        
-                        existing.quantity += amountToAdd;
-                        remainder -= amountToAdd;
-                        
-                        // If still have remainder, create new stack
-                        if (remainder > 0)
-                        {
-                            if (addToBag && !HasBagSpace())
-                            {
-                                Debug.LogWarning("[BagInventory] Bag full, remaining items sent to storage");
-                                addToBag = false;
-                            }
-                            
-                            existing = new ItemInstance(itemID, 0, addToBag);
-                            allItems.Add(existing);
-                        }
-                    }
-                }
-                else
-                {
-                    // Create new stack(s)
-                    while (quantity > 0)
-                    {
-                        if (addToBag && !HasBagSpace())
-                        {
-                            Debug.LogWarning("[BagInventory] Bag full, remaining items sent to storage");
-                            addToBag = false;
-                        }
-                        
-                        int stackSize = Mathf.Min(quantity, itemData.MaxStackSize);
-                        allItems.Add(new ItemInstance(itemID, stackSize, addToBag));
-                        quantity -= stackSize;
-                    }
-                }
+                // Use stacking service to add stackable items
+                _stackingService.AddToExistingOrCreateNew(
+                    allItems,
+                    itemID,
+                    quantity,
+                    addToBag,
+                    false, // isInPocket
+                    itemData.MaxStackSize
+                );
             }
             else
             {
-                // Non-stackable items (weapons, armor, skills)
+                // Non-stackable items: create individual instances
                 for (int i = 0; i < quantity; i++)
                 {
+                    // Check space before each addition
                     if (addToBag && !HasBagSpace())
                     {
                         Debug.LogWarning("[BagInventory] Bag full, remaining items sent to storage");
                         addToBag = false;
                     }
-                    
-                    allItems.Add(new ItemInstance(itemID, 1, addToBag));
+
+                    allItems.Add(new ItemInstance(itemID, 1, addToBag, false));
                 }
             }
 
@@ -232,11 +151,14 @@ namespace Ascension.Inventory.Data
         public bool RemoveItem(ItemInstance item, int quantity = 1)
         {
             if (!allItems.Contains(item))
+            {
+                Debug.LogWarning("[BagInventory] Item not found in inventory");
                 return false;
+            }
 
             item.quantity -= quantity;
 
-            if (item.quantity <= 0)
+            if (_stackingService.ShouldRemoveStack(item))
             {
                 allItems.Remove(item);
             }
@@ -245,285 +167,86 @@ namespace Ascension.Inventory.Data
             return true;
         }
 
+        #endregion
+
+        #region Location Methods (Delegate to LocationService)
+
         /// <summary>
-        /// Move item to bag (from storage or pocket)
+        /// Move item to bag (requires database for stackable check)
         /// </summary>
-        public bool MoveToBag(ItemInstance item, int quantity = 1)
+        public bool MoveToBag(ItemInstance item, int quantity, GameDatabaseSO database)
         {
-            if (item.isInBag)
+            ItemBaseSO itemData = database.GetItem(item.itemID);
+            if (itemData == null)
             {
-                Debug.LogWarning("[BagInventory] Item already in bag");
+                Debug.LogError($"[BagInventory] Item data not found: {item.itemID}");
                 return false;
             }
 
-            if (!HasBagSpace())
-            {
-                Debug.LogWarning("[BagInventory] Bag is full");
-                return false;
-            }
+            bool success = _locationService.MoveToBag(allItems, item, quantity, maxBagSlots, itemData);
 
-            // Get item data to check if stackable
-            ItemBaseSO itemData = InventoryManager.Instance.Database.GetItem(item.itemID);
-            
-            if (itemData.IsStackable)
-            {
-                // Try to find existing stack in bag
-                ItemInstance existingInBag = allItems.FirstOrDefault(i => 
-                    i.itemID == item.itemID && 
-                    i.isInBag && 
-                    !i.isInPocket &&
-                    i.quantity < itemData.MaxStackSize
-                );
+            if (success)
+                OnInventoryChanged?.Invoke();
 
-                if (existingInBag != null)
-                {
-                    // Stack with existing
-                    int spaceInStack = itemData.MaxStackSize - existingInBag.quantity;
-                    int amountToMove = Mathf.Min(spaceInStack, quantity);
-                    
-                    existingInBag.quantity += amountToMove;
-                    item.quantity -= amountToMove;
-                    
-                    // Remove source if empty
-                    if (item.quantity <= 0)
-                    {
-                        allItems.Remove(item);
-                    }
-                    
-                    // If still have remainder and bag has space, create new stack
-                    if (quantity > amountToMove && HasBagSpace())
-                    {
-                        int remainder = quantity - amountToMove;
-                        item.quantity -= remainder;
-                        allItems.Add(new ItemInstance(item.itemID, remainder, true, false));
-                        
-                        if (item.quantity <= 0)
-                        {
-                            allItems.Remove(item);
-                        }
-                    }
-                }
-                else
-                {
-                    // No existing stack found, move/split normally
-                    if (quantity < item.quantity)
-                    {
-                        item.quantity -= quantity;
-                        allItems.Add(new ItemInstance(item.itemID, quantity, true, false));
-                    }
-                    else
-                    {
-                        item.isInBag = true;
-                        item.isInPocket = false;
-                    }
-                }
-            }
-            else
-            {
-                // Non-stackable: just change location flags
-                if (quantity < item.quantity)
-                {
-                    item.quantity -= quantity;
-                    allItems.Add(new ItemInstance(item.itemID, quantity, true, false));
-                }
-                else
-                {
-                    item.isInBag = true;
-                    item.isInPocket = false;
-                }
-            }
-
-            OnInventoryChanged?.Invoke();
-            return true;
+            return success;
         }
 
         /// <summary>
-        /// Move item to pocket (from storage or bag)
+        /// Move item to pocket (requires database for stackable check)
         /// </summary>
-        public bool MoveToPocket(ItemInstance item, int quantity = 1)
+        public bool MoveToPocket(ItemInstance item, int quantity, GameDatabaseSO database)
         {
-            if (item.isInPocket)
+            ItemBaseSO itemData = database.GetItem(item.itemID);
+            if (itemData == null)
             {
-                Debug.LogWarning("[BagInventory] Item already in pocket");
+                Debug.LogError($"[BagInventory] Item data not found: {item.itemID}");
                 return false;
             }
 
-            if (!HasPocketSpace())
-            {
-                Debug.LogWarning("[BagInventory] Pocket is full");
-                return false;
-            }
+            bool success = _locationService.MoveToPocket(allItems, item, quantity, maxPocketSlots, itemData);
 
-            // Get item data to check if stackable
-            ItemBaseSO itemData = InventoryManager.Instance.Database.GetItem(item.itemID);
-            
-            if (itemData.IsStackable)
-            {
-                // Try to find existing stack in pocket
-                ItemInstance existingInPocket = allItems.FirstOrDefault(i => 
-                    i.itemID == item.itemID && 
-                    i.isInPocket && 
-                    i.quantity < itemData.MaxStackSize
-                );
+            if (success)
+                OnInventoryChanged?.Invoke();
 
-                if (existingInPocket != null)
-                {
-                    // Stack with existing
-                    int spaceInStack = itemData.MaxStackSize - existingInPocket.quantity;
-                    int amountToMove = Mathf.Min(spaceInStack, quantity);
-                    
-                    existingInPocket.quantity += amountToMove;
-                    item.quantity -= amountToMove;
-                    
-                    // Remove source if empty
-                    if (item.quantity <= 0)
-                    {
-                        allItems.Remove(item);
-                    }
-                    
-                    // If still have remainder and pocket has space, create new stack
-                    if (quantity > amountToMove && HasPocketSpace())
-                    {
-                        int remainder = quantity - amountToMove;
-                        item.quantity -= remainder;
-                        allItems.Add(new ItemInstance(item.itemID, remainder, false, true));
-                        
-                        if (item.quantity <= 0)
-                        {
-                            allItems.Remove(item);
-                        }
-                    }
-                }
-                else
-                {
-                    // No existing stack found, move/split normally
-                    if (quantity < item.quantity)
-                    {
-                        item.quantity -= quantity;
-                        allItems.Add(new ItemInstance(item.itemID, quantity, false, true));
-                    }
-                    else
-                    {
-                        item.isInBag = false;
-                        item.isInPocket = true;
-                    }
-                }
-            }
-            else
-            {
-                // Non-stackable: just change location flags
-                if (quantity < item.quantity)
-                {
-                    item.quantity -= quantity;
-                    allItems.Add(new ItemInstance(item.itemID, quantity, false, true));
-                }
-                else
-                {
-                    item.isInBag = false;
-                    item.isInPocket = true;
-                }
-            }
-
-            OnInventoryChanged?.Invoke();
-            return true;
+            return success;
         }
 
         /// <summary>
-        /// Move item to storage (from bag or pocket)
+        /// Move item to storage (requires database for stackable check)
         /// </summary>
-        public bool MoveToStorage(ItemInstance item, int quantity = 1)
+        public bool MoveToStorage(ItemInstance item, int quantity, GameDatabaseSO database)
         {
-            if (!item.isInBag && !item.isInPocket)
+            ItemBaseSO itemData = database.GetItem(item.itemID);
+            if (itemData == null)
             {
-                Debug.LogWarning("[BagInventory] Item already in storage");
+                Debug.LogError($"[BagInventory] Item data not found: {item.itemID}");
                 return false;
             }
 
-            // Get item data to check if stackable
-            ItemBaseSO itemData = InventoryManager.Instance.Database.GetItem(item.itemID);
-            
-            if (itemData.IsStackable)
-            {
-                // Try to find existing stack in storage
-                ItemInstance existingInStorage = allItems.FirstOrDefault(i => 
-                    i.itemID == item.itemID && 
-                    !i.isInBag && 
-                    !i.isInPocket &&
-                    i.quantity < itemData.MaxStackSize
-                );
+            bool success = _locationService.MoveToStorage(allItems, item, quantity, itemData);
 
-                if (existingInStorage != null)
-                {
-                    // Stack with existing
-                    int spaceInStack = itemData.MaxStackSize - existingInStorage.quantity;
-                    int amountToMove = Mathf.Min(spaceInStack, quantity);
-                    
-                    existingInStorage.quantity += amountToMove;
-                    item.quantity -= amountToMove;
-                    
-                    // Remove source if empty
-                    if (item.quantity <= 0)
-                    {
-                        allItems.Remove(item);
-                    }
-                    
-                    // If still have remainder, create new stack in storage
-                    if (quantity > amountToMove)
-                    {
-                        int remainder = quantity - amountToMove;
-                        item.quantity -= remainder;
-                        allItems.Add(new ItemInstance(item.itemID, remainder, false, false));
-                        
-                        if (item.quantity <= 0)
-                        {
-                            allItems.Remove(item);
-                        }
-                    }
-                }
-                else
-                {
-                    // No existing stack found, move/split normally
-                    if (quantity < item.quantity)
-                    {
-                        item.quantity -= quantity;
-                        allItems.Add(new ItemInstance(item.itemID, quantity, false, false));
-                    }
-                    else
-                    {
-                        item.isInBag = false;
-                        item.isInPocket = false;
-                    }
-                }
-            }
-            else
-            {
-                // Non-stackable: just change location flags
-                if (quantity < item.quantity)
-                {
-                    item.quantity -= quantity;
-                    allItems.Add(new ItemInstance(item.itemID, quantity, false, false));
-                }
-                else
-                {
-                    item.isInBag = false;
-                    item.isInPocket = false;
-                }
-            }
+            if (success)
+                OnInventoryChanged?.Invoke();
 
-            OnInventoryChanged?.Invoke();
-            return true;
+            return success;
         }
 
+        #endregion
+
+        #region Utility Methods
+
         /// <summary>
-        /// Store all items from bag to storage
+        /// Store all items from bag to storage (excludes equipped items)
         /// </summary>
         public void StoreAllItems()
         {
+            // ToList() to avoid modification during iteration
             foreach (var item in GetBagItems().ToList())
             {
                 if (!item.isEquipped)
                 {
                     item.isInBag = false;
+                    item.isInPocket = false;
                 }
             }
 
@@ -531,28 +254,14 @@ namespace Ascension.Inventory.Data
         }
 
         /// <summary>
-        /// Get total count of a specific item (bag + storage)
-        /// </summary>
-        public int GetItemCount(string itemID)
-        {
-            return allItems.Where(i => i.itemID == itemID).Sum(i => i.quantity);
-        }
-
-        /// <summary>
-        /// Check if player has item
-        /// </summary>
-        public bool HasItem(string itemID, int quantity = 1)
-        {
-            return GetItemCount(itemID) >= quantity;
-        }
-
-        /// <summary>
-        /// Clear all items (for testing)
+        /// Clear all items (for testing/reset)
         /// </summary>
         public void ClearAll()
         {
             allItems.Clear();
             OnInventoryChanged?.Invoke();
         }
+
+        #endregion
     }
 }
