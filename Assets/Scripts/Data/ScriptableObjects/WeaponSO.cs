@@ -203,5 +203,25 @@ namespace Ascension.Data.SO.Item
                 itemID = $"weapon_{name.ToLower().Replace(" ", "_")}";
         }
         #endregion
+
+        #region Debug Helpers
+
+        [ContextMenu("Generate Item ID")]
+        private void GenerateItemID()
+        {
+            itemID = $"weapon_{weaponName.ToLower().Replace(" ", "_")}";
+            Debug.Log($"Generated ID: {itemID}");
+            
+            #if UNITY_EDITOR
+            UnityEditor.EditorUtility.SetDirty(this);
+            #endif
+        }
+
+        [ContextMenu("Print Weapon Info")]
+        private void DebugPrintInfo()
+        {
+            Debug.Log(GetInfoText());
+        }
+        #endregion
     }
 }

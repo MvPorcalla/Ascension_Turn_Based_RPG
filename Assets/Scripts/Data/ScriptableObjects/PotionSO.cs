@@ -167,25 +167,11 @@ namespace Ascension.Data.SO.Item
         {
             itemID = $"potion_{itemName.ToLower().Replace(" ", "_").Replace("'", "")}";
             Debug.Log($"Generated ID: {itemID}");
-
-#if UNITY_EDITOR
+            
+            #if UNITY_EDITOR
             UnityEditor.EditorUtility.SetDirty(this);
-#endif
+            #endif
         }
-
-        // [ContextMenu("Test: Add to Inventory")]
-        // private void DebugAddToInventory()
-        // {
-        //     if (Application.isPlaying && InventoryManager.Instance != null)
-        //     {
-        //         InventoryManager.Instance.AddItem(itemID, 5);
-        //         Debug.Log($"[PotionSO] Added 5x {itemName} to inventory");
-        //     }
-        //     else
-        //     {
-        //         Debug.LogWarning("Can only test in Play Mode with InventoryManager present");
-        //     }
-        // }
 
         [ContextMenu("Print Potion Info")]
         private void DebugPrintInfo()

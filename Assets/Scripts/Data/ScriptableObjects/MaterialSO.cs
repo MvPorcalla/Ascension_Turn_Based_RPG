@@ -49,24 +49,6 @@ namespace Ascension.Data.SO.Item
 
         #region Debug Helpers
 
-        // [ContextMenu("Test: Add to Inventory (Bag)")]
-        // private void DebugAddToBag()
-        // {
-        //     if (!Application.isPlaying || InventoryManager.Instance == null) return;
-
-        //     InventoryManager.Instance.AddItem(itemID, 5, true);
-        //     Debug.Log($"[MaterialSO] Added 5x {itemName} to bag");
-        // }
-
-        // [ContextMenu("Test: Add to Storage")]
-        // private void DebugAddToStorage()
-        // {
-        //     if (!Application.isPlaying || InventoryManager.Instance == null) return;
-
-        //     InventoryManager.Instance.AddItem(itemID, 10, false);
-        //     Debug.Log($"[MaterialSO] Added 10x {itemName} to storage");
-        // }
-
         [ContextMenu("Print Material Info")]
         private void DebugPrintInfo()
         {

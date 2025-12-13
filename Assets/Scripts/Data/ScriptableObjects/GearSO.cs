@@ -184,6 +184,25 @@ namespace Ascension.Data.SO.Item
                 itemID = $"gear_{gearType.ToString().ToLower()}_{name.ToLower().Replace(" ", "_")}";
         }
         #endregion
+
+        #region Debug Helpers
+        [ContextMenu("Generate Item ID")]
+        private void GenerateItemID()
+        {
+            itemID = $"gear_{gearType.ToString().ToLower()}_{gearName.ToLower().Replace(" ", "_")}";
+            Debug.Log($"Generated ID: {itemID}");
+            
+            #if UNITY_EDITOR
+            UnityEditor.EditorUtility.SetDirty(this);
+            #endif
+        }
+
+        [ContextMenu("Print Gear Info")]
+        private void DebugPrintInfo()
+        {
+            Debug.Log(GetInfoText());
+        }
+        #endregion
     }
 
     public enum GearType

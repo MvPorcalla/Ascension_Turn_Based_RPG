@@ -135,49 +135,6 @@ Should I create a separate `UI` folder for each module’s interface and have th
 
 ---
 
-TODO: also other say my current GameSystemHUB is Inefficient and not robust
+TODO: 
 
-Currently, I’m using a Component-Based Architecture (CBA) with a Service Locator (SL) pattern. Would it make sense to switch to Dependency Injection (DI) or implement a hybrid approach combining SL and DI for better modularity and decoupling? Also, what naming convention do you recommend for system references and injected dependencies—for example, using _inventorySystem for private fields or InventorySystem for public properties?
-
-## 5. Diagram
-
-
-        ┌─────────────────────────────┐
-        │  GameManager & SaveManager  │  ← Central Brain / Global Game State
-        └──────────────┬──────────────┘
-                       │
-                       ▼
-               ┌───────────────┐
-               │ GameSystemHub │  ← Orchestrator / Coordinator (shouild i make mini hubs to split the work?)
-               └───────┬───────┘
-                       │
-    ┌──────────────────┼───────────────────┐───────────────────┐ 
-    │                  │                   │                   │
-    ▼                  ▼                   ▼                   ▼
-CharacterSystem  InventorySystem  CombatSystem               ETC...
-   (.asmdef)        (.asmdef)      (.asmdef)
-
-(currently using Service Locator (SL) which is not good they said, is Dependency Injection Hybrid with SL better?)
-
-This diagram illustrates module orchestration and allowed dependencies.
-
----
-
-**Cross-Module Communication Rule:**
-
-All game modules (CharacterSystem, InventorySystem, CombatSystem, etc.) are **independent**. If a module needs functionality from another module:
-
-1. It **requests the target system from `GameSystemHub`**.
-2. It calls the required method on that system.
-3. The result is returned to the requesting module.
-
-**Example:**
-
-* InventorySystem wants to use a potion to heal a player or apply a buff.
-* InventorySystem **does not directly call** `PotionManager`.
-* Instead, it asks `GameSystemHub` for `PotionManager` and calls `UsePotion(...)`.
-* Any effect (healing, buff) is applied through `PotionManager` and the results flow back to InventorySystem.
-
-This ensures **loose coupling**, **centralized orchestration**, and **easy swapping/testing** of modules without breaking dependencies.
-
----
+Refactor BagInventory.cs split the responsibility
