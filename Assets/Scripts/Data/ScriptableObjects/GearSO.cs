@@ -102,19 +102,25 @@ namespace Ascension.Data.SO.Item
             string info = $"<b>{gearName}</b>\n";
             info += $"<color=#{rarityColorHex}>{rarityName} {gearType}</color>\n\n";
 
-            info += FormatStatText(BonusHP, "HP");
-            info += FormatStatText(BonusDefense, "Defense");
+            // Defensive stats first
+            info += FormatStatText(BonusHP, "HP", "#2dff03ff");
+            info += FormatStatText(BonusDefense, "Defense", "#ff5f03ff");
+
+            // Offensive stats next
             info += FormatStatText(BonusAD, "Attack Damage", "#ff6b6b");
             info += FormatStatText(BonusAP, "Ability Power", "#4ecdc4");
             info += FormatStatText(BonusAttackSpeed, "Attack Speed");
             info += FormatStatText(BonusCritRate, "Crit Rate", "%");
             info += FormatStatText(BonusCritDamage, "Crit Damage", "%");
+
+            // Utility stats last
             info += FormatStatText(BonusEvasion, "Evasion", "%");
             info += FormatStatText(BonusTenacity, "Tenacity", "%");
             info += FormatStatText(BonusLethality, "Lethality");
             info += FormatStatText(BonusPenetration, "Penetration", "%");
             info += FormatStatText(BonusLifesteal, "Lifesteal", "%");
 
+            // Bonus stats
             if (bonusStats.Count > 0)
             {
                 info += $"\n<color=#{rarityColorHex}><b>Bonus Stats:</b></color>\n";
@@ -122,11 +128,13 @@ namespace Ascension.Data.SO.Item
                     info += $"<color=#ffd700>• {bonus.GetDisplayText()}</color>\n";
             }
 
+            // Description
             if (!string.IsNullOrEmpty(description))
                 info += $"\n<i>{description}</i>";
 
             return info;
         }
+
         #endregion
 
         #region Private Methods

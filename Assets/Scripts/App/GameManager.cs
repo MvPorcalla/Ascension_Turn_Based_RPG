@@ -1,44 +1,37 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\AppFlow\GameManager.cs
-// Central game controller - uses ServiceContainer for system access
-// Handles: Game flow, saves, scene management
+// Central game manager handling player state, saves, and scene transitions
 // ════════════════════════════════════════════
 
 using System;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using Ascension.Core;
-using Ascension.Manager.Model;
 using Ascension.Character.Stat;
-using Ascension.Character.Manager;
-using Ascension.Inventory.Manager;
-using Ascension.Inventory.Data;  // ✅ ADDED: For BagInventoryData
 using Ascension.Data.SO.Character;
 
 namespace Ascension.App
 {
-    public class GameManager : MonoBehaviour
+    public class GameManager : MonoBehaviour, IGameService
     {
         #region Singleton
         public static GameManager Instance { get; private set; }
         #endregion
         
-        #region Serialized Fields
-        [Header("Runtime Data (Read Only)")]
-        [SerializeField] private float sessionPlayTime = 0f;
-        [SerializeField] private bool isAvatarCreationComplete = false;
+        #region Injected Controllers
+        private SaveController _saveController;
+        private PlayerStateController _playerStateController;
+        private SceneController _sceneController;
         #endregion
         
-        #region Properties (Through Hub)
-        private ServiceContainer Hub => ServiceContainer.Instance;
-        private CharacterManager CharManager => Hub?.Get<CharacterManager>();
-        private SaveManager SManager => Hub?.Get<SaveManager>();
-        private InventoryManager InvManager => Hub?.Get<InventoryManager>();
-        private EquipmentManager EqManager => Hub?.Get<EquipmentManager>();
+        #region Runtime State
+        [Header("Session Data (Read Only)")]
+        [SerializeField] private float sessionPlayTime = 0f;
+        #endregion
         
-        public CharacterStats CurrentPlayer => CharManager?.CurrentPlayer;
-        public CharacterBaseStatsSO BaseStats => CharManager?.BaseStats;
-        public bool HasActivePlayer => CharManager != null && CharManager.HasActivePlayer;
+        #region Properties
+        public CharacterStats CurrentPlayer => _playerStateController?.CurrentPlayer;
+        public CharacterBaseStatsSO BaseStats => GetBaseStatsFromCharacterManager();
+        public bool HasActivePlayer => _playerStateController != null && _playerStateController.HasActivePlayer;
         #endregion
         
         #region Events
@@ -50,23 +43,12 @@ namespace Ascension.App
         #region Unity Callbacks
         private void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            
-            Instance = this;
-        }
-
-        private void Start()
-        {
-            WaitForSystemsAndSubscribe();
+            InitializeSingleton();
         }
 
         private void OnDestroy()
         {
-            UnsubscribeFromCharacterManager();
+            UnsubscribeFromEvents();
         }
         
         private void Update()
@@ -94,375 +76,188 @@ namespace Ascension.App
         }
         #endregion
         
-        #region Public Methods - Game Flow
+        #region Initialization
+        private void InitializeSingleton()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            
+            Instance = this;
+            Debug.Log("[GameManager] Singleton created");
+        }
+
+        /// <summary>
+        /// ✅ FIXED: Called by ServiceContainer after all services are registered
+        /// This ensures dependencies are available
+        /// </summary>
+        public void Initialize()
+        {
+            Debug.Log("[GameManager] Initializing...");
+            
+            InjectControllers();
+            ValidateControllers();
+            SubscribeToControllerEvents();
+            
+            Debug.Log("[GameManager] Ready");
+        }
+
+        private void InjectControllers()
+        {
+            var container = ServiceContainer.Instance;
+            
+            if (container == null)
+            {
+                Debug.LogError("[GameManager] ServiceContainer is null during initialization!");
+                return;
+            }
+
+            _saveController = container.Get<SaveController>();
+            _playerStateController = container.Get<PlayerStateController>();
+            _sceneController = container.Get<SceneController>();
+        }
+
+        private void ValidateControllers()
+        {
+            if (_saveController == null)
+                Debug.LogError("[GameManager] SaveController not found!");
+            
+            if (_playerStateController == null)
+                Debug.LogError("[GameManager] PlayerStateController not found!");
+            
+            if (_sceneController == null)
+                Debug.LogError("[GameManager] SceneController not found!");
+        }
+
+        private void SubscribeToControllerEvents()
+        {
+            if (_saveController != null)
+            {
+                _saveController.OnSaveCompleted += HandleSaveCompleted;
+            }
+
+            if (_playerStateController != null)
+            {
+                _playerStateController.OnPlayerLoaded += HandlePlayerLoaded;
+            }
+        }
+
+        private void HandleSaveCompleted()
+        {
+            OnPlayerSaved?.Invoke();
+        }
+
+        private void HandlePlayerLoaded(CharacterStats stats)
+        {
+            OnPlayerLoaded?.Invoke(stats);
+        }
+
+        private void UnsubscribeFromEvents()
+        {
+            if (_saveController != null)
+            {
+                _saveController.OnSaveCompleted -= HandleSaveCompleted;
+            }
+
+            if (_playerStateController != null)
+            {
+                _playerStateController.OnPlayerLoaded -= HandlePlayerLoaded;
+            }
+        }
+        #endregion
+        
+        #region Public API - Game Flow
         public void StartNewGame()
         {
-            if (!ValidateSystemsReady())
-                return;
-
-            CharManager.CreateNewPlayer("Adventurer");
-            
+            _playerStateController?.StartNewGame("Adventurer");
             sessionPlayTime = 0f;
-            isAvatarCreationComplete = false;
             
-            Debug.Log("[GameManager] New game started");
             OnNewGameStarted?.Invoke();
+            Debug.Log("[GameManager] New game started");
         }
         
         public void SetPlayerName(string playerName)
         {
-            if (!HasActivePlayer) return;
-            
-            CurrentPlayer.playerName = playerName;
-            Debug.Log($"[GameManager] Player name set: {playerName}");
+            _playerStateController?.SetPlayerName(playerName);
         }
 
         public void CompleteAvatarCreation()
         {
-            isAvatarCreationComplete = true;
-            Debug.Log("[GameManager] Avatar creation completed - saves enabled");
+            _playerStateController?.CompleteAvatarCreation();
         }
         
         public bool SaveGame()
         {
-            if (!CanSave())
-            {
-                Debug.LogWarning("[GameManager] Save blocked - conditions not met");
-                return false;
-            }
+            if (!CanSave()) return false;
             
-            // Convert real data to save data format
-            CharacterSaveData charSaveData = ConvertToCharacterSaveData(CurrentPlayer);
-            InventorySaveData invSaveData = ConvertToInventorySaveData();
-            EquipmentSaveData eqSaveData = ConvertToEquipmentSaveData();
-            
-            bool success = SManager.SaveGame(charSaveData, invSaveData, eqSaveData, sessionPlayTime);
-            
-            if (success)
-            {
-                OnPlayerSaved?.Invoke();
-            }
-            
-            return success;
+            return _saveController != null && _saveController.SaveGame(sessionPlayTime);
         }
 
         public bool LoadGame()
         {
-            if (!ValidateSystemsReady())
-                return false;
-
-            SaveData saveData = SManager.LoadGame();
+            bool success = _saveController != null && _saveController.LoadGame();
             
-            if (saveData == null)
+            if (success)
             {
-                Debug.LogError("[GameManager] Failed to load save");
-                return false;
-            }
-            
-            LoadPlayerFromSave(saveData);
-            LoadInventoryFromSave(saveData);
-            LoadEquipmentFromSave(saveData);
-            
-            sessionPlayTime = 0f;
-            isAvatarCreationComplete = true;
-            
-            Debug.Log($"[GameManager] Loaded: {CurrentPlayer.playerName} (Lv.{CurrentPlayer.Level})");
-            
-            return true;
-        }
-        
-        public bool SaveExists()
-        {
-            return SManager != null && SManager.SaveExists();
-        }
-        
-        public bool DeleteSave()
-        {
-            if (SManager == null) return false;
-            
-            bool success = SManager.DeleteSave();
-            
-            if (success && CharManager != null)
-            {
-                CharManager.UnloadPlayer();
+                sessionPlayTime = 0f;
+                _playerStateController?.CompleteAvatarCreation();
             }
             
             return success;
         }
+        
+        public bool SaveExists()
+        {
+            return _saveController != null && _saveController.SaveExists();
+        }
+        
+        public bool DeleteSave()
+        {
+            return _saveController != null && _saveController.DeleteSave();
+        }
+
+        private bool CanSave()
+        {
+            return _playerStateController != null && _playerStateController.CanSave();
+        }
         #endregion
         
-        #region Public Methods - Player Actions
+        #region Public API - Player Actions
         public bool AddExperience(int amount)
         {
-            if (!HasActivePlayer || CharManager == null)
-                return false;
+            if (_playerStateController == null) return false;
             
-            int oldLevel = CurrentPlayer.Level;
-            CharManager.AddExperience(amount);
-            
-            bool leveledUp = CurrentPlayer.Level > oldLevel;
+            bool leveledUp = _playerStateController.AddExperience(amount);
             
             if (leveledUp)
             {
-                Debug.Log($"[GameManager] Level up! Now level {CurrentPlayer.Level}");
                 SaveGame();
             }
             
             return leveledUp;
         }
 
-        public void Heal(float amount)
-        {
-            CharManager?.Heal(amount);
-        }
-
-        public void TakeDamage(float amount)
-        {
-            CharManager?.TakeDamage(amount);
-        }
-
-        public void FullHeal()
-        {
-            CharManager?.FullHeal();
-        }
+        public void Heal(float amount) => _playerStateController?.Heal(amount);
+        public void TakeDamage(float amount) => _playerStateController?.TakeDamage(amount);
+        public void FullHeal() => _playerStateController?.FullHeal();
         #endregion
         
-        #region Public Methods - Scene Management
-        public void LoadScene(string sceneName)
-        {
-            SceneManager.LoadScene(sceneName);
-        }
-        
-        public void LoadSceneWithSave(string sceneName)
-        {
-            SaveGame();
-            SceneManager.LoadScene(sceneName);
-        }
-        
-        public void GoToMainBase()
-        {
-            LoadScene("03_MainBase");
-        }
-        
-        public void ResetAndCreateNewCharacter()
-        {
-            DeleteSave();
-            StartNewGame();
-            LoadScene("02_AvatarCreation");
-        }
-        
-        public void ReturnToMainBase()
-        {
-            SaveGame();
-            LoadScene("03_MainBase");
-        }
-
-        public void OnActivityCompleted()
-        {
-            SaveGame();
-            Debug.Log("[GameManager] Progress saved after activity");
-        }
+        #region Public API - Scene Management
+        public void LoadScene(string sceneName) => _sceneController?.LoadScene(sceneName);
+        public void LoadSceneWithSave(string sceneName) => _sceneController?.LoadSceneWithSave(sceneName, sessionPlayTime);
+        public void GoToMainBase() => _sceneController?.GoToMainBase();
+        public void ResetAndCreateNewCharacter() => _sceneController?.ResetAndCreateNewCharacter();
+        public void ReturnToMainBase() => _sceneController?.ReturnToMainBase(sessionPlayTime);
+        public void OnActivityCompleted() => _sceneController?.OnActivityCompleted(sessionPlayTime);
         #endregion
-        
-        #region Private Methods - Conversion
-        private CharacterSaveData ConvertToCharacterSaveData(CharacterStats stats)
-        {
-            return new CharacterSaveData
-            {
-                playerName = stats.playerName,
-                level = stats.Level,
-                currentExperience = stats.CurrentEXP,          // ✅ FIXED: Was CurrentExperience
-                currentHealth = stats.CurrentHP,               // ✅ FIXED: Was CurrentHealth
-                currentMana = 0f,                              // ✅ FIXED: You don't have mana yet
-                attributePoints = stats.UnallocatedPoints,     // ✅ FIXED: Was AttributePoints
-                strength = stats.attributes.STR,               // ✅ FIXED: Was Attributes.Strength
-                dexterity = stats.attributes.AGI,              // ✅ FIXED: Was Attributes.Dexterity
-                intelligence = stats.attributes.INT,           // ✅ FIXED: Was Attributes.Intelligence
-                vitality = stats.attributes.END,               // ✅ FIXED: Was Attributes.Vitality
-                luck = stats.attributes.WIS                    // ✅ FIXED: Was Attributes.Luck (mapped to WIS)
-            };
-        }
 
-        private InventorySaveData ConvertToInventorySaveData()
+        #region Private Helpers
+        private CharacterBaseStatsSO GetBaseStatsFromCharacterManager()
         {
-            if (InvManager == null)
-            {
-                return new InventorySaveData { items = new ItemInstanceData[0], maxBagSlots = 12 };
-            }
-
-            BagInventoryData bagData = InvManager.SaveInventory();
-            
-            // Convert BagInventoryData to InventorySaveData
-            ItemInstanceData[] itemArray = new ItemInstanceData[bagData.items.Count];
-            
-            for (int i = 0; i < bagData.items.Count; i++)
-            {
-                itemArray[i] = new ItemInstanceData
-                {
-                    itemId = bagData.items[i].itemID,
-                    quantity = bagData.items[i].quantity
-                };
-            }
-            
-            return new InventorySaveData
-            {
-                maxBagSlots = bagData.maxBagSlots,
-                items = itemArray
-            };
-        }
-
-        private EquipmentSaveData ConvertToEquipmentSaveData()
-        {
-            if (EqManager == null)
-            {
-                // Return empty equipment data
-                return new EquipmentSaveData
-                {
-                    weaponId = "",
-                    helmetId = "",
-                    chestId = "",
-                    glovesId = "",
-                    bootsId = ""
-                };
-            }
-
-            // TODO: Implement when EquipmentManager exists
-            return new EquipmentSaveData();
-        }
-        #endregion
-        
-        #region Private Methods - Loading
-        private void WaitForSystemsAndSubscribe()
-        {
-            if (Hub == null || !Hub.IsInitialized)
-            {
-                Debug.LogWarning("[GameManager] Waiting for ServiceContainer...");
-                Invoke(nameof(WaitForSystemsAndSubscribe), 0.1f);
-                return;
-            }
-            
-            // ✅ ADD THIS: Wait for CharacterManager specifically
-            if (CharManager == null)
-            {
-                Debug.LogWarning("[GameManager] Waiting for CharacterManager...");
-                Invoke(nameof(WaitForSystemsAndSubscribe), 0.1f);
-                return;
-            }
-            
-            SubscribeToCharacterManager();
-        }
-        
-        private void SubscribeToCharacterManager()
-        {
-            if (CharManager != null)
-            {
-                CharManager.OnPlayerLoaded += OnCharacterLoaded;
-                Debug.Log("[GameManager] Subscribed to CharacterManager");
-            }
-            else
-            {
-                Debug.LogWarning("[GameManager] CharacterManager not found!");
-            }
-        }
-
-        private void UnsubscribeFromCharacterManager()
-        {
-            if (CharManager != null)
-            {
-                CharManager.OnPlayerLoaded -= OnCharacterLoaded;
-            }
-        }
-        
-        private void OnCharacterLoaded(CharacterStats stats)
-        {
-            OnPlayerLoaded?.Invoke(stats);
-        }
-        
-        private bool ValidateSystemsReady()
-        {
-            if (Hub == null || !Hub.IsInitialized)
-            {
-                Debug.LogError("[GameManager] ServiceContainer not initialized!");
-                return false;
-            }
-            return true;
-        }
-        
-        private bool CanSave()
-        {
-            if (!HasActivePlayer)
-            {
-                Debug.LogError("[GameManager] No active player to save!");
-                return false;
-            }
-            
-            if (!isAvatarCreationComplete)
-            {
-                Debug.LogWarning("[GameManager] Save blocked: Avatar creation not complete");
-                return false;
-            }
-            
-            return true;
-        }
-        
-        private void LoadPlayerFromSave(SaveData saveData)
-        {
-            // Create new character stats
-            CharacterStats stats = new CharacterStats();
-            stats.Initialize(CharManager.BaseStats);
-            
-            // Restore saved values
-            stats.playerName = saveData.characterData.playerName;
-            stats.guildRank = "Unranked"; // TODO: Save/load guild rank
-            
-            // Restore level
-            stats.levelSystem.level = saveData.characterData.level;
-            stats.levelSystem.currentEXP = saveData.characterData.currentExperience;
-            stats.levelSystem.unallocatedPoints = saveData.characterData.attributePoints;
-            
-            // Restore attributes
-            stats.attributes.STR = saveData.characterData.strength;
-            stats.attributes.AGI = saveData.characterData.dexterity;
-            stats.attributes.INT = saveData.characterData.intelligence;
-            stats.attributes.END = saveData.characterData.vitality;
-            stats.attributes.WIS = saveData.characterData.luck;
-            
-            // Recalculate stats
-            stats.RecalculateStats(CharManager.BaseStats, fullHeal: false);
-            
-            // Restore HP
-            stats.combatRuntime.currentHP = saveData.characterData.currentHealth;
-            
-            // Load player
-            CharManager.LoadPlayer(stats);
-        }
-        
-        private void LoadInventoryFromSave(SaveData saveData)
-        {
-            if (InvManager != null && saveData.inventoryData != null)
-            {
-                // Convert InventorySaveData back to BagInventoryData
-                BagInventoryData bagData = new BagInventoryData();
-                bagData.maxBagSlots = saveData.inventoryData.maxBagSlots;
-                bagData.items = new System.Collections.Generic.List<ItemInstance>();
-                
-                foreach (var itemData in saveData.inventoryData.items)
-                {
-                    bagData.items.Add(new ItemInstance(itemData.itemId, itemData.quantity, false));
-                }
-                
-                InvManager.LoadInventory(bagData);
-            }
-        }
-        
-        private void LoadEquipmentFromSave(SaveData saveData)
-        {
-            if (EqManager != null && saveData.equipmentData != null)
-            {
-                // TODO: Implement when EquipmentManager exists
-                // EqManager.LoadEquipment(convertedData);
-                CharManager.UpdateStatsFromEquipment();
-            }
+            var charManager = ServiceContainer.Instance?.Get<Ascension.Character.Manager.CharacterManager>();
+            return charManager?.BaseStats;
         }
         #endregion
     }

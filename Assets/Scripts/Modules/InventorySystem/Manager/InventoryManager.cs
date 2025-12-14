@@ -1,17 +1,17 @@
 // ════════════════════════════════════════════
-// InventoryManager.cs
-// Manages the player's inventory and storage system
+// Assets\Scripts\Modules\InventorySystem\Manager\InventoryManager.cs
+// Manages player inventory and item database
 // ════════════════════════════════════════════
 
 using UnityEngine;
-using Ascension.GameSystem;
 using Ascension.Data.SO.Item;
 using Ascension.Data.SO.Database;
 using Ascension.Inventory.Data;
+using Ascension.Core;
 
 namespace Ascension.Inventory.Manager
 {
-    public class InventoryManager : MonoBehaviour
+    public class InventoryManager : MonoBehaviour, IGameService
     {
         public static InventoryManager Instance { get; private set; }
 
@@ -21,27 +21,48 @@ namespace Ascension.Inventory.Manager
         public BagInventory Inventory { get; private set; }
         public GameDatabaseSO Database => database;
 
-        // Event for UI to subscribe to
         public event System.Action OnInventoryLoaded;
 
         private void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-
-            Instance = this;
-
-            Inventory = new BagInventory();
-
-            if (database == null)
-                Debug.LogError("[InventoryManager] Database not assigned!");
-            else
-                database.Initialize();
+            InitializeSingleton();
         }
 
+        #region IGameService Implementation
+        /// <summary>
+        /// ✅ FIXED: Explicit initialization called by ServiceContainer
+        /// </summary>
+        public void Initialize()
+        {
+            Debug.Log("[InventoryManager] Initializing...");
+            
+            InitializeInventory();
+            InitializeDatabase();
+            
+            Debug.Log("[InventoryManager] Ready");
+        }
+
+        private void InitializeInventory()
+        {
+            Inventory = new BagInventory();
+            Debug.Log("[InventoryManager] Inventory system created");
+        }
+
+        private void InitializeDatabase()
+        {
+            if (database == null)
+            {
+                Debug.LogError("[InventoryManager] GameDatabaseSO not assigned!");
+            }
+            else
+            {
+                database.Initialize();
+                Debug.Log($"[InventoryManager] Database initialized: {database.name}");
+            }
+        }
+        #endregion
+
+        #region Public Methods
         /// <summary>
         /// Add item to player inventory
         /// </summary>
@@ -60,7 +81,6 @@ namespace Ascension.Inventory.Manager
 
             Debug.Log($"[InventoryManager] Loaded {Inventory.allItems.Count} items");
 
-            // Manually trigger UI refresh after loading
             OnInventoryLoaded?.Invoke();
         }
 
@@ -75,9 +95,22 @@ namespace Ascension.Inventory.Manager
                 maxBagSlots = Inventory.maxBagSlots
             };
         }
+        #endregion
+
+        #region Private Methods
+        private void InitializeSingleton()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+        }
+        #endregion
 
         #region Debug Helpers
-
         [ContextMenu("Debug: Add Test Items")]
         public void DebugAddTestItems()
         {
@@ -87,7 +120,6 @@ namespace Ascension.Inventory.Manager
                 return;
             }
 
-            // Add 10 of each stackable item to storage (excluding Abilities)
             foreach (var item in database.GetAllItems())
             {
                 if (item.ItemType == ItemType.Ability)
@@ -97,7 +129,6 @@ namespace Ascension.Inventory.Manager
                 Debug.Log($"Added {(item.IsStackable ? 10 : 1)}x {item.ItemName} to storage");
             }
 
-            // Add a few items to bag for testing
             var weapons = database.GetAllWeapons();
             if (weapons.Count > 0)
             {
@@ -134,7 +165,6 @@ namespace Ascension.Inventory.Manager
             Debug.Log($"\nTotal Items: {Inventory.allItems.Count}");
             Debug.Log($"Empty Bag Slots: {Inventory.GetEmptyBagSlots()}");
         }
-
         #endregion
     }
 }

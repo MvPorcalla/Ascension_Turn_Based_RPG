@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════
-// PotionManager.cs
-// REFACTORED: Injects CharacterManager dependency
+// Assets\Scripts\Modules\GameSystem\PotionManager.cs
+// Manages potion usage, effects, and combat state
 // ════════════════════════════════════════════
 
 using System;

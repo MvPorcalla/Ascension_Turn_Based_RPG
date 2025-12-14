@@ -88,6 +88,10 @@ namespace Ascension.Inventory.Popup
             {
                 DisplayWeaponStats(weapon);
             }
+            else if (item is GearSO gear)
+            {
+                DisplayGearStats(gear);
+            }
             else
             {
                 ClearStats();
@@ -106,8 +110,8 @@ namespace Ascension.Inventory.Popup
             if (weapon.BonusAP > 0) AddStatLine("Ability Power", $"+{weapon.BonusAP}", "#4ecdc4");
 
             // DEFENSIVE STATS
-            if (weapon.BonusHP > 0) AddStatLine("Health", $"+{weapon.BonusHP}");
-            if (weapon.BonusDefense > 0) AddStatLine("Defense", $"+{weapon.BonusDefense}");
+            if (weapon.BonusHP > 0) AddStatLine("Health", $"+{weapon.BonusHP}", "#00ff15ff");
+            if (weapon.BonusDefense > 0) AddStatLine("Defense", $"+{weapon.BonusDefense}", "#ff7b00ff");
 
             // OFFENSIVE STATS
             if (weapon.BonusAttackSpeed > 0) AddStatLine("Attack Speed", $"+{weapon.BonusAttackSpeed}");
@@ -126,6 +130,29 @@ namespace Ascension.Inventory.Popup
             {
                 AddEffectLine($"[Skill] : {weapon.DefaultWeaponSkill.AbilityName}");
             }
+        }
+
+        private void DisplayGearStats(GearSO gear)
+        {
+            ClearStats();
+
+            // Defensive stats first
+            if (gear.BonusHP > 0) AddStatLine("HP", $"+{gear.BonusHP}", "#00ff15ff");
+            if (gear.BonusDefense > 0) AddStatLine("Defense", $"+{gear.BonusDefense}", "#ff7b00ff");
+
+            // Offensive stats
+            if (gear.BonusAD > 0) AddStatLine("Attack Damage", $"+{gear.BonusAD}", "#ff6b6b");
+            if (gear.BonusAP > 0) AddStatLine("Ability Power", $"+{gear.BonusAP}", "#4ecdc4");
+            if (gear.BonusAttackSpeed > 0) AddStatLine("Attack Speed", $"+{gear.BonusAttackSpeed}");
+            if (gear.BonusCritRate > 0) AddStatLine("Crit Rate", $"+{gear.BonusCritRate}%");
+            if (gear.BonusCritDamage > 0) AddStatLine("Crit Damage", $"+{gear.BonusCritDamage}%");
+
+            // Utility stats
+            if (gear.BonusEvasion > 0) AddStatLine("Evasion", $"+{gear.BonusEvasion}%");
+            if (gear.BonusTenacity > 0) AddStatLine("Tenacity", $"+{gear.BonusTenacity}%");
+            if (gear.BonusLethality > 0) AddStatLine("Lethality", $"+{gear.BonusLethality}");
+            if (gear.BonusPenetration > 0) AddStatLine("Penetration", $"+{gear.BonusPenetration}%");
+            if (gear.BonusLifesteal > 0) AddStatLine("Lifesteal", $"+{gear.BonusLifesteal}%");
         }
 
         private void ClearStats()

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e25cf8c5bf3bfd54b810028d474deb83, type: 3}
   m_Name: Leather Helmet
   m_EditorClassIdentifier: 
-  itemID: gear_helmet_helmet
+  itemID: gear_leather_helmet
   itemName: Leather Helmet
   icon: {fileID: 0}
   rarity: 0

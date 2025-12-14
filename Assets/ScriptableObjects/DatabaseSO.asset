@@ -19,17 +19,17 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 70df036faaa69a040937ceb3fe71a12b, type: 2}
   - {fileID: 11400000, guid: 0eb235d2e9f4378479073d0114d024be, type: 2}
   - {fileID: 11400000, guid: 6988cb8d8790d1f4c9b2ab684224df09, type: 2}
-  skills:
-  - {fileID: 11400000, guid: 93826072a9dc756459d0b203e6e67d8d, type: 2}
-  - {fileID: 11400000, guid: 985ad5b040e309649917a0c3b4d777bf, type: 2}
+  abilities:
   - {fileID: 11400000, guid: c184a05eef981f34da01b228752b4472, type: 2}
-  - {fileID: 11400000, guid: 261ea761e2dd91d43a663e385cfbc1f9, type: 2}
-  - {fileID: 11400000, guid: 708e68f5285279845b0c72ba918912e7, type: 2}
   - {fileID: 11400000, guid: 0fa87048f78a38f489d573b680d6f008, type: 2}
   - {fileID: 11400000, guid: b72d2b3bcccc7ef4795159a52cf0ff68, type: 2}
-  - {fileID: 11400000, guid: 8529fb580497c4c498614469053e6f2b, type: 2}
   - {fileID: 11400000, guid: 36d5198e5b549924a9f0a940261ae6f8, type: 2}
   - {fileID: 11400000, guid: 23e081431eeb64f4496458e505c579c0, type: 2}
+  - {fileID: 11400000, guid: 985ad5b040e309649917a0c3b4d777bf, type: 2}
+  - {fileID: 11400000, guid: 261ea761e2dd91d43a663e385cfbc1f9, type: 2}
+  - {fileID: 11400000, guid: 8529fb580497c4c498614469053e6f2b, type: 2}
+  - {fileID: 11400000, guid: 93826072a9dc756459d0b203e6e67d8d, type: 2}
+  - {fileID: 11400000, guid: 708e68f5285279845b0c72ba918912e7, type: 2}
   - {fileID: 11400000, guid: 9543a0a54380d8840939f0e583176d03, type: 2}
   - {fileID: 11400000, guid: eaabd6af0a1f99340aa0b5f49866185e, type: 2}
   - {fileID: 11400000, guid: 3709e6aa2e3765a45991b00b3139629f, type: 2}
@@ -37,5 +37,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: e35ae557b2d13704d84f558786c402cb, type: 2}
   materials:
   - {fileID: 11400000, guid: d590e228ddad8bd429a3d54c32174cc7, type: 2}
-  gear: []
+  gear:
+  - {fileID: 11400000, guid: 078887a9a61fe9d459f35eff0093fac3, type: 2}
   misc: []

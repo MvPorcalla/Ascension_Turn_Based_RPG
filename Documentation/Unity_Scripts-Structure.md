@@ -40,17 +40,15 @@ Scripts/
 ├── AppFlow/                                // High-level orchestration
 │   ├── Ascension.Appflow.asmdef            // Future once all are solidified
 │   ├── GameManager.cs
-│   └── SaveManager.cs
+│   ├── PlayerStateController.cs
+│   ├── SaveController.cs
+│   └── SceneController.cs
 │
 ├── Core/                                   // Core engine / bootstrap
 │   ├── Ascension.Core.asmdef               // Future once all are solidified
 │   ├── Bootstrap.cs
-│   └── GameSystemHub.cs
-│
-├── Manager/                                // Pure manager logic, no cross-module calls
-│   ├── Ascension.Manager.asmdef
-│   └── Model/
-│       └── SaveData.cs
+│   ├── SaveManager.cs
+│   └── ServiceContainer.cs
 │
 ├── Modules/                                // All gameplay modules
 │   ├── CharacterSystem/
@@ -78,6 +76,10 @@ Scripts/
 │   │       ├── LevelUpManager.cs
 │   │       └── CharacterCreationManager.cs
 │   │
+│   ├── GameSystem/                                 // Game-wide systems, optional cross-module logic, Will be reworked into CombatSystem later
+│   │   ├── Ascension.GameSystem.asmdef
+│   │   └── PotionManager.cs                        // Will be reworked later
+│   │
 │   ├── InventorySystem/
 │   │   ├── Ascension.Inventory.asmdef      // Future once all are solidified
 │   │   ├── Manager/
@@ -100,9 +102,6 @@ Scripts/
 │   └── EquipmentSystem/                     // In-progress module
 │       └── (files to come)
 │
-├── GameSystem/                             // Game-wide systems, optional cross-module logic
-│   ├── Ascension.GameSystem.asmdef
-│   └── PotionManager.cs                     // Will be reworked into CombatSystem later
 │
 ├── UI/                                     // UI module
 │   ├── Ascension.UI.asmdef
@@ -115,6 +114,8 @@ Scripts/
 │   ├── Ascension.Data.asmdef
 │   ├── Enums/
 │   │   └── WeaponEnums.cs
+│   ├── Save/
+│   │   └── SaveData.cs
 │   └── ScriptableObject/
 │       ├── Item/
 │       │   ├── ItemBaseSO.cs
@@ -139,12 +140,10 @@ Move files to these EXACT locations:
 
 ```
 GameManager.cs                  → AppFlow/                                                      ✅
-SaveManager.cs                  → AppFlow/                                                      ✅
 
 Bootstrap.cs                    → Core/                                                         ✅
-GameSystemHub.cs                → Core/                                                         ✅
-
-SaveData.cs                     → Manager/Model/                                                ✅
+ServiceContainer.cs             → Core/                                                         ✅
+SaveManager.cs                  → Core/                                                         ✅
 
 CharacterManager.cs             → CharacterSystem/Manager/                                      ✅
 PlayerStats.cs                  → CharacterSystem/Stat/ (rename: CharacterStats.cs)             ✅
@@ -160,17 +159,17 @@ ProfilePanelManager.cs          → CharacterSystem/UI/                         
 LevelUpManager.cs               → CharacterSystem/UI/                                           ✅
 CharacterCreationManager.cs        → CharacterSystem/UI/                                        ✅
 
-InventoryManager.cs             → InventorySystem/Manager/                                      
-BagInventory.cs                 → InventorySystem/Data/                                         
-ItemInstance.cs                 → InventorySystem/Data/                                                                 
-BagInventoryData.cs             → InventorySystem/Data/                                         
-InventoryEnums.cs               → InventorySystem/Enums/                                         
-StorageRoomUI.cs                → InventorySystem/UI/                                           
-ItemSlotUI.cs                   → InventorySystem/UI/                                           
-BuffLineUI.cs                   → InventorySystem/UI/                                           
-InventoryPotionPopup.cs         → InventorySystem/UI/Popup/                                     
-InventoryItemPopup.cs           → InventorySystem/UI/Popup/                                     
-InventoryGearPopup.cs           → InventorySystem/UI/Popup/                                     
+InventoryManager.cs             → InventorySystem/Manager/                                      ✅
+BagInventory.cs                 → InventorySystem/Data/                                         ✅
+ItemInstance.cs                 → InventorySystem/Data/                                         ✅               
+BagInventoryData.cs             → InventorySystem/Data/                                         ✅
+InventoryEnums.cs               → InventorySystem/Enums/                                        ✅ 
+StorageRoomUI.cs                → InventorySystem/UI/                                           ✅
+ItemSlotUI.cs                   → InventorySystem/UI/                                           ✅
+BuffLineUI.cs                   → InventorySystem/UI/                                           ✅
+InventoryPotionPopup.cs         → InventorySystem/UI/Popup/                                     ✅
+InventoryItemPopup.cs           → InventorySystem/UI/Popup/                                     ✅
+InventoryGearPopup.cs           → InventorySystem/UI/Popup/                                     ✅
 
 **EquipmentSystem** "on going work"
 - 
@@ -186,6 +185,7 @@ UIManager.cs                    → UI/Core/
 DisclaimerController.cs         → UI/Panel/                                                     
 
 WeaponEnums.cs                  → Data/Enums/                                                   ✅
+SaveData.cs                     → Data/Save/                                                    ✅
 ItemBaseSO.cs                   → Data/ScriptableObject/Item/                                   ✅
 WeaponSO.cs                     → Data/ScriptableObject/Item/                                   ✅
 WeaponRaritySO.cs               → Data/ScriptableObject/Item/                                   ✅
@@ -206,8 +206,6 @@ Apply these namespaces to files based on their folder:
 ```
 AppFlow/*                               → namespace Ascension.AppFlow
 Core/*                                  → namespace Ascension.Core
-Manager/*                               → namespace Ascension.Manager
-Manager/Model/*                         → namespace Ascension.Manager.Model
 
 CharacterSystem/Manager/*               → namespace Ascension.Character.Manager
 CharacterSystem/Stat/*                  → namespace Ascension.Character.Stat

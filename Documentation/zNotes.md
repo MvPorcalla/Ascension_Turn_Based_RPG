@@ -137,4 +137,26 @@ Should I create a separate `UI` folder for each module’s interface and have th
 
 TODO: 
 
-Refactor BagInventory.cs split the responsibility
+i removed IGameService at potionManager for now 
+
+
+App Launch
+ └─ 00_Consent
+     └─ (if accepted)
+         ↓
+ └─ 01_Bootstrap
+     ├─ Create ServiceContainer
+     ├─ Register all core services
+     ├─ Initialize all services (in order)
+     ├─ Mark container READY
+         ↓
+ └─ 02_CharacterCreation
+     ├─ GameManager already alive
+     ├─ PlayerStateController ready
+     └─ Create character
+         ↓
+ └─ 03_MainBase
+     └─ Normal gameplay
+
+---
+

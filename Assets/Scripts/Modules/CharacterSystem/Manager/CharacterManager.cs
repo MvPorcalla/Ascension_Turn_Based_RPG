@@ -1,19 +1,19 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\CharacterSystem\Manager\CharacterManager.cs
-// REFACTORED: Uses ServiceContainer for optional EquipmentManager dependency
+// Manages character creation, loading, stats, and equipment
 // ════════════════════════════════════════════
 
 using UnityEngine;
 using System;
 using Ascension.Core;
-using Ascension.Manager.Model;
+using Ascension.Data.Save;
 using Ascension.Data.SO.Item;
 using Ascension.Data.SO.Character;
 using Ascension.Character.Stat;
 
 namespace Ascension.Character.Manager
 {
-    public class CharacterManager : MonoBehaviour
+    public class CharacterManager : MonoBehaviour, IGameService
     {
         #region Singleton
         public static CharacterManager Instance { get; private set; }
@@ -27,9 +27,6 @@ namespace Ascension.Character.Manager
         #region Private Fields
         private CharacterStats _currentPlayer;
         private bool _isInitialized = false;
-        
-        // Optional dependency - resolved lazily when needed
-        // private EquipmentManager _equipmentManager;
         #endregion
 
         #region Properties
@@ -50,6 +47,32 @@ namespace Ascension.Character.Manager
         private void Awake()
         {
             InitializeSingleton();
+        }
+        #endregion
+
+        #region IGameService Implementation
+        /// <summary>
+        /// ✅ FIXED: Explicit initialization called by ServiceContainer
+        /// </summary>
+        public void Initialize()
+        {
+            Debug.Log("[CharacterManager] Initializing...");
+            
+            ValidateBaseStats();
+            
+            Debug.Log("[CharacterManager] Ready");
+        }
+
+        private void ValidateBaseStats()
+        {
+            if (baseStats == null)
+            {
+                Debug.LogError("[CharacterManager] CharacterBaseStatsSO not assigned!");
+            }
+            else
+            {
+                Debug.Log($"[CharacterManager] Base stats loaded: {baseStats.name}");
+            }
         }
         #endregion
 
@@ -94,56 +117,17 @@ namespace Ascension.Character.Manager
         #endregion
 
         #region Equipment Integration
-        /// <summary>
-        /// Update player stats from equipped items
-        /// Lazy-loads EquipmentManager from ServiceContainer
-        /// </summary>
         public void UpdateStatsFromEquipment()
         {
             if (!HasActivePlayer) return;
             
-            // TODO: Uncomment when EquipmentManager is ready
-            /*
-            var equipmentManager = GetEquipmentManager();
-            
-            if (equipmentManager != null)
-            {
-                CharacterItemStats equipmentStats = equipmentManager.GetTotalItemStats();
-                _currentPlayer.ApplyItemStats(equipmentStats, baseStats);
-                
-                Debug.Log("[CharacterManager] Stats updated from equipment");
-                OnCharacterStatsChanged?.Invoke(_currentPlayer);
-            }
-            */
-            
+            // TODO: Implement when EquipmentManager is ready
             Debug.Log("[CharacterManager] UpdateStatsFromEquipment called (EquipmentManager not implemented yet)");
         }
 
         public bool EquipWeaponFromInventory(string itemID)
         {
             if (!HasActivePlayer) return false;
-            
-            // TODO: Implement when EquipmentManager ready
-            /*
-            var equipmentManager = GetEquipmentManager();
-            
-            if (equipmentManager == null)
-            {
-                Debug.LogError("[CharacterManager] EquipmentManager not found!");
-                return false;
-            }
-            
-            bool success = equipmentManager.EquipWeapon(itemID);
-            
-            if (success)
-            {
-                WeaponSO weapon = equipmentManager.GetEquippedWeapon();
-                _currentPlayer.equippedWeapon = weapon;
-                UpdateStatsFromEquipment();
-            }
-            
-            return success;
-            */
             
             Debug.LogWarning("[CharacterManager] EquipWeaponFromInventory not implemented yet");
             return false;
@@ -153,33 +137,8 @@ namespace Ascension.Character.Manager
         {
             if (!HasActivePlayer) return;
             
-            // TODO: Implement when EquipmentManager ready
-            /*
-            var equipmentManager = GetEquipmentManager();
-            
-            if (equipmentManager != null)
-            {
-                equipmentManager.UnequipWeapon();
-                _currentPlayer.equippedWeapon = null;
-                UpdateStatsFromEquipment();
-            }
-            */
-            
             Debug.LogWarning("[CharacterManager] UnequipWeaponFromInventory not implemented yet");
         }
-
-        // TODO: Uncomment when EquipmentManager is ready
-        /*
-        private EquipmentManager GetEquipmentManager()
-        {
-            if (_equipmentManager == null && ServiceContainer.Instance != null)
-            {
-                _equipmentManager = ServiceContainer.Instance.Get<EquipmentManager>();
-            }
-            
-            return _equipmentManager;
-        }
-        */
         #endregion
 
         #region Public Methods - Player Actions

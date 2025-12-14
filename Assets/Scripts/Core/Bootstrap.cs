@@ -1,9 +1,12 @@
+// ════════════════════════════════════════════
+// Assets\Scripts\Core\Bootstrap.cs
+// Application bootstrapper handling initial scene routing
+// ════════════════════════════════════════════
+
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Ascension.App;
-using Ascension.Character.Manager;
-using Ascension.Inventory.Manager;
 
 namespace Ascension.Core
 {
@@ -17,15 +20,8 @@ namespace Ascension.Core
         [Header("Splash / Load Timing")]
         [SerializeField] private float minimumLoadTime = 1f;
 
-        [Header("System Initialization")]
-        [SerializeField] private float systemTimeoutSeconds = 10f;
-
         [Header("Debug")]
         [SerializeField] private bool showDebugLogs = true;
-        #endregion
-
-        #region Private Fields
-        private const int FRAME_WAIT_INTERVAL = 10;
         #endregion
 
         #region Unity Callbacks
@@ -34,122 +30,72 @@ namespace Ascension.Core
             float startTime = Time.time;
             Log("Initializing...");
 
-            // Wait for ServiceContainer and all critical systems to be ready
-            yield return StartCoroutine(WaitForSystemsReady());
-
-            Log("All systems initialized");
+            // Wait for ServiceContainer to complete initialization
+            yield return StartCoroutine(WaitForServiceContainer());
+            Log("ServiceContainer ready");
 
             // Ensure minimum load time for smooth UX
             yield return EnsureMinimumLoadTime(startTime);
 
-            // Determine and load target scene
+            // Determine target scene based on save state
             string targetScene = DetermineTargetScene();
             Log($"Loading scene: {targetScene}");
+            
             SceneManager.LoadScene(targetScene);
         }
         #endregion
 
-        #region System Initialization
-        private IEnumerator WaitForSystemsReady()
+        #region Initialization
+        private IEnumerator WaitForServiceContainer()
         {
-            Log("Waiting for ServiceContainer...");
-
-            float elapsedTime = 0f;
-            int frameCount = 0;
-
-            // Wait for ServiceContainer to exist and initialize
-            while (ServiceContainer.Instance == null || !ServiceContainer.Instance.IsInitialized)
+            // Wait for ServiceContainer singleton
+            while (ServiceContainer.Instance == null)
             {
-                frameCount++;
-                if (frameCount % FRAME_WAIT_INTERVAL == 0)
-                    Log($"Still waiting for ServiceContainer... ({elapsedTime:F1}s elapsed)");
-
                 yield return null;
-                elapsedTime += Time.deltaTime;
-
-                if (elapsedTime >= systemTimeoutSeconds)
-                {
-                    LogError($"CRITICAL: ServiceContainer not ready after {systemTimeoutSeconds}s!");
-                    yield break;
-                }
             }
 
-            Log("ServiceContainer found, checking critical systems...");
+            Log("ServiceContainer instance found, waiting for initialization...");
 
-            // Wait for all critical systems to be registered
-            elapsedTime = 0f;
-            frameCount = 0;
-
-            while (!(ServiceContainer.Instance.Has<SaveManager>() &&
-                    ServiceContainer.Instance.Has<CharacterManager>() &&
-                    ServiceContainer.Instance.Has<InventoryManager>()))
+            // Wait for full initialization
+            while (!ServiceContainer.Instance.IsInitialized)
             {
-                frameCount++;
-                if (frameCount % FRAME_WAIT_INTERVAL == 0)
-                    Log($"Waiting for critical systems... ({elapsedTime:F1}s elapsed)");
-
                 yield return null;
-                elapsedTime += Time.deltaTime;
-
-                if (elapsedTime >= systemTimeoutSeconds)
-                {
-                    LogError("CRITICAL: Critical systems not ready after timeout!");
-                    LogError(ServiceContainer.Instance.GetSystemStatus());
-                    yield break;
-                }
             }
 
-            Log("✓ All critical systems ready!");
+            Log("✓ ServiceContainer fully initialized");
         }
-
         #endregion
 
         #region Scene Logic
         private string DetermineTargetScene()
         {
-            if (!ValidateManagers())
+            // Validate GameManager exists
+            if (GameManager.Instance == null)
             {
-                LogError("Critical managers missing, defaulting to avatar creation");
+                LogError("GameManager not found! Going to avatar creation as fallback.");
                 return avatarCreationScene;
             }
 
-            if (!SaveManager.Instance.SaveExists())
+            // Check if save exists
+            if (!GameManager.Instance.SaveExists())
             {
-                Log("No save found — creating new profile");
-                GameManager.Instance.StartNewGame();
+                Log("No save found — going to avatar creation");
                 return avatarCreationScene;
             }
 
+            // Save exists - try to load
             Log("Save found — attempting to load...");
+            
             if (GameManager.Instance.LoadGame())
             {
                 string playerName = GameManager.Instance.CurrentPlayer?.playerName ?? "Unknown";
-                Log($"Save loaded — Welcome back, {playerName}!");
+                Log($"Save loaded successfully — Welcome back, {playerName}!");
                 return mainBaseScene;
             }
 
-            Log("Save corrupted or load failed — creating new profile");
-            GameManager.Instance.StartNewGame();
+            // Load failed - go to character creation
+            Log("Save corrupted or load failed — going to character creation");
             return avatarCreationScene;
-        }
-
-        private bool ValidateManagers()
-        {
-            bool valid = true;
-
-            if (GameManager.Instance == null)
-            {
-                LogError("GameManager is null!");
-                valid = false;
-            }
-
-            if (SaveManager.Instance == null)
-            {
-                LogError("SaveManager is null!");
-                valid = false;
-            }
-
-            return valid;
         }
         #endregion
 

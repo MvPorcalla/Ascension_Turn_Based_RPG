@@ -1,16 +1,16 @@
 // ════════════════════════════════════════════
-// Assets\Scripts\GameCore\SaveManager.cs
-// Manages game state persistence with backup system
+// Assets\Scripts\Core\SaveManager.cs
+// Manages save/load operations with backup and validation
 // ════════════════════════════════════════════
 
 using System;
 using System.IO;
 using UnityEngine;
-using Ascension.Manager.Model;
+using Ascension.Data.Save;
 
-namespace Ascension.App
+namespace Ascension.Core
 {
-    public class SaveManager : MonoBehaviour
+    public class SaveManager : MonoBehaviour, IGameService
     {
         #region Singleton
         public static SaveManager Instance { get; private set; }
@@ -49,7 +49,6 @@ namespace Ascension.App
         private void Awake()
         {
             InitializeSingleton();
-            EnsureFoldersExist();
         }
         
         #if UNITY_EDITOR
@@ -59,17 +58,53 @@ namespace Ascension.App
         }
         #endif
         #endregion
+
+        #region IGameService Implementation
+        /// <summary>
+        /// ✅ FIXED: Explicit initialization called by ServiceContainer
+        /// </summary>
+        public void Initialize()
+        {
+            Debug.Log("[SaveManager] Initializing...");
+            
+            EnsureFoldersExist();
+            
+            Debug.Log($"[SaveManager] Ready - Save path: {CharacterDataPath}");
+        }
+        #endregion
         
         #region Public Methods - Save/Load API
-
         public bool SaveGame(CharacterSaveData characterData, InventorySaveData inventoryData, EquipmentSaveData equipmentData, float playTime)
         {
             try
             {
                 CreateBackupIfNeeded();
                 
-                SaveData saveData = BuildSaveData(characterData, inventoryData, equipmentData, playTime);
-                saveData.UpdateMetaData();
+                // ✅ Check if updating existing save or creating new one
+                SaveData saveData;
+                if (File.Exists(CharacterDataFile))
+                {
+                    // Load existing save to preserve metadata
+                    saveData = TryLoadFromPath(CharacterDataFile);
+                    if (saveData == null)
+                    {
+                        // Corrupted save, create new
+                        saveData = BuildSaveData(characterData, inventoryData, equipmentData, playTime);
+                    }
+                    else
+                    {
+                        // Update existing save
+                        saveData.characterData = characterData;
+                        saveData.inventoryData = inventoryData;
+                        saveData.equipmentData = equipmentData;
+                        UpdateSaveMetadata(saveData, playTime);
+                    }
+                }
+                else
+                {
+                    // New save
+                    saveData = BuildSaveData(characterData, inventoryData, equipmentData, playTime);
+                }
                 
                 WriteSaveFile(saveData);
                 
@@ -166,19 +201,39 @@ namespace Ascension.App
                 Directory.CreateDirectory(path);
         }
         
+        /// <summary>
+        /// ✅ Factory method - Creates SaveData with Unity-dependent metadata
+        /// </summary>
         private SaveData BuildSaveData(CharacterSaveData characterData, InventorySaveData inventoryData, EquipmentSaveData equipmentData, float playTime)
         {
+            string timestamp = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            
             SaveData save = new SaveData
             {
-                metaData = SaveMetaData.CreateNew(),
+                metaData = new SaveMetaData
+                {
+                    saveVersion = UnityEngine.Application.version,
+                    createdTime = timestamp,
+                    lastSaveTime = timestamp,
+                    totalPlayTimeSeconds = playTime,
+                    saveCount = 1
+                },
                 characterData = characterData,
                 inventoryData = inventoryData,
                 equipmentData = equipmentData
             };
             
-            save.metaData.totalPlayTimeSeconds += playTime;
-            
             return save;
+        }
+        
+        /// <summary>
+        /// ✅ Updates metadata before saving
+        /// </summary>
+        private void UpdateSaveMetadata(SaveData saveData, float additionalPlayTime)
+        {
+            saveData.metaData.lastSaveTime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            saveData.metaData.totalPlayTimeSeconds += additionalPlayTime;
+            saveData.metaData.saveCount++;
         }
         
         private void WriteSaveFile(SaveData saveData)

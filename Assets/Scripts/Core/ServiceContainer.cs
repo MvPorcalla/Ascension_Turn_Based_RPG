@@ -1,32 +1,34 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // Assets\Scripts\Core\ServiceContainer.cs
-// Hybrid DI + Service Locator - Type-safe system registry
+// Centralized service locator and lifecycle manager
 // ═══════════════════════════════════════════════════════════════════════════════
 
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Ascension.App;
 
 namespace Ascension.Core
 {
-    /// <summary>
-    /// Central service registry using dictionary-based lookups (O(1) performance)
-    /// Supports both constructor injection and runtime resolution
-    /// </summary>
     public class ServiceContainer : MonoBehaviour
     {
         #region Singleton
         public static ServiceContainer Instance { get; private set; }
         #endregion
 
-        #region System Storage
-        // Type-safe dictionary: O(1) lookups vs switch statement
+        #region Service Storage
         private readonly Dictionary<Type, Component> _services = new Dictionary<Type, Component>();
         #endregion
 
         #region Initialization State
+        private bool _isDiscoveryComplete = false;
         private bool _isInitialized = false;
+        
         public bool IsInitialized => _isInitialized;
+        #endregion
+
+        #region Events
+        public event Action OnAllSystemsReady;
         #endregion
 
         #region Unity Callbacks
@@ -35,14 +37,34 @@ namespace Ascension.Core
             if (!InitializeSingleton())
                 return;
 
+            // Phase 1: Auto-discover all services
             AutoDiscoverServices();
+            _isDiscoveryComplete = true;
+            
+            Log("Discovery complete, waiting for Start() to initialize services...");
         }
 
         private void Start()
         {
+            if (!_isDiscoveryComplete)
+            {
+                LogError("Discovery not complete in Start()!");
+                return;
+            }
+
+            // Phase 2: Initialize all services in order
+            InitializeAllServices();
+            
+            // Phase 3: Validate critical services
             ValidateCriticalServices();
+            
+            // Phase 4: Mark as ready
             _isInitialized = true;
-            Log($"Container ready - {_services.Count} services registered");
+            
+            Log($"✓ All systems initialized - {_services.Count} services ready");
+            
+            // Phase 5: Fire event
+            OnAllSystemsReady?.Invoke();
         }
         #endregion
 
@@ -61,47 +83,112 @@ namespace Ascension.Core
             return true;
         }
 
-        /// <summary>
-        /// Automatically find and register all services from child objects
-        /// No more manual string matching!
-        /// </summary>
         private void AutoDiscoverServices()
         {
             Log("Auto-discovering services...");
 
-            // Get all components on children
             Component[] allComponents = GetComponentsInChildren<Component>(true);
+            int discoveredCount = 0;
 
-            // Register known service types
-            RegisterServicesOfType<Ascension.App.GameManager>(allComponents);
-            RegisterServicesOfType<Ascension.App.SaveManager>(allComponents);
-            RegisterServicesOfType<Ascension.Character.Manager.CharacterManager>(allComponents);
-            RegisterServicesOfType<Ascension.Inventory.Manager.InventoryManager>(allComponents);
-            RegisterServicesOfType<Ascension.GameSystem.PotionManager>(allComponents);
-            
-            // TODO: Add EquipmentManager when ready
-            // RegisterServicesOfType<Ascension.Equipment.Manager.EquipmentManager>(allComponents);
+            foreach (Component comp in allComponents)
+            {
+                if (comp is IGameService)
+                {
+                    Type serviceType = comp.GetType();
+                    
+                    if (serviceType == typeof(ServiceContainer))
+                        continue;
 
-            LogRegisteredServices();
+                    if (!_services.ContainsKey(serviceType))
+                    {
+                        _services[serviceType] = comp;
+                        Log($"✓ Discovered: {serviceType.Name}");
+                        discoveredCount++;
+                    }
+                    else
+                    {
+                        LogWarning($"Duplicate service found: {serviceType.Name} (ignored)");
+                    }
+                }
+            }
+
+            Log($"Discovery complete: {discoveredCount} services found");
         }
 
-        private void RegisterServicesOfType<T>(Component[] components) where T : Component
+        /// <summary>
+        /// ✅ NEW: Initialize all services in explicit order
+        /// This ensures dependencies are available when each service initializes
+        /// </summary>
+        private void InitializeAllServices()
         {
-            foreach (Component comp in components)
+            Log("Initializing services in order...");
+
+            // Define initialization order (critical services first)
+            Type[] initOrder = new Type[]
             {
-                if (comp is T service)
+                typeof(SaveManager),                                    // Must be first (no dependencies)
+                typeof(Ascension.Character.Manager.CharacterManager),   // Depends on SaveManager
+                typeof(Ascension.Inventory.Manager.InventoryManager),   // Depends on CharacterManager
+                typeof(PlayerStateController),                          // Depends on CharacterManager
+                typeof(SaveController),                                 // Depends on all managers
+                typeof(SceneController),                                // Depends on SaveController
+                typeof(Ascension.App.GameManager)                       // Orchestrator (depends on all)
+            };
+
+            // Initialize services in order
+            foreach (Type serviceType in initOrder)
+            {
+                if (_services.TryGetValue(serviceType, out Component service))
                 {
-                    Register(service);
-                    return; // Only register first instance
+                    if (service is IGameService gameService)
+                    {
+                        try
+                        {
+                            gameService.Initialize();
+                            Log($"✓ Initialized: {serviceType.Name}");
+                        }
+                        catch (Exception e)
+                        {
+                            LogError($"Failed to initialize {serviceType.Name}: {e.Message}\n{e.StackTrace}");
+                        }
+                    }
+                }
+                else
+                {
+                    LogWarning($"Service not found for initialization: {serviceType.Name}");
+                }
+            }
+
+            // Initialize any remaining services not in the explicit list
+            InitializeRemainingServices(initOrder);
+        }
+
+        private void InitializeRemainingServices(Type[] alreadyInitialized)
+        {
+            HashSet<Type> initializedSet = new HashSet<Type>(alreadyInitialized);
+
+            foreach (var kvp in _services)
+            {
+                if (!initializedSet.Contains(kvp.Key))
+                {
+                    if (kvp.Value is IGameService gameService)
+                    {
+                        try
+                        {
+                            gameService.Initialize();
+                            Log($"✓ Initialized (late): {kvp.Key.Name}");
+                        }
+                        catch (Exception e)
+                        {
+                            LogError($"Failed to initialize {kvp.Key.Name}: {e.Message}");
+                        }
+                    }
                 }
             }
         }
         #endregion
 
         #region Public API - Registration
-        /// <summary>
-        /// Manually register a service (for edge cases or testing)
-        /// </summary>
         public void Register<T>(T service) where T : Component
         {
             Type serviceType = typeof(T);
@@ -115,9 +202,6 @@ namespace Ascension.Core
             Log($"✓ Registered: {serviceType.Name}");
         }
 
-        /// <summary>
-        /// Unregister a service
-        /// </summary>
         public void Unregister<T>() where T : Component
         {
             Type serviceType = typeof(T);
@@ -130,10 +214,6 @@ namespace Ascension.Core
         #endregion
 
         #region Public API - Resolution
-        /// <summary>
-        /// Get a service by type - O(1) dictionary lookup
-        /// Returns null if not found (caller should handle)
-        /// </summary>
         public T Get<T>() where T : Component
         {
             Type serviceType = typeof(T);
@@ -147,10 +227,6 @@ namespace Ascension.Core
             return null;
         }
 
-        /// <summary>
-        /// Get service with runtime type check
-        /// Throws exception if not found (use for critical dependencies)
-        /// </summary>
         public T GetRequired<T>() where T : Component
         {
             T service = Get<T>();
@@ -163,51 +239,47 @@ namespace Ascension.Core
             return service;
         }
 
-        /// <summary>
-        /// Check if service exists without retrieving it
-        /// </summary>
         public bool Has<T>() where T : Component
         {
             return _services.ContainsKey(typeof(T));
         }
         #endregion
 
-        #region Public API - Validation
-        /// <summary>
-        /// Validate that critical services are registered
-        /// </summary>
+        #region Validation
         private void ValidateCriticalServices()
         {
             bool allPresent = true;
 
-            allPresent &= ValidateService<Ascension.App.GameManager>();
-            allPresent &= ValidateService<Ascension.App.SaveManager>();
-            allPresent &= ValidateService<Ascension.Character.Manager.CharacterManager>();
-            allPresent &= ValidateService<Ascension.Inventory.Manager.InventoryManager>();
+            allPresent &= ValidateService<Ascension.App.GameManager>("GameManager");
+            allPresent &= ValidateService<SaveManager>("SaveManager");
+            allPresent &= ValidateService<Ascension.Character.Manager.CharacterManager>("CharacterManager");
+            allPresent &= ValidateService<Ascension.Inventory.Manager.InventoryManager>("InventoryManager");
 
             if (!allPresent)
             {
-                LogError("CRITICAL SERVICES MISSING! Check hierarchy.");
+                LogError("CRITICAL SERVICES MISSING! Check hierarchy and IGameService implementation.");
+            }
+            else
+            {
+                Log("✓ All critical services validated");
             }
         }
 
-        private bool ValidateService<T>() where T : Component
+        private bool ValidateService<T>(string serviceName) where T : Component
         {
             if (!Has<T>())
             {
-                LogError($"Critical service missing: {typeof(T).Name}");
+                LogError($"Critical service missing: {serviceName}");
                 return false;
             }
             return true;
         }
 
-        /// <summary>
-        /// Get detailed status for debugging
-        /// </summary>
         public string GetSystemStatus()
         {
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
             sb.AppendLine("=== SERVICE CONTAINER STATUS ===");
+            sb.AppendLine($"Discovery Complete: {(_isDiscoveryComplete ? "✓" : "✗")}");
             sb.AppendLine($"Initialized: {(_isInitialized ? "✓" : "✗")}");
             sb.AppendLine($"Total Services: {_services.Count}");
             sb.AppendLine("\nRegistered Services:");
@@ -215,23 +287,15 @@ namespace Ascension.Core
             foreach (var kvp in _services)
             {
                 string status = kvp.Value != null ? "✓ Ready" : "✗ Null";
-                sb.AppendLine($"  {kvp.Key.Name}: {status}");
+                string hasInterface = kvp.Value is IGameService ? " [IGameService]" : "";
+                sb.AppendLine($"  {kvp.Key.Name}: {status}{hasInterface}");
             }
 
             return sb.ToString();
         }
         #endregion
 
-        #region Private Helpers
-        private void LogRegisteredServices()
-        {
-            Log("=== Registered Services ===");
-            foreach (var kvp in _services)
-            {
-                Log($"  {kvp.Key.Name}: {(kvp.Value != null ? "✓" : "✗")}");
-            }
-        }
-
+        #region Logging
         private void Log(string message)
         {
             Debug.Log($"[ServiceContainer] {message}");
