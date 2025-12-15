@@ -27,7 +27,7 @@ MonoBehaviour:
   bonusStats: []
   baseHP: 40
   baseDefense: 10
-  baseAD: 0
+  baseAD: 5
   baseAP: 0
   baseAttackSpeed: 0
   baseCritRate: 0

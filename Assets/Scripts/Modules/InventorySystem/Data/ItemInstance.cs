@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────────
-// ItemInstance.cs
+// Assets\Scripts\Modules\InventorySystem\Data\ItemInstance.cs
 // Represents an instance of an item in inventory/storage
 // ──────────────────────────────────────────────────
 

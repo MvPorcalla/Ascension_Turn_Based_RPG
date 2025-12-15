@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────────
-// StorageRoomUI.cs
+// Assets\Scripts\Modules\InventorySystem\UI\StorageRoomUI.cs
 // Manages the Storage Room UI for item management
 // ──────────────────────────────────────────────────
 

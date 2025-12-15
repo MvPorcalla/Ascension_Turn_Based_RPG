@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────────
-// InventoryEnums.cs
+// Assets\Scripts\Modules\InventorySystem\Enum\InventoryEnums.cs
 // Enums for inventory system locations and haptic feedback
 // ──────────────────────────────────────────────────
 

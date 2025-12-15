@@ -88,21 +88,41 @@
 
 ---
 
-Scene: 01_Bootstrap (or any scene with ServiceContainer)
-├── GameSystem (GameObject) (Component: ServiceContainer.cs)
-│   ├── GameManager (Component: GameManager.cs)
-│   ├── PlayerStateController (Component: PlayerStateController.cs)
-│   ├── SaveController (Component: SaveController.cs)
-│   ├── SceneController (Component: SceneController.cs)
-│   ├── SaveManager (Component: SaveManager.cs)
-│   ├── CharacterManager (Component: CharacterManager.cs)
-│   ├── PotionManager (Component: PotionManager.cs)
-│   ├── InventoryManager (Component: InventoryManager.cs)
-│   └── EquipmentManager (Component: EquipmentManager.cs)
+## Script Flow
 
+Bootstrap.Start()
+    ↓
+ServiceContainer.Awake()
+    └─ Auto-discovers all IGameService components
+    ↓
+ServiceContainer.Start()
+    └─ Initializes services in order:
+        1. SaveManager.Initialize()
+        2. CharacterManager.Initialize()
+        3. InventoryManager.Initialize()
+        4. PlayerStateController.Initialize()
+        5. SaveController.Initialize()
+        6. SceneController.Initialize()
+        7. GameManager.Initialize()
+    ↓
+    └─ Fires OnAllSystemsReady event
+    ↓
+Bootstrap continues
+    └─ Checks if save exists
+        ├─ YES → LoadGame() → MainBase
+        └─ NO → CharacterCreation
+    ↓
+CharacterCreationManager loads
+    └─ User customizes character
+    └─ OnConfirmClicked()
+        └─ GameManager.StartNewGame() ← CREATES PLAYER HERE
+        └─ Apply customizations
+        └─ Save and proceed to MainBase
+
+---
 
 ## 📊 Dependency Tree
-```
+
 ServiceContainer (initializes everything)
     ↓
 SaveManager (no dependencies) ← IGameService ✅
@@ -116,3 +136,19 @@ GameManager (depends on all controllers) ← IGameService ✅
 PotionManager (depends on CharacterManager) ← NOT IGameService ✅
     ↓
 UI Components (depend on managers) ← NOT IGameService ✅
+
+---
+
+## Service Container System
+
+Scene: 01_Bootstrap (or any scene with ServiceContainer)
+├── GameSystem (GameObject) (Component: ServiceContainer.cs)
+│   ├── GameManager (Component: GameManager.cs)
+│   ├── PlayerStateController (Component: PlayerStateController.cs)
+│   ├── SaveController (Component: SaveController.cs)
+│   ├── SceneController (Component: SceneController.cs)
+│   ├── SaveManager (Component: SaveManager.cs)
+│   ├── CharacterManager (Component: CharacterManager.cs)
+│   ├── PotionManager (Component: PotionManager.cs)
+│   ├── InventoryManager (Component: InventoryManager.cs)
+│   └── EquipmentManager (Component: EquipmentManager.cs)

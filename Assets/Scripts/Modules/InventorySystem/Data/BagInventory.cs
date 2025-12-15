@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════
 // Scripts/Modules/InventorySystem/Data/BagInventory.cs
-// STEP 4: Refactored to use services (much cleaner!)
+// IMPROVED: Optional service injection for better testability
 // ══════════════════════════════════════════════════════════════════
 
 using System;
@@ -33,9 +33,25 @@ namespace Ascension.Inventory.Data
         #endregion
 
         #region Constructor
+        /// <summary>
+        /// Default constructor - creates services internally
+        /// </summary>
         public BagInventory()
         {
             InitializeServices();
+        }
+
+        /// <summary>
+        /// Constructor with optional service injection for testing
+        /// </summary>
+        public BagInventory(
+            ItemQueryService queryService = null,
+            ItemStackingService stackingService = null,
+            ItemLocationService locationService = null)
+        {
+            _queryService = queryService ?? new ItemQueryService();
+            _stackingService = stackingService ?? new ItemStackingService();
+            _locationService = locationService ?? new ItemLocationService(_stackingService, _queryService);
         }
 
         private void InitializeServices()
@@ -88,9 +104,6 @@ namespace Ascension.Inventory.Data
 
         #region Add/Remove Methods
 
-        /// <summary>
-        /// Add item to inventory (goes to storage by default)
-        /// </summary>
         public bool AddItem(string itemID, int quantity = 1, bool addToBag = false, GameDatabaseSO database = null)
         {
             if (database == null)
@@ -106,7 +119,6 @@ namespace Ascension.Inventory.Data
                 return false;
             }
 
-            // Check bag space for non-storage additions
             if (addToBag && !HasBagSpace())
             {
                 Debug.LogWarning("[BagInventory] Bag full, sending to storage");
@@ -115,22 +127,19 @@ namespace Ascension.Inventory.Data
 
             if (itemData.IsStackable)
             {
-                // Use stacking service to add stackable items
                 _stackingService.AddToExistingOrCreateNew(
                     allItems,
                     itemID,
                     quantity,
                     addToBag,
-                    false, // isInPocket
+                    false,
                     itemData.MaxStackSize
                 );
             }
             else
             {
-                // Non-stackable items: create individual instances
                 for (int i = 0; i < quantity; i++)
                 {
-                    // Check space before each addition
                     if (addToBag && !HasBagSpace())
                     {
                         Debug.LogWarning("[BagInventory] Bag full, remaining items sent to storage");
@@ -145,9 +154,6 @@ namespace Ascension.Inventory.Data
             return true;
         }
 
-        /// <summary>
-        /// Remove item from inventory
-        /// </summary>
         public bool RemoveItem(ItemInstance item, int quantity = 1)
         {
             if (!allItems.Contains(item))
@@ -171,9 +177,6 @@ namespace Ascension.Inventory.Data
 
         #region Location Methods (Delegate to LocationService)
 
-        /// <summary>
-        /// Move item to bag (requires database for stackable check)
-        /// </summary>
         public bool MoveToBag(ItemInstance item, int quantity, GameDatabaseSO database)
         {
             ItemBaseSO itemData = database.GetItem(item.itemID);
@@ -191,9 +194,6 @@ namespace Ascension.Inventory.Data
             return success;
         }
 
-        /// <summary>
-        /// Move item to pocket (requires database for stackable check)
-        /// </summary>
         public bool MoveToPocket(ItemInstance item, int quantity, GameDatabaseSO database)
         {
             ItemBaseSO itemData = database.GetItem(item.itemID);
@@ -211,9 +211,6 @@ namespace Ascension.Inventory.Data
             return success;
         }
 
-        /// <summary>
-        /// Move item to storage (requires database for stackable check)
-        /// </summary>
         public bool MoveToStorage(ItemInstance item, int quantity, GameDatabaseSO database)
         {
             ItemBaseSO itemData = database.GetItem(item.itemID);
@@ -235,12 +232,8 @@ namespace Ascension.Inventory.Data
 
         #region Utility Methods
 
-        /// <summary>
-        /// Store all items from bag to storage (excludes equipped items)
-        /// </summary>
         public void StoreAllItems()
         {
-            // ToList() to avoid modification during iteration
             foreach (var item in GetBagItems().ToList())
             {
                 if (!item.isEquipped)
@@ -253,9 +246,6 @@ namespace Ascension.Inventory.Data
             OnInventoryChanged?.Invoke();
         }
 
-        /// <summary>
-        /// Clear all items (for testing/reset)
-        /// </summary>
         public void ClearAll()
         {
             allItems.Clear();

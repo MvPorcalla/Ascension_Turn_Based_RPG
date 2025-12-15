@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────────
-// BagInventoryData.cs
+// Assets\Scripts\Modules\InventorySystem\Data\BagInventoryData.cs
 // Serializable data class for saving/loading BagInventory
 // ──────────────────────────────────────────────────
 

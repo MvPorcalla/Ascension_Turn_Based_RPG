@@ -115,9 +115,6 @@ CharacterManager   InventoryManager     SaveManager
    │                    │                    │
    └────── data ─────────┴────────── data ───┘
 
-   (.asmdef)        (.asmdef)      (.asmdef)
-
-
 This diagram illustrates module orchestration and allowed dependencies.
 
 ---
