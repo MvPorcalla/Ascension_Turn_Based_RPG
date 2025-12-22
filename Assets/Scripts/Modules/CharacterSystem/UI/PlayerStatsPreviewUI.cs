@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════
-// PlayerPreviewUI.cs
+// Assets\Scripts\Modules\CharacterSystem\UI\PlayerStatsPreviewUI.cs
 // Displays player derived stats in the preview panel
 // ════════════════════════════════════════════
 

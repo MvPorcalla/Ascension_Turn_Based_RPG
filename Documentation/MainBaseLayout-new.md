@@ -49,56 +49,58 @@ Canvas
 │     │
 │     ├── EquipmentRoomPanel (Full screen)
 │     │     ├── Roomheader
-│     │     ├── PlayerStatsection
+│     │     ├── PlayerPreview (prefab has a script already just ereuse it)
 │     │     ├── GearSection
-│     │     ├── LoadoutSection
-│     │     ├── StorageRoomPanel (Full screen)
-│     │           ├── Roomheader
-│     │           ├── PlayerPreview (prefab has a script already just ereuse it)
+│     │     │    ├── GearHeader
+│     │     │    │    ├── title
+│     │     │    │
+│     │     │    ├── GearContainer
+│     │     │    │    ├── WeaponSlot
+│     │     │    │    ├── HelmetSlot
+│     │     │    │    ├── ChestPlateSlot
+│     │     │    │    ├── GlovesSlot
+│     │     │    │    ├── BootsSlot
+│     │     │    │    ├── Accessory1Slot
+│     │     │    │    ├── Accessory2Slot
+│     │     │    │
+│     │     │    ├── HotBarContainer
+│     │     │         ├── NormalSkillSlot1
+│     │     │         ├── NormalSkillSlot2
+│     │     │         ├── UltimateSkillSlot
+│     │     │         ├── Item1
+│     │     │         ├── Item2
+│     │     │         ├── Item3
+│     │     │
+│     │     ├── StorageSection (Gear: only show Weapon, Gear, and Potions) (Abilities: only show ability)
+│     │           ├── StorageHeader
+│     │           │    ├── background
+│     │           │    ├── Title
+│     │           │    ├── GearButton (switch the storage to Gear)
+│     │           │    ├── AbilitiesButton (switch the storage to Abilities)
+│     │           │    ├── SortSection
+│     │           │         └── SortButtons
+│     │           │              ├── GearSortButtons (sort for Gear)
+│     │           │              │    ├── AllButton 
+│     │           │              │    ├── WeaponsButton 
+│     │           │              │    ├── HelmetsButton 
+│     │           │              │    ├── ChestsButton 
+│     │           │              │    ├── GlovesButton 
+│     │           │              │    ├── BootsButton 
+│     │           │              │    ├── AccessoriesButton 
+│     │           │              │    └── PotionsButton
+│     │           │              │
+│     │           │              ├── AbilitiesSortButtons (sort for Abilities)
 │     │           │
-│     │           ├── GearPanel
-│     │           │     ├── GearSection
-│     │           │          ├── GearHeader
-│     │           │          │    ├── title
-│     │           │          │
-│     │           │          ├── GearContainer
-│     │           │          │    ├── WeaponSlot
-│     │           │          │    ├── HelmetSlot
-│     │           │          │    ├── ChestPlateSlot
-│     │           │          │    ├── GlovesSlot
-│     │           │          │    ├── BootsSlot
-│     │           │          │    ├── Accessory1Slot
-│     │           │          │    ├── Accessory2Slot
-│     │           │          │
-│     │           │          ├── HotBarContainer
-│     │           │               ├── NormalSkillSlot1
-│     │           │               ├── NormalSkillSlot2
-│     │           │               ├── UltimateSkillSlot
-│     │           │               ├── Item1
-│     │           │               ├── Item2
-│     │           │               ├── Item3
-│     │           │
-│     │           ├── StorageSection (Gear: only show Weapon, Gear, and Potions) (Abilities: only show ability)
-│     │                 ├── StorageHeader
-│     │                 │    ├── background
-│     │                 │    ├── Title
-│     │                 │    ├── GearButton (switch the storage to Gear)
-│     │                 │    ├── AbilitiesButton (switch the storage to Abilities)
-│     │                 │    ├── SortSection
-│     │                 │         └── SortButtons
-│     │                 │              ├── GearSortButtons (sort for Gear)
-│     │                 │              ├── AbilitiesSortButtons (sort for Abilities)
-│     │                 │
-│     │                 └── StoragePanel (Prefab) (sotage Gear / Abilities)
-│     │                      └── StorageViewport
-│     │                           └── StorageContent (GridLayoutGroup)
-│     │                                ├── ItemSlot (Button)
-│     │                                │    ├── rarity (image)
-│     │                                │    ├── Button
-│     │                                │    ├── ItemIcon (Image)
-│     │                                │    ├── EquipedIndicator
-│     │                                │    └── Quantity (TMP - max x999 after that new slot)
-│     │                                ├── ...
+│     │           └── StoragePanel (Prefab) (sotage Gear / Abilities)
+│     │                └── StorageViewport
+│     │                     └── StorageContent (GridLayoutGroup)
+│     │                          ├── ItemSlot (Button)
+│     │                          │    ├── rarity (image)
+│     │                          │    ├── Button
+│     │                          │    ├── ItemIcon (Image)
+│     │                          │    ├── EquipedIndicator
+│     │                          │    └── Quantity (TMP - max x999 after that new slot)
+│     │                          ├── ...
 │     │
 │     ├── StorageRoomPanel (Full screen)
 │     │     ├── Roomheader

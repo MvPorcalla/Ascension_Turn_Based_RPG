@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════
-// ProfilePanelManager.cs - FIXED: GetOriginalValue
+// ProfilePanelManager.cs
 // ════════════════════════════════════════════
 
 using UnityEngine;

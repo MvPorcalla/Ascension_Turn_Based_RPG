@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\AppFlow\SaveController.cs
-// Manages game saving and loading operations
+// Controller for saving and loading game state
 // ════════════════════════════════════════════
 
 using UnityEngine;
@@ -10,6 +10,7 @@ using Ascension.Character.Stat;
 using Ascension.Character.Manager;
 using Ascension.Inventory.Manager;
 using Ascension.Inventory.Data;
+using Ascension.Equipment.Manager;
 
 namespace Ascension.App
 {
@@ -19,6 +20,8 @@ namespace Ascension.App
         private CharacterManager _characterManager;
         private SaveManager _saveManager;
         private InventoryManager _inventoryManager;
+        private EquipmentManager _equipmentManager;
+        private SkillLoadoutManager _skillLoadoutManager;
         #endregion
 
         #region Events
@@ -45,6 +48,8 @@ namespace Ascension.App
             _characterManager = container.Get<CharacterManager>();
             _saveManager = container.Get<SaveManager>();
             _inventoryManager = container.Get<InventoryManager>();
+            _equipmentManager = container.Get<EquipmentManager>();
+            _skillLoadoutManager = container.Get<SkillLoadoutManager>();
 
             ValidateDependencies();
         }
@@ -59,6 +64,12 @@ namespace Ascension.App
             
             if (_inventoryManager == null)
                 Debug.LogError("[SaveController] InventoryManager not found!");
+            
+            if (_equipmentManager == null)
+                Debug.LogError("[SaveController] EquipmentManager not found!");
+            
+            if (_skillLoadoutManager == null)
+                Debug.LogError("[SaveController] SkillLoadoutManager not found!");
         }
         #endregion
 
@@ -74,8 +85,15 @@ namespace Ascension.App
             CharacterSaveData charData = ConvertToCharacterSaveData(_characterManager.CurrentPlayer);
             InventorySaveData invData = ConvertToInventorySaveData();
             EquipmentSaveData eqData = ConvertToEquipmentSaveData();
+            SkillLoadoutSaveData skillData = ConvertToSkillLoadoutSaveData();
             
-            bool success = _saveManager.SaveGame(charData, invData, eqData, sessionPlayTime);
+            bool success = _saveManager.SaveGame(
+                charData, 
+                invData, 
+                eqData, 
+                skillData,
+                sessionPlayTime
+            );
             
             if (success)
             {
@@ -96,9 +114,18 @@ namespace Ascension.App
                 return false;
             }
             
-            LoadPlayerFromSave(saveData);
+            // ✅ IMPORTANT: Load order matters!
+            // 1. Load inventory first (creates items in storage/bag/pocket)
             LoadInventoryFromSave(saveData);
+            
+            // 2. Load equipment (marks items as equipped + calculates stats)
             LoadEquipmentFromSave(saveData);
+            
+            // 3. Load character (applies final stats)
+            LoadPlayerFromSave(saveData);
+            
+            // 4. Load skill loadout
+            LoadSkillLoadoutFromSave(saveData);
             
             OnLoadCompleted?.Invoke();
             Debug.Log("[SaveController] Game loaded successfully");
@@ -127,9 +154,6 @@ namespace Ascension.App
         #endregion
 
         #region Private Methods - Character Conversion
-        /// <summary>
-        /// ✅ FIXED: Maps CharacterStats attributes to save data with correct names
-        /// </summary>
         private CharacterSaveData ConvertToCharacterSaveData(CharacterStats stats)
         {
             return new CharacterSaveData
@@ -141,18 +165,14 @@ namespace Ascension.App
                 currentMana = 0f,
                 attributePoints = stats.UnallocatedPoints,
                 
-                // ✅ FIXED: Map to correct save data fields
                 strength = stats.attributes.STR,
-                agility = stats.attributes.AGI,      // Was: dexterity
+                agility = stats.attributes.AGI,
                 intelligence = stats.attributes.INT,
-                endurance = stats.attributes.END,    // Was: vitality
-                wisdom = stats.attributes.WIS        // Was: luck
+                endurance = stats.attributes.END,
+                wisdom = stats.attributes.WIS
             };
         }
 
-        /// <summary>
-        /// ✅ FIXED: Maps save data to CharacterStats attributes with correct names
-        /// </summary>
         private void LoadPlayerFromSave(SaveData saveData)
         {
             CharacterStats stats = new CharacterStats();
@@ -165,12 +185,11 @@ namespace Ascension.App
             stats.levelSystem.currentEXP = saveData.characterData.currentExperience;
             stats.levelSystem.unallocatedPoints = saveData.characterData.attributePoints;
             
-            // ✅ FIXED: Map from correct save data fields
             stats.attributes.STR = saveData.characterData.strength;
-            stats.attributes.AGI = saveData.characterData.agility;      // Was: dexterity
+            stats.attributes.AGI = saveData.characterData.agility;
             stats.attributes.INT = saveData.characterData.intelligence;
-            stats.attributes.END = saveData.characterData.endurance;    // Was: vitality
-            stats.attributes.WIS = saveData.characterData.wisdom;       // Was: luck
+            stats.attributes.END = saveData.characterData.endurance;
+            stats.attributes.WIS = saveData.characterData.wisdom;
             
             stats.RecalculateStats(_characterManager.BaseStats, fullHeal: false);
             stats.combatRuntime.currentHP = saveData.characterData.currentHealth;
@@ -183,11 +202,21 @@ namespace Ascension.App
         #endregion
 
         #region Private Methods - Inventory Conversion
+        /// <summary>
+        /// ✅ CLEAN: Only saves item location (Bag/Pocket/Storage)
+        /// Equipment state is saved separately in EquipmentSaveData
+        /// </summary>
         private InventorySaveData ConvertToInventorySaveData()
         {
             if (_inventoryManager == null)
             {
-                return new InventorySaveData { items = new ItemInstanceData[0], maxBagSlots = 12 };
+                return new InventorySaveData 
+                { 
+                    items = new ItemInstanceData[0], 
+                    maxBagSlots = 12,
+                    maxPocketSlots = 6,
+                    maxStorageSlots = 60
+                };
             }
 
             BagInventoryData bagData = _inventoryManager.SaveInventory();
@@ -196,61 +225,170 @@ namespace Ascension.App
             
             for (int i = 0; i < bagData.items.Count; i++)
             {
+                ItemInstance item = bagData.items[i];
+                
+                // ✅ CLEAN: Only save location flags
                 itemArray[i] = new ItemInstanceData
                 {
-                    itemId = bagData.items[i].itemID,
-                    quantity = bagData.items[i].quantity
+                    itemId = item.itemID,
+                    quantity = item.quantity,
+                    isInBag = item.isInBag,
+                    isInPocket = item.isInPocket
+                    // ❌ No isEquipped - that's in EquipmentSaveData
                 };
             }
             
             return new InventorySaveData
             {
+                items = itemArray,
                 maxBagSlots = bagData.maxBagSlots,
-                items = itemArray
+                maxPocketSlots = bagData.maxPocketSlots,
+                maxStorageSlots = bagData.maxStorageSlots
             };
         }
 
+        /// <summary>
+        /// ✅ CLEAN: Only restores item location
+        /// Equipment state is restored separately by LoadEquipmentFromSave()
+        /// </summary>
         private void LoadInventoryFromSave(SaveData saveData)
         {
-            if (_inventoryManager != null && saveData.inventoryData != null)
+            if (_inventoryManager == null)
             {
-                BagInventoryData bagData = new BagInventoryData
-                {
-                    maxBagSlots = saveData.inventoryData.maxBagSlots,
-                    items = new System.Collections.Generic.List<ItemInstance>()
-                };
-                
-                foreach (var itemData in saveData.inventoryData.items)
-                {
-                    bagData.items.Add(new ItemInstance(itemData.itemId, itemData.quantity, false));
-                }
-                
-                _inventoryManager.LoadInventory(bagData);
+                Debug.LogWarning("[SaveController] InventoryManager not available");
+                return;
             }
+
+            if (saveData.inventoryData == null)
+            {
+                Debug.LogWarning("[SaveController] No inventory data in save");
+                return;
+            }
+
+            // Convert InventorySaveData → BagInventoryData
+            BagInventoryData bagData = new BagInventoryData
+            {
+                maxBagSlots = saveData.inventoryData.maxBagSlots,
+                maxPocketSlots = saveData.inventoryData.maxPocketSlots,
+                maxStorageSlots = saveData.inventoryData.maxStorageSlots,
+                items = new System.Collections.Generic.List<ItemInstance>()
+            };
+            
+            // ✅ Restore location flags from save data
+            foreach (var itemData in saveData.inventoryData.items)
+            {
+                ItemInstance item = new ItemInstance(
+                    itemData.itemId, 
+                    itemData.quantity, 
+                    itemData.isInBag,
+                    itemData.isInPocket
+                );
+                
+                bagData.items.Add(item);
+            }
+            
+            _inventoryManager.LoadInventory(bagData);
+
+            // ✅ Debug verification
+            Debug.Log($"[SaveController] ✓ Loaded inventory: {bagData.items.Count} items");
+            Debug.Log($"[SaveController]   Slots - Bag:{bagData.maxBagSlots} Pocket:{bagData.maxPocketSlots} Storage:{bagData.maxStorageSlots}");
+            
+            // ✅ Log item locations
+            int bagCount = 0, pocketCount = 0, storageCount = 0;
+            foreach (var item in bagData.items)
+            {
+                if (item.isInBag) bagCount++;
+                else if (item.isInPocket) pocketCount++;
+                else storageCount++;
+            }
+            Debug.Log($"[SaveController]   Distribution - Bag:{bagCount} Pocket:{pocketCount} Storage:{storageCount}");
         }
         #endregion
 
         #region Private Methods - Equipment Conversion
+        /// <summary>
+        /// ✅ Equipment state is tracked HERE, not in inventory
+        /// </summary>
         private EquipmentSaveData ConvertToEquipmentSaveData()
         {
-            // TODO: Implement when EquipmentManager ready
+            if (_equipmentManager != null)
+            {
+                return _equipmentManager.SaveEquipment();
+            }
+
             return new EquipmentSaveData
             {
-                weaponId = "",
-                helmetId = "",
-                chestId = "",
-                glovesId = "",
-                bootsId = ""
+                weaponId = string.Empty,
+                helmetId = string.Empty,
+                chestId = string.Empty,
+                glovesId = string.Empty,
+                bootsId = string.Empty,
+                accessory1Id = string.Empty,
+                accessory2Id = string.Empty
             };
         }
 
+        /// <summary>
+        /// ✅ Equipment loading marks items as equipped in inventory
+        /// </summary>
         private void LoadEquipmentFromSave(SaveData saveData)
         {
-            // TODO: Implement when EquipmentManager ready
-            if (saveData.equipmentData != null)
+            if (_equipmentManager == null)
+            {
+                Debug.LogWarning("[SaveController] EquipmentManager not available");
+                return;
+            }
+
+            if (saveData.equipmentData == null)
+            {
+                Debug.LogWarning("[SaveController] No equipment data in save");
+                return;
+            }
+
+            _equipmentManager.LoadEquipment(saveData.equipmentData);
+            
+            if (_characterManager != null)
             {
                 _characterManager.UpdateStatsFromEquipment();
             }
+            
+            Debug.Log("[SaveController] Equipment loaded and stats updated");
+        }
+        #endregion
+
+        #region Private Methods - Skill Loadout Conversion
+        private SkillLoadoutSaveData ConvertToSkillLoadoutSaveData()
+        {
+            if (_skillLoadoutManager != null)
+            {
+                return _skillLoadoutManager.SaveSkillLoadout();
+            }
+
+            return new SkillLoadoutSaveData
+            {
+                normalSkill1Id = string.Empty,
+                normalSkill2Id = string.Empty,
+                ultimateSkillId = string.Empty
+            };
+        }
+
+        private void LoadSkillLoadoutFromSave(SaveData saveData)
+        {
+            if (_skillLoadoutManager == null)
+            {
+                Debug.LogWarning("[SaveController] SkillLoadoutManager not available");
+                return;
+            }
+
+            if (saveData.skillLoadoutData == null)
+            {
+                Debug.LogWarning("[SaveController] No skill loadout data in save");
+                return;
+            }
+
+            _skillLoadoutManager.LoadSkillLoadout(saveData.skillLoadoutData);
+            
+            Debug.Log("[SaveController] Skill loadout loaded");
         }
         #endregion
     }

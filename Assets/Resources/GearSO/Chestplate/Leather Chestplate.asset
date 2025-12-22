@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e25cf8c5bf3bfd54b810028d474deb83, type: 3}
+  m_Name: Leather Chestplate
+  m_EditorClassIdentifier: 
+  itemID: gear_chestplate_leather_chestplate
+  itemName: Leather Chestplate
+  icon: {fileID: 0}
+  rarity: 0
+  description: Made from Leather
+  itemType: 1
+  isStackable: 0
+  maxStackSize: 999
+  requiredLevel: 1
+  gearName: Leather Chestplate
+  gearType: 1
+  rarityConfig: {fileID: 11400000, guid: ef3ee926371c1dd44a560545113296e5, type: 2}
+  bonusStats: []
+  baseHP: 120
+  baseDefense: 10
+  baseAD: 0
+  baseAP: 0
+  baseAttackSpeed: 0
+  baseCritRate: 0
+  baseCritDamage: 0
+  baseEvasion: 0
+  baseTenacity: 0
+  baseLethality: 0
+  basePenetration: 0
+  baseLifesteal: 0

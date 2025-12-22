@@ -269,28 +269,25 @@ Canvas (Screen Space - Overlay, 1920x1080)
 │               ├── AddtoBagButton
 │                    ├── ButtonLabel (TMP)
 │
-├── GearPopUp  (for itemts: weapons, gears(hetmet, armorplate, gloves, boots, accessory, skills, etc) thats is not stockable)
-│    ├── PopupContainer
-│         ├── itemName
-│         ├── ItemImageContainer
-│         │    └── ItemImage
-│         ├── StatPanel
-│         │    └── Viewport
-│         │         └── Content
-│         │              ├── ItemBonusStats (Prefab)
-│         │                   ├── Text_Label
-│         │                   └── Text_value
-│         ├── EffectPanel
-│         │    └── Viewport
-│         │         └── Content
-│         │              ├── ItemEffect (Prefab)
-│         │                   └── Text
-│         ├── ItemDescriptionPanel
-│         │    └── DescriptionText
-│         ├── CloseButton
-│         │    ├── ButtonLabel (TMP)
-│         ├── EquipButton
-│              ├── ButtonLabel (TMP)
+├── GearPopup (for itemts: weapons, gears(hetmet, armorplate, gloves, boots, accessory, etc) thats is not stockable)
+│   └── PopupContainer
+│       ├── ItemName (TMP)
+│       ├── ItemImageContainer
+│       │   └── ItemImage (Image)
+│       ├── StatPanel
+│       │   └── Viewport
+│       │       └── Content (Vertical Layout)
+│       │           └── [ItemBonusStats instantiated here]
+│       ├── EffectPanel
+│       │   └── Viewport
+│       │       └── Content (Vertical Layout)
+│       │           └── [ItemEffect instantiated here]
+│       ├── ItemDescriptionPanel
+│       │   └── DescriptionText (TMP)
+│       ├── CloseButton
+│       │   └── ButtonLabel (TMP: "Close")
+│       └── EquipButton
+│           └── ButtonLabel (TMP: "Add to Bag") in StorageRoomUI | (TMP: "EQUIP") in EquipmentRoomUI
 │
 
 │

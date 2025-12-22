@@ -17,6 +17,7 @@ namespace Ascension.Data.Save
         public CharacterSaveData characterData;
         public InventorySaveData inventoryData;
         public EquipmentSaveData equipmentData;
+        public SkillLoadoutSaveData skillLoadoutData;
     }
 
     // ════════════════════════════════════════════
@@ -65,6 +66,7 @@ namespace Ascension.Data.Save
 
     // ════════════════════════════════════════════
     // InventorySaveData - Pure serializable data
+    // ✅ UPDATED: Added maxPocketSlots and maxStorageSlots
     // ════════════════════════════════════════════
 
     /// <summary>
@@ -74,17 +76,24 @@ namespace Ascension.Data.Save
     public class InventorySaveData
     {
         public ItemInstanceData[] items;
-        public int maxBagSlots;
+        public int maxBagSlots = 12;
+        public int maxPocketSlots = 6;
+        public int maxStorageSlots = 60;
     }
 
     /// <summary>
-    /// Single item instance in inventory
+    /// Single item instance with location flags
     /// </summary>
     [Serializable]
     public class ItemInstanceData
     {
         public string itemId;
         public int quantity;
+        
+        // Location flags for proper persistence
+        public bool isInBag;
+        public bool isInPocket;
+        // public bool isEquipped;
     }
 
     // ════════════════════════════════════════════
@@ -102,5 +111,23 @@ namespace Ascension.Data.Save
         public string chestId;
         public string glovesId;
         public string bootsId;
+        public string accessory1Id;
+        public string accessory2Id;
+    }
+
+    // ════════════════════════════════════════════
+    // SkillLoadoutSaveData - Pure serializable data
+    // ════════════════════════════════════════════
+
+    /// <summary>
+    /// Skill loadout configuration snapshot for persistence
+    /// </summary>
+    [Serializable]
+    public class SkillLoadoutSaveData
+    {
+        // Skill slots only (consumables removed)
+        public string normalSkill1Id;
+        public string normalSkill2Id;
+        public string ultimateSkillId;
     }
 }

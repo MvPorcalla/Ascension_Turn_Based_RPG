@@ -60,9 +60,6 @@ namespace Ascension.Core
         #endregion
 
         #region IGameService Implementation
-        /// <summary>
-        /// ✅ FIXED: Explicit initialization called by ServiceContainer
-        /// </summary>
         public void Initialize()
         {
             Debug.Log("[SaveManager] Initializing...");
@@ -74,13 +71,20 @@ namespace Ascension.Core
         #endregion
         
         #region Public Methods - Save/Load API
-        public bool SaveGame(CharacterSaveData characterData, InventorySaveData inventoryData, EquipmentSaveData equipmentData, float playTime)
+        /// <summary>
+        /// ✅ UPDATED: Renamed hotbarData → skillLoadoutData
+        /// </summary>
+        public bool SaveGame(
+            CharacterSaveData characterData, 
+            InventorySaveData inventoryData, 
+            EquipmentSaveData equipmentData,
+            SkillLoadoutSaveData skillLoadoutData,  // ✅ RENAMED
+            float playTime)
         {
             try
             {
                 CreateBackupIfNeeded();
                 
-                // ✅ Check if updating existing save or creating new one
                 SaveData saveData;
                 if (File.Exists(CharacterDataFile))
                 {
@@ -89,7 +93,7 @@ namespace Ascension.Core
                     if (saveData == null)
                     {
                         // Corrupted save, create new
-                        saveData = BuildSaveData(characterData, inventoryData, equipmentData, playTime);
+                        saveData = BuildSaveData(characterData, inventoryData, equipmentData, skillLoadoutData, playTime);
                     }
                     else
                     {
@@ -97,13 +101,14 @@ namespace Ascension.Core
                         saveData.characterData = characterData;
                         saveData.inventoryData = inventoryData;
                         saveData.equipmentData = equipmentData;
+                        saveData.skillLoadoutData = skillLoadoutData;  // ✅ RENAMED
                         UpdateSaveMetadata(saveData, playTime);
                     }
                 }
                 else
                 {
                     // New save
-                    saveData = BuildSaveData(characterData, inventoryData, equipmentData, playTime);
+                    saveData = BuildSaveData(characterData, inventoryData, equipmentData, skillLoadoutData, playTime);
                 }
                 
                 WriteSaveFile(saveData);
@@ -202,9 +207,14 @@ namespace Ascension.Core
         }
         
         /// <summary>
-        /// ✅ Factory method - Creates SaveData with Unity-dependent metadata
+        /// ✅ UPDATED: Renamed hotbarData → skillLoadoutData
         /// </summary>
-        private SaveData BuildSaveData(CharacterSaveData characterData, InventorySaveData inventoryData, EquipmentSaveData equipmentData, float playTime)
+        private SaveData BuildSaveData(
+            CharacterSaveData characterData, 
+            InventorySaveData inventoryData, 
+            EquipmentSaveData equipmentData,
+            SkillLoadoutSaveData skillLoadoutData,  // ✅ RENAMED
+            float playTime)
         {
             string timestamp = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             
@@ -220,15 +230,13 @@ namespace Ascension.Core
                 },
                 characterData = characterData,
                 inventoryData = inventoryData,
-                equipmentData = equipmentData
+                equipmentData = equipmentData,
+                skillLoadoutData = skillLoadoutData  // ✅ RENAMED
             };
             
             return save;
         }
         
-        /// <summary>
-        /// ✅ Updates metadata before saving
-        /// </summary>
         private void UpdateSaveMetadata(SaveData saveData, float additionalPlayTime)
         {
             saveData.metaData.lastSaveTime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");

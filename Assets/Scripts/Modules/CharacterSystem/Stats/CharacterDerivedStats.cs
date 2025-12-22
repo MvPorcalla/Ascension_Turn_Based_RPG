@@ -151,6 +151,38 @@ namespace Ascension.Character.Stat
         }
 
         // ──────────────────────────────────────────────
+        // Default constructor
+        // ──────────────────────────────────────────────
+        public CharacterDerivedStats()
+        {
+            AD = AP = MaxHP = Defense = AttackSpeed = CritRate = CritDamage =
+                Evasion = Tenacity = Lethality = Penetration = Lifesteal = 0f;
+
+            isDirty = true;
+        }
+
+        // ──────────────────────────────────────────────
+        // SNAPSHOT / DTO CONSTRUCTOR
+        // ──────────────────────────────────────────────
+        public CharacterDerivedStats(CharacterDerivedStats source)
+        {
+            AD = source.AD;
+            AP = source.AP;
+            MaxHP = source.MaxHP;
+            Defense = source.Defense;
+            AttackSpeed = source.AttackSpeed;
+            CritRate = source.CritRate;
+            CritDamage = source.CritDamage;
+            Evasion = source.Evasion;
+            Tenacity = source.Tenacity;
+            Lethality = source.Lethality;
+            Penetration = source.Penetration;
+            Lifesteal = source.Lifesteal;
+
+            isDirty = false;
+        }
+
+        // ──────────────────────────────────────────────
         // Private Methods
         // ──────────────────────────────────────────────
 

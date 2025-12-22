@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────────
-// InventoryPotionPopup.cs
+// Assets\Scripts\Modules\InventorySystem\PopupScript\InventoryPotionPopup.cs
 // UI Popup for displaying potion details and actions
 // ──────────────────────────────────────────────────
 

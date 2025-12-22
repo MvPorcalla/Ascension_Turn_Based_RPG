@@ -10,30 +10,22 @@ namespace Ascension.Inventory.Data
     [Serializable]
     public class ItemInstance
     {
-        public string itemID; // Reference to ItemBaseSO
+        public string itemID;
         public int quantity;
-        public bool isEquipped;
-        public bool isInBag; // true = in 12-slot bag, false = in storage
-        public bool isInPocket; // true = in 6-slot pocket
+        public bool isInBag;
+        public bool isInPocket;
 
         public ItemInstance(string itemID, int quantity = 1, bool isInBag = false, bool isInPocket = false)
         {
             this.itemID = itemID;
             this.quantity = quantity;
-            this.isEquipped = false;
             this.isInBag = isInBag;
             this.isInPocket = isInPocket;
         }
 
-        /// <summary>
-        /// Create a copy of this instance
-        /// </summary>
         public ItemInstance Clone()
         {
-            return new ItemInstance(itemID, quantity, isInBag, isInPocket)
-            {
-                isEquipped = this.isEquipped
-            };
+            return new ItemInstance(itemID, quantity, isInBag, isInPocket);
         }
 
         public string GetLocation()

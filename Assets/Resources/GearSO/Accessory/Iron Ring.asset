@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e25cf8c5bf3bfd54b810028d474deb83, type: 3}
+  m_Name: Iron Ring
+  m_EditorClassIdentifier: 
+  itemID: gear_accessory_iron_ring
+  itemName: Iron Ring
+  icon: {fileID: 0}
+  rarity: 0
+  description: 
+  itemType: 1
+  isStackable: 0
+  maxStackSize: 999
+  requiredLevel: 1
+  gearName: Iron Ring
+  gearType: 4
+  rarityConfig: {fileID: 11400000, guid: ef3ee926371c1dd44a560545113296e5, type: 2}
+  bonusStats: []
+  baseHP: 0
+  baseDefense: 0
+  baseAD: 30
+  baseAP: 0
+  baseAttackSpeed: 10
+  baseCritRate: 10
+  baseCritDamage: 0
+  baseEvasion: 0
+  baseTenacity: 0
+  baseLethality: 0
+  basePenetration: 0
+  baseLifesteal: 0

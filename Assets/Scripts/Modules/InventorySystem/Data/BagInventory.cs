@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════
 // Scripts/Modules/InventorySystem/Data/BagInventory.cs
-// IMPROVED: Optional service injection for better testability
+// Support for configurable max slots (for upgrades/save data)
 // ══════════════════════════════════════════════════════════════════
 
 using System;
@@ -20,10 +20,12 @@ namespace Ascension.Inventory.Data
         public List<ItemInstance> allItems = new List<ItemInstance>();
         public int maxBagSlots = 12;
         public int maxPocketSlots = 6;
+        public int maxStorageSlots = 60; // ✅ NEW: For future storage upgrades
         #endregion
 
         #region Events
         public event Action OnInventoryChanged;
+        public event Action<int> OnMaxSlotsChanged; // ✅ NEW: Notify UI when slots upgraded
         #endregion
 
         #region Services
@@ -99,6 +101,15 @@ namespace Ascension.Inventory.Data
 
         public int GetEmptyPocketSlots()
             => _queryService.GetEmptyPocketSlots(allItems, maxPocketSlots);
+        
+        public int GetStorageItemCount()
+            => _queryService.GetStorageItemCount(allItems);
+
+        public bool HasStorageSpace()
+            => _queryService.HasStorageSpace(allItems, maxStorageSlots);
+
+        public int GetEmptyStorageSlots()
+            => _queryService.GetEmptyStorageSlots(allItems, maxStorageSlots);
 
         #endregion
 
@@ -119,12 +130,28 @@ namespace Ascension.Inventory.Data
                 return false;
             }
 
+            // Check bag space - if full, send to storage
             if (addToBag && !HasBagSpace())
             {
                 Debug.LogWarning("[BagInventory] Bag full, sending to storage");
                 addToBag = false;
             }
 
+            // ═══════════════════════════════════════════════════════════════
+            // ✅ Storage Full Check - Show warning and prevent adding
+            // ═══════════════════════════════════════════════════════════════
+            if (!addToBag && !HasStorageSpace())
+            {
+                Debug.LogWarning($"[BagInventory] Storage full! ({GetStorageItemCount()}/{maxStorageSlots})");
+                
+                // TODO: Show popup to player
+                // StorageFullPopup.Show("Inventory is Full!");
+                
+                return false; // Prevent adding item
+            }
+            // ═══════════════════════════════════════════════════════════════
+
+            // Add stackable items
             if (itemData.IsStackable)
             {
                 _stackingService.AddToExistingOrCreateNew(
@@ -138,13 +165,30 @@ namespace Ascension.Inventory.Data
             }
             else
             {
+                // Add non-stackable items one by one
                 for (int i = 0; i < quantity; i++)
                 {
+                    // Re-check bag space mid-loop
                     if (addToBag && !HasBagSpace())
                     {
                         Debug.LogWarning("[BagInventory] Bag full, remaining items sent to storage");
                         addToBag = false;
                     }
+
+                    // ═══════════════════════════════════════════════════════════════
+                    // ✅ Storage Full Check (Inside Loop)
+                    // ═══════════════════════════════════════════════════════════════
+                    if (!addToBag && !HasStorageSpace())
+                    {
+                        Debug.LogWarning($"[BagInventory] Storage full! Added {i}/{quantity} items");
+                        
+                        // TODO: Show popup to player
+                        // StorageFullPopup.Show("Inventory is Full!");
+                        
+                        OnInventoryChanged?.Invoke();
+                        return false;
+                    }
+                    // ═══════════════════════════════════════════════════════════════
 
                     allItems.Add(new ItemInstance(itemID, 1, addToBag, false));
                 }
@@ -230,13 +274,65 @@ namespace Ascension.Inventory.Data
 
         #endregion
 
+        #region Slot Management (NEW)
+
+        /// <summary>
+        /// ✅ NEW: Upgrade bag slot capacity
+        /// </summary>
+        public void UpgradeBagSlots(int additionalSlots)
+        {
+            maxBagSlots += additionalSlots;
+            OnMaxSlotsChanged?.Invoke(maxBagSlots);
+            Debug.Log($"[BagInventory] Bag upgraded to {maxBagSlots} slots");
+        }
+
+        /// <summary>
+        /// ✅ NEW: Upgrade pocket slot capacity
+        /// </summary>
+        public void UpgradePocketSlots(int additionalSlots)
+        {
+            maxPocketSlots += additionalSlots;
+            OnMaxSlotsChanged?.Invoke(maxPocketSlots);
+            Debug.Log($"[BagInventory] Pocket upgraded to {maxPocketSlots} slots");
+        }
+
+        /// <summary>
+        /// ✅ NEW: Upgrade storage slot capacity
+        /// </summary>
+        public void UpgradeStorageSlots(int additionalSlots)
+        {
+            maxStorageSlots += additionalSlots;
+            OnMaxSlotsChanged?.Invoke(maxStorageSlots);
+            Debug.Log($"[BagInventory] Storage upgraded to {maxStorageSlots} slots");
+        }
+
+        /// <summary>
+        /// ✅ NEW: Set all slot capacities (useful for loading save data)
+        /// </summary>
+        public void SetSlotCapacities(int bagSlots, int pocketSlots, int storageSlots)
+        {
+            maxBagSlots = bagSlots;
+            maxPocketSlots = pocketSlots;
+            maxStorageSlots = storageSlots;
+            OnMaxSlotsChanged?.Invoke(maxStorageSlots);
+            Debug.Log($"[BagInventory] Slots set - Bag: {maxBagSlots}, Pocket: {maxPocketSlots}, Storage: {maxStorageSlots}");
+        }
+
+        #endregion
+
         #region Utility Methods
 
+        /// 
+        /// Query EquipmentManager for equipped state
+        /// 
         public void StoreAllItems()
         {
             foreach (var item in GetBagItems().ToList())
             {
-                if (!item.isEquipped)
+                // Query EquipmentManager instead of stale flag
+                bool isEquipped = Equipment.Manager.EquipmentManager.Instance?.IsItemEquipped(item.itemID) ?? false;
+                
+                if (!isEquipped)
                 {
                     item.isInBag = false;
                     item.isInPocket = false;

@@ -53,157 +53,179 @@ EquipmentRoomUI Component:
 
 ---
 
-### **2. Individual Equipment Slot Setup**
-
-**For EACH slot** (WeaponSlot, HelmetSlot, etc.):
-
-**GameObject Structure:**
-```
-WeaponSlot (or any slot name)
-├── Add Component: EquipmentSlotUI.cs
-├── Button Component (should already exist)
-├── ItemIcon (Image)
-├── RarityBorder (Image)
-└── EmptyIndicator (GameObject with Image/Text)
-```
-
-**Component Assignment:**
-```
-EquipmentSlotUI Component:
-├── Slot Button: Button component on same GameObject
-├── Item Icon: ItemIcon (Image child)
-├── Rarity Border: RarityBorder (Image child)
-└── Empty Indicator: EmptyIndicator (GameObject child)
-```
-
----
-
-### **3. Storage Item Slot Prefab Setup**
-
-**Create Prefab:** `ItemSlot.prefab`
-
-**GameObject Structure:**
-```
-ItemSlot
-├── Add Component: EquipmentStorageSlotUI.cs
-├── Button Component
-├── Rarity (Image) - background colored by rarity
-├── ItemIcon (Image)
-├── EquippedIndicator (GameObject with visual indicator)
-└── Quantity (TextMeshPro)
-```
-
-**Component Assignment:**
-```
-EquipmentStorageSlotUI Component:
-├── Button: Button component on same GameObject
-├── Item Icon: ItemIcon (Image)
-├── Rarity Border: Rarity (Image)
-├── Quantity Text: Quantity (TMP_Text)
-└── Equipped Indicator: EquippedIndicator (GameObject)
-```
-
-**⚠️ Important:** Save this as a **Prefab**, then drag it into the `Item Slot Prefab` field in `EquipmentRoomUI`
-
----
-
-### **4. Gear Info Popup Setup**
-
-**GameObject:** `GearInfoPopup` (probably a child of Canvas or EquipmentRoomPanel)
-
-**Add Component:** `GearInfoPopUp.cs`
-
-**GameObject Structure:**
-```
-GearInfoPopup
-├── PopupContainer (parent of all UI)
-│   ├── ItemNameText (TMP_Text)
-│   ├── ItemImage (Image)
-│   ├── StatPanel
-│   │   └── StatPanelContent (Vertical Layout Group)
-│   ├── EffectPanel
-│   │   └── EffectPanelContent (Vertical Layout Group)
-│   ├── DescriptionText (TMP_Text)
-│   ├── CloseButton (Button)
-│   ├── EquipButton (Button)
-│   └── EquipButtonLabel (TMP_Text - child of EquipButton)
-```
-
-**Component Assignment:**
-```
-GearInfoPopUp Component:
-├── UI References
-│   ├── Popup Container: PopupContainer
-│   ├── Item Name Text: ItemNameText
-│   ├── Item Image: ItemImage
-│   ├── Stat Panel Content: StatPanelContent (Transform)
-│   ├── Effect Panel Content: EffectPanelContent (Transform)
-│   ├── Description Text: DescriptionText
-│   ├── Close Button: CloseButton
-│   ├── Equip Button: EquipButton
-│   └── Equip Button Label: EquipButtonLabel
-│
-└── Prefabs
-    ├── Item Bonus Stat Prefab: (create stat row prefab - see below)
-    └── Item Effect Prefab: (create effect row prefab - see below)
+Canvas (Screen Space - Overlay)
+├── EquipmentRoomPanel (Full Screen)
+│   ├── RoomHeader
+│   │   ├── Title (TMP)
+│   │   └── BackButton
+│   │
+│   ├── PlayerPreview (Your existing prefab)
+│   │
+│   ├── GearSection
+│   │   ├── GearHeader
+│   │   │   └── Title (TMP: "Equipment")
+│   │   │
+│   │   └── GearContainer (Vertical Layout Group)
+│   │       ├── WeaponSlot (GearSlotUI)
+│   │       ├── HelmetSlot (GearSlotUI)
+│   │       ├── ChestSlot (GearSlotUI)
+│   │       ├── GlovesSlot (GearSlotUI)
+│   │       ├── BootsSlot (GearSlotUI)
+│   │       ├── Accessory1Slot (GearSlotUI)
+│   │       └── Accessory2Slot (GearSlotUI)
+│   │
+│   └── StorageSection
+│       ├── StorageHeader (Horizontal Layout)
+│       │   ├── GearButton (Toggle filter to Gear)
+│       │   ├── AbilitiesButton (Toggle filter to Abilities)
+│       │   │
+│       │   └── SortSection (Horizontal Layout)
+│       │       ├── AllButton
+│       │       ├── WeaponsButton
+│       │       ├── HelmetsButton
+│       │       ├── ChestsButton
+│       │       ├── GlovesButton
+│       │       ├── BootsButton
+│       │       └── AccessoriesButton
+│       │
+│       └── StoragePanel (Scroll View)
+│           └── StorageViewport
+│               └── StorageContent (Grid Layout Group)
+│                   └── ItemSlot (Prefab) - Generated at runtime
 ```
 
 ---
 
-### **5. Stat/Effect Prefab Setup (for Popup)**
+### **Step 2: Component Assignment**
 
-**Create Two Prefabs:**
+#### **A. EquipmentRoomPanel GameObject**
+```
+- Add Component: EquipmentRoomUI.cs
+- Assign References:
+  ✓ Player Preview → PlayerPreview prefab
+  ✓ Storage UI → EquipmentStorageUI component
+  ✓ All 7 Gear Slots → Individual GearSlotUI components
+  ✓ Back Button → Button component
+```
 
-**A. ItemBonusStatPrefab:**
+#### **B. Each Gear Slot (WeaponSlot, HelmetSlot, etc.)**
 ```
-StatRow
-├── Text_Label (TMP_Text) - "Attack Damage:"
-└── Text_value (TMP_Text) - "+50"
+- Add Component: GearSlotUI.cs
+- Assign in Inspector:
+  ✓ Slot Type → (Weapon, Helmet, Chest, etc.)
+  ✓ Slot Button → Self Button component
+  ✓ Slot Background → Background Image
+  ✓ Item Icon → Child Image (for item sprite)
+  ✓ Rarity Border → Border Image (colored by rarity)
+  ✓ Slot Name Text → TMP Text (displays "Weapon", "Helmet")
+  ✓ Empty Indicator → Small icon/text when slot is empty
 ```
 
-**B. ItemEffectPrefab:**
+#### **C. StorageSection GameObject**
 ```
-EffectRow
-└── Text (TMP_Text) - "• Effect description"
+- Add Component: EquipmentStorageUI.cs
+- Assign References:
+  ✓ Storage Content → Content Transform (Grid Layout)
+  ✓ Item Slot Prefab → Your ItemSlotUI prefab
+  ✓ Gear Button → Button for "Gear" tab
+  ✓ Abilities Button → Button for "Abilities" tab
+  ✓ All Sort Buttons → Individual filter buttons
+
+
+  EquipmentRoomPanel
+├── RoomHeader ✅
+├── PlayerPreview ✅
+├── GearSection ✅
+│   ├── GearHeader
+│   ├── GearContainer (7 gear slots) ✅
+│   └── HotbarContainer 🆕 ADD THIS
+│       ├── NormalSkillSlot1
+│       ├── NormalSkillSlot2
+│       ├── UltimateSkillSlot
+│       ├── Item1Slot
+│       ├── Item2Slot
+│       └── Item3Slot
+└── StorageSection ✅
 ```
 
 ---
 
-## **🔧 Setup Checklist**
+### **Step 3: Create HotbarContainer**
 
-### **Step 1: Create All UI Elements**
-- [ ] Build the hierarchy structure as shown in your markdown
-- [ ] Add all Images, Buttons, TextMeshPro components
+1. **In EquipmentRoomPanel → GearSection:**
+```
+   Right-click GearSection → UI → Empty (name it "HotbarContainer")
+```
 
-### **Step 2: Add Scripts**
-- [ ] Add `EquipmentRoomUI.cs` to `EquipmentRoomPanel`
-- [ ] Add `EquipmentSlotUI.cs` to **EACH** slot (13 total: 7 gear + 3 skills + 3 hotbar)
-- [ ] Add `EquipmentStorageSlotUI.cs` to `ItemSlot` prefab
-- [ ] Add `GearInfoPopUp.cs` to `GearInfoPopup`
+2. **Add Layout:**
+```
+   Add Component → Horizontal Layout Group (or Grid if you prefer)
+   ├─ Spacing: 10
+   ├─ Child Force Expand: Width ✓
+   └─ Padding: 10 all sides
+```
 
-### **Step 3: Assign References in Inspector**
-- [ ] Drag all slot references into `EquipmentRoomUI` inspector
-- [ ] Drag all UI elements into each `EquipmentSlotUI` inspector
-- [ ] Drag all UI elements into `EquipmentStorageSlotUI` prefab inspector
-- [ ] Drag all UI elements into `GearInfoPopUp` inspector
-- [ ] Create and assign stat/effect prefabs
-
-### **Step 4: Test**
-- [ ] Click on equipped slots - should show popup
-- [ ] Click on empty slots - should filter storage
-- [ ] Click storage items - should show popup with equip button
-- [ ] Equip/unequip items - should update all UI
+3. **Add Visual Separator (Optional):**
+```
+   Above HotbarContainer, add a Panel called "HotbarHeader"
+   └─ Add TMP Text: "HOTBAR"
+```
 
 ---
 
-## **💡 Quick Tips**
+### **Step 4: Create Hotbar Slot Prefab**
 
-1. **GridLayoutGroup on StorageContent**: Set proper cell size, spacing, constraint
-2. **Don't forget DontDestroyOnLoad**: `EquipmentManager` should persist
-3. **Test in Play Mode**: The ItemSlot prefab gets instantiated at runtime
-4. **Button Colors**: Set up proper button states (Normal, Highlighted, Pressed, Disabled)
-5. **Anchors**: Make sure all UI elements have proper anchors for different resolutions
+1. **Create GameObject:**
+```
+   Hierarchy → Right-click → UI → Button (name it "HotbarSlot")
+```
+
+2. **Structure:**
+```
+   HotbarSlot
+   ├── SlotBackground (Image - colored based on type)
+   ├── ItemIcon (Image - shows skill/potion icon)
+   ├── SlotNameText (TMP - "Skill 1", "Item 1")
+   ├── EmptyIndicator (Image/Icon - "+" or lock icon)
+   └── QuantityText (TMP - "x5" for potions only)
+```
+
+3. **Add Component:**
+```
+   Add Component → HotbarSlotUI.cs
+```
+
+4. **Inspector Setup:**
+```
+   HotbarSlotUI Component:
+   ├── Slot Type → (Set when instantiating)
+   ├── Slot Button → Button component
+   ├── Slot Background → SlotBackground Image
+   ├── Item Icon → ItemIcon Image
+   ├── Slot Name Text → SlotNameText TMP
+   ├── Empty Indicator → EmptyIndicator GameObject
+   ├── Quantity Text → QuantityText TMP
+   └── Colors → Set your preferred colors
+```
+
+5. **Save as Prefab:**
+```
+   Drag HotbarSlot → Assets/Prefabs/UI/Equipment/
+```
 
 ---
 
-Your setup is now complete! The scripts will handle all the logic automatically once the references are assigned. 🎯
+### **Step 5: Create 6 Hotbar Slots**
+
+In `HotbarContainer`, create 6 instances:
+
+1. **Duplicate the prefab 6 times**
+2. **Rename and configure each:**
+```
+HotbarContainer/
+├── NormalSkillSlot1 (HotbarSlotUI → Slot Type: NormalSkill1)
+├── NormalSkillSlot2 (HotbarSlotUI → Slot Type: NormalSkill2)
+├── UltimateSkillSlot (HotbarSlotUI → Slot Type: UltimateSkill)
+├── Item1Slot (HotbarSlotUI → Slot Type: Item1)
+├── Item2Slot (HotbarSlotUI → Slot Type: Item2)
+└── Item3Slot (HotbarSlotUI → Slot Type: Item3)

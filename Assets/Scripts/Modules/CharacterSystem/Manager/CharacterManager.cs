@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\CharacterSystem\Manager\CharacterManager.cs
-// Manages character creation, loading, stats, and equipment
+// Manager for character stats and state
 // ════════════════════════════════════════════
 
 using UnityEngine;
@@ -10,6 +10,7 @@ using Ascension.Data.Save;
 using Ascension.Data.SO.Item;
 using Ascension.Data.SO.Character;
 using Ascension.Character.Stat;
+using Ascension.Equipment.Manager; // ✅ ADD THIS
 
 namespace Ascension.Character.Manager
 {
@@ -51,9 +52,6 @@ namespace Ascension.Character.Manager
         #endregion
 
         #region IGameService Implementation
-        /// <summary>
-        /// ✅ FIXED: Explicit initialization called by ServiceContainer
-        /// </summary>
         public void Initialize()
         {
             Debug.Log("[CharacterManager] Initializing...");
@@ -117,12 +115,27 @@ namespace Ascension.Character.Manager
         #endregion
 
         #region Equipment Integration
+        /// <summary>
+        /// ✅ GOOD: This implementation is correct!
+        /// </summary>
         public void UpdateStatsFromEquipment()
         {
             if (!HasActivePlayer) return;
             
-            // TODO: Implement when EquipmentManager is ready
-            Debug.Log("[CharacterManager] UpdateStatsFromEquipment called (EquipmentManager not implemented yet)");
+            var equipmentManager = ServiceContainer.Instance?.Get<EquipmentManager>();
+            
+            if (equipmentManager != null)
+            {
+                CharacterItemStats equipStats = equipmentManager.GetTotalItemStats();
+                _currentPlayer.ApplyItemStats(equipStats, baseStats);
+                
+                Debug.Log("[CharacterManager] Stats updated from equipment");
+                OnCharacterStatsChanged?.Invoke(_currentPlayer);
+            }
+            else
+            {
+                Debug.LogWarning("[CharacterManager] EquipmentManager not available");
+            }
         }
 
         public bool EquipWeaponFromInventory(string itemID)

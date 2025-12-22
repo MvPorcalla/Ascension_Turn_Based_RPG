@@ -1,5 +1,6 @@
 // ──────────────────────────────────────────────────
 // Assets\Scripts\Modules\InventorySystem\Data\BagInventoryData.cs
+// ✅ UPDATED: Added maxStorageSlots with backward compatibility
 // Serializable data class for saving/loading BagInventory
 // ──────────────────────────────────────────────────
 
@@ -16,9 +17,10 @@ namespace Ascension.Inventory.Data
         public List<ItemInstance> items = new List<ItemInstance>();
         public int maxBagSlots = 12;
         public int maxPocketSlots = 6;
+        public int maxStorageSlots = 60; // ✅ NEW: Storage capacity
 
         /// <summary>
-        /// Create from BagInventory
+        /// ✅ UPDATED: Create from BagInventory (includes storage slots)
         /// </summary>
         public static BagInventoryData FromInventory(BagInventory inventory)
         {
@@ -26,8 +28,31 @@ namespace Ascension.Inventory.Data
             {
                 items = new List<ItemInstance>(inventory.allItems),
                 maxBagSlots = inventory.maxBagSlots,
-                maxPocketSlots = inventory.maxPocketSlots
+                maxPocketSlots = inventory.maxPocketSlots,
+                maxStorageSlots = inventory.maxStorageSlots // ✅ NEW
             };
+        }
+
+        /// <summary>
+        /// ✅ NEW: Default constructor with safe defaults
+        /// </summary>
+        public BagInventoryData()
+        {
+            items = new List<ItemInstance>();
+            maxBagSlots = 12;
+            maxPocketSlots = 6;
+            maxStorageSlots = 60;
+        }
+
+        /// <summary>
+        /// ✅ NEW: Constructor with custom slot capacities
+        /// </summary>
+        public BagInventoryData(int bagSlots, int pocketSlots, int storageSlots)
+        {
+            items = new List<ItemInstance>();
+            maxBagSlots = bagSlots;
+            maxPocketSlots = pocketSlots;
+            maxStorageSlots = storageSlots;
         }
     }
 }

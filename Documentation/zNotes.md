@@ -128,10 +128,12 @@ what is ideal for base stats cap? for
 
 ---
 
-Should I organize the `InventorySystem`, `CharacterSystem`, and `EquipmentSystem` folders inside a `Modules` folder for better project structure?
+TODO: Move the following UI scripts to their own folder for better separation:
 
-Should I create a separate `UI` folder for each module’s interface and have the UI reference its respective module, like having a central UI folder at the root, separate from the module folders, rather than putting a UI folder inside each module.
+- Assets\Scripts\Modules\CharacterSystem\UI\PlayerStatsPreviewUI.cs
+- Assets\Scripts\Modules\CharacterSystem\UI\PlayerHUD.cs
 
+New folder: Assets\Scripts\Modules\UI\
 
 ---
 
@@ -160,3 +162,168 @@ App Launch
 
 ---
 
+Final Folder Structure
+
+Scripts/Modules/EquipmentSystem/
+├── Manager/
+│   └── EquipmentManager.cs ✅
+│
+├── Data/
+│   └── EquippedGear.cs ✅
+│
+├── Services/
+│   ├── GearSlotService.cs ✅
+│   ├── GearEquipService.cs ✅
+│   └── GearStatsService.cs ✅
+│
+├── UI/
+│   ├── EquipmentRoomUI.cs ✅
+│   ├── GearSlotUI.cs ✅
+│   └── EquipmentStorageUI.cs ✅
+│
+└── Enums/
+    └── EquipmentEnums.cs ✅
+
+
+## ✅ **Current Status: Almost Complete!**
+
+Based on the refactoring we just did, here's your **actual** status:
+
+### **Phase 1: Core Equipment (Gear Only)** ✅ COMPLETE
+
+| File | Status | Notes |
+|------|--------|-------|
+| `EquipmentEnums.cs` | ✅ Done | Updated - removed consumable slots |
+| `EquippedGear.cs` | ✅ Done | No changes needed |
+| `GearSlotService.cs` | ✅ Done | Fixed - removed consumable filter |
+| `GearEquipService.cs` | ✅ Done | No changes needed |
+| `GearStatsService.cs` | ✅ Done | No changes needed |
+| `EquipmentManager.cs` | ✅ Done | No changes needed |
+| `EquipmentRoomUI.cs` | ✅ Done | Updated - removed consumable slots |
+| `GearSlotUI.cs` | ✅ Done | No changes needed |
+| `EquipmentStorageUI.cs` | ✅ Done | Fixed - removed potion popup |
+
+---
+
+### **Phase 1.2: Popup System** ✅ COMPLETE
+
+| File | Status | Notes |
+|------|--------|-------|
+| `EquipmentGearPopup.cs` | ✅ Done | For weapons/gear |
+| `EquipmentPotionPopup.cs` | ❌ Deleted | Removed (use inventory pocket instead) |
+
+---
+
+### **Phase 2: Skill Loadout System** ✅ COMPLETE (Renamed from Hotbar)
+
+| File | Status | Notes |
+|------|--------|-------|
+| `SkillLoadout.cs` | ✅ Done | Renamed from `HotbarLoadout.cs` |
+| `SkillLoadoutManager.cs` | ✅ Done | Renamed from `HotbarManager.cs` |
+| `SkillSlotUI.cs` | ✅ Done | Renamed from `HotbarSlotUI.cs` |
+| `SkillLoadoutSaveData.cs` | ✅ Done | Renamed from `HotbarSaveData.cs` |
+
+**Save System Integration:** ✅ Done
+- `SaveData.cs` - Updated
+- `SaveManager.cs` - Updated
+- `SaveController.cs` - Updated
+- `ServiceContainer.cs` - Updated
+
+---
+
+### **Phase 3: Skills System (Future/Separate)** ⏳ TODO
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| `SkillManager.cs` | ⏳ TODO | Not started yet |
+| `SkillSaveData.cs` | ⏳ TODO | Not started yet |
+| Weapon-type validation | ⏳ TODO | Not implemented yet |
+| Skill assignment popup | ⏳ TODO | Placeholder in `EquipmentStorageUI` |
+
+---
+
+## 🎯 **What You Have NOW:**
+
+✅ **Equipment System** - Players can equip weapons and gear
+✅ **Skill Loadout System** - Players can assign 3 skills (2 normal + 1 ultimate)
+✅ **Save/Load System** - Everything persists correctly
+✅ **UI System** - Clean, mobile-friendly interface
+✅ **No Redundancy** - Consumables managed via Inventory Pocket (not hotbar)
+
+---
+
+## 🚧 **What's LEFT (Phase 3):**
+
+### **1. Skill Assignment Popup**
+Currently when you click an ability in storage, it just logs a warning:
+```csharp
+Debug.LogWarning("[EquipmentStorageUI] Skill assignment popup not yet implemented");
+```
+
+**You need:** A popup similar to `EquipmentGearPopup` but for skills.
+
+### **2. Weapon-Type Skill Validation**
+Currently in `SkillLoadoutManager.cs`, there's a TODO:
+```csharp
+// TODO Phase 3: Validate weapon compatibility
+// For now, allow any skill
+```
+
+**You need:** Logic to check if a skill matches the equipped weapon type.
+
+Example:
+- Sword equipped → Can only assign sword skills
+- Staff equipped → Can only assign staff skills
+
+### **3. Skill Data Management (Optional)**
+Right now skills are just stored as IDs. You might want:
+- Default skills for each weapon
+- Skill unlock system
+- Skill progression/leveling
+
+---
+
+## 📋 **My Recommendation:**
+
+Your **core system is complete**! You can now:
+1. ✅ Equip weapons and gear
+2. ✅ Assign skills to loadout slots
+3. ✅ Save and load everything
+4. ✅ View stats and equipment
+
+**For Phase 3, you should implement:**
+1. **SkillAssignmentPopup** (similar to `EquipmentGearPopup`)
+2. **Weapon-Type Validation** (add to `SkillLoadoutManager`)
+
+---
+
+
+===========================================================================================================
+
+"Group related systems together: Character/Combat-related (Character, Equipment, Inventory), Social/Interaction (NPC, Intimacy), Mini-games (Blacksmith, Crafting, Brewing). Let systems within a group communicate directly. Use a scoped event bus only for communication between groups, keeping dependencies clean and modular."
+
+----
+
+CRITICAL: ========================================================================================
+
+
+Also, in the Equipment Room, the accessory gear slots should allow equipping two accessories. They can be the same item or different items—it doesn’t matter, since there are two accessory slots.
+
+---
+
+Refactor my save JSON so that abilities are stored in their own abilities section, instead of inside items.
+
+Example:
+
+```json
+"inventoryData": {
+  "items": []
+},
+"abilities": {
+}
+```
+
+Also, restructure inventoryData so that items are separated by category: weapons, armor (helmet, chestplate, gloves, boots), accessories, potions, and materials, instead of storing everything in a single items array.
+Keep equipmentData and skillLoadoutData the same, and include sample item IDs and quantities in each category. Output the full JSON ready to use.
+
+---

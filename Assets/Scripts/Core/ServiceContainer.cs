@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Ascension.App;
+using Ascension.Equipment.Manager;
 
 namespace Ascension.Core
 {
@@ -116,8 +117,7 @@ namespace Ascension.Core
         }
 
         /// <summary>
-        /// ✅ NEW: Initialize all services in explicit order
-        /// This ensures dependencies are available when each service initializes
+        /// ✅ UPDATED: Changed HotbarManager → SkillLoadoutManager
         /// </summary>
         private void InitializeAllServices()
         {
@@ -130,6 +130,8 @@ namespace Ascension.Core
                 typeof(Ascension.Character.Manager.CharacterManager),   // Depends on SaveManager
                 typeof(Ascension.Inventory.Manager.InventoryManager),   // Depends on CharacterManager
                 typeof(PlayerStateController),                          // Depends on CharacterManager
+                typeof(EquipmentManager),                               // Depends on InventoryManager
+                typeof(SkillLoadoutManager),                            // ✅ RENAMED from HotbarManager
                 typeof(SaveController),                                 // Depends on all managers
                 typeof(SceneController),                                // Depends on SaveController
                 typeof(Ascension.App.GameManager)                       // Orchestrator (depends on all)

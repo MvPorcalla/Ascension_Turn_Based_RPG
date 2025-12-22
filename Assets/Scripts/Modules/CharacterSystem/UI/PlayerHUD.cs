@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════
-// PlayerHUD.cs
+// Assets\Scripts\Modules\CharacterSystem\UI\PlayerHUD.cs
 // Displays player info, health, and EXP; subscribes to CharacterManager events
 // ════════════════════════════════════════════
 

@@ -16,17 +16,20 @@ namespace Ascension.Inventory.UI
     {
         [Header("UI Components")]
         [SerializeField] private Button button;
-        [SerializeField] private Image rarityBackground; // This gets colored by rarity
+        [SerializeField] private Image rarityBackground;
         [SerializeField] private Image itemIcon;
         [SerializeField] private GameObject equippedIndicator;
         [SerializeField] private TMP_Text quantityText;
 
         [Header("Rarity Colors")]
-        [SerializeField] private Color commonColor = new Color(0.7f, 0.7f, 0.7f, 1f); // Gray
-        [SerializeField] private Color rareColor = new Color(0.2f, 0.5f, 1f, 1f); // Blue
-        [SerializeField] private Color epicColor = new Color(0.6f, 0.2f, 1f, 1f); // Purple
-        [SerializeField] private Color legendaryColor = new Color(1f, 0.75f, 0.1f, 1f); // Gold
-        [SerializeField] private Color mythicColor = new Color(1f, 0.2f, 0.2f, 1f); // Red
+        [SerializeField] private Color commonColor = new Color(0.7f, 0.7f, 0.7f, 1f);
+        [SerializeField] private Color rareColor = new Color(0.2f, 0.5f, 1f, 1f);
+        [SerializeField] private Color epicColor = new Color(0.6f, 0.2f, 1f, 1f);
+        [SerializeField] private Color legendaryColor = new Color(1f, 0.75f, 0.1f, 1f);
+        [SerializeField] private Color mythicColor = new Color(1f, 0.2f, 0.2f, 1f);
+
+        [Header("Empty Slot")]
+        [SerializeField] private Color emptySlotColor = new Color(0.3f, 0.3f, 0.3f, 0.5f);
 
         [Header("Optional Effects")]
         [SerializeField] private bool useGlowEffect = true;
@@ -34,69 +37,174 @@ namespace Ascension.Inventory.UI
 
         private ItemInstance itemInstance;
         private ItemBaseSO itemData;
+        private Action currentOnClick;
 
+        /// <summary>
+        /// ✅ OPTIMIZED: Setup slot with item data (used for initial creation)
+        /// </summary>
         public void Setup(ItemBaseSO data, ItemInstance instance, Action onClick)
         {
             itemData = data;
             itemInstance = instance;
+            currentOnClick = onClick;
 
-            // Set icon (CRITICAL: Clear previous icon if null to prevent caching bug)
+            UpdateVisuals();
+            UpdateButton();
+        }
+
+        /// <summary>
+        /// ✅ NEW: Update existing slot without recreating (fast refresh)
+        /// </summary>
+        public void UpdateItem(ItemBaseSO data, ItemInstance instance, Action onClick)
+        {
+            // Only update if data actually changed
+            if (itemData == data && itemInstance == instance && currentOnClick == onClick)
+                return;
+
+            itemData = data;
+            itemInstance = instance;
+            currentOnClick = onClick;
+
+            UpdateVisuals();
+            UpdateButton();
+        }
+
+        /// <summary>
+        /// ✅ NEW: Show as empty slot (no item)
+        /// </summary>
+        public void ShowEmpty()
+        {
+            itemData = null;
+            itemInstance = null;
+            currentOnClick = null;
+
+            // Clear icon
             if (itemIcon != null)
             {
-                if (data.Icon != null)
-                {
-                    itemIcon.sprite = data.Icon;
-                    itemIcon.color = Color.white; // Keep icon at full color
-                    itemIcon.enabled = true;
-                }
-                else
-                {
-                    // Clear previous sprite to prevent showing old icon
-                    itemIcon.sprite = null;
-                    itemIcon.enabled = false;
-                }
+                itemIcon.sprite = null;
+                itemIcon.enabled = false;
             }
 
-            // Apply rarity color to background
+            // Set empty background color
             if (rarityBackground != null)
             {
-                Color rarityColor = GetRarityColor(data.Rarity);
+                rarityBackground.color = emptySlotColor;
+            }
 
-                // Optional: Add glow effect for higher rarities
-                if (useGlowEffect && (data.Rarity == Rarity.Epic || 
-                                    data.Rarity == Rarity.Legendary || 
-                                    data.Rarity == Rarity.Mythic))
-                {
-                    rarityColor = rarityColor * glowIntensity;
-                }
+            // Hide quantity
+            if (quantityText != null)
+            {
+                quantityText.gameObject.SetActive(false);
+            }
 
-                rarityBackground.color = rarityColor;
+            // Hide equipped indicator
+            if (equippedIndicator != null)
+            {
+                equippedIndicator.SetActive(false);
+            }
+
+            // Disable button interaction
+            if (button != null)
+            {
+                button.interactable = false;
+                button.onClick.RemoveAllListeners();
+            }
+        }
+
+        /// <summary>
+        /// ✅ OPTIMIZED: Check if slot is currently empty
+        /// </summary>
+        public bool IsEmpty() => itemData == null;
+
+        #region Private Helper Methods
+
+        private void UpdateVisuals()
+        {
+            if (itemData == null)
+            {
+                ShowEmpty();
+                return;
+            }
+
+            UpdateIcon();
+            UpdateRarityBackground();
+            UpdateQuantity();
+            UpdateEquippedIndicator();
+        }
+
+        private void UpdateIcon()
+        {
+            if (itemIcon == null) return;
+
+            if (itemData.Icon != null)
+            {
+                itemIcon.sprite = itemData.Icon;
+                itemIcon.color = Color.white;
+                itemIcon.enabled = true;
             }
             else
             {
-                Debug.LogWarning("[ItemSlotUI] RarityBackground not assigned! Rarity colors won't show.");
+                itemIcon.sprite = null;
+                itemIcon.enabled = false;
+            }
+        }
+
+        private void UpdateRarityBackground()
+        {
+            if (rarityBackground == null) return;
+
+            Color rarityColor = GetRarityColor(itemData.Rarity);
+
+            // Optional: Add glow effect for higher rarities
+            if (useGlowEffect && (itemData.Rarity == Rarity.Epic || 
+                                itemData.Rarity == Rarity.Legendary || 
+                                itemData.Rarity == Rarity.Mythic))
+            {
+                rarityColor = rarityColor * glowIntensity;
             }
 
-            // Set quantity
-            if (data.IsStackable && instance.quantity > 1)
+            rarityBackground.color = rarityColor;
+        }
+
+        private void UpdateQuantity()
+        {
+            if (quantityText == null) return;
+
+            if (itemData.IsStackable && itemInstance != null && itemInstance.quantity > 1)
             {
                 quantityText.gameObject.SetActive(true);
-                quantityText.text = $"x{instance.quantity}";
+                quantityText.text = $"x{itemInstance.quantity}";
             }
             else
             {
                 quantityText.gameObject.SetActive(false);
             }
+        }
 
-            // Set equipped indicator
-            if (equippedIndicator != null)
+        private void UpdateEquippedIndicator()
+        {
+            if (equippedIndicator == null) return;
+            
+            bool isEquipped = false;
+            if (itemInstance != null && Equipment.Manager.EquipmentManager.Instance != null)
             {
-                equippedIndicator.SetActive(instance.isEquipped);
+                isEquipped = Equipment.Manager.EquipmentManager.Instance.IsItemEquipped(itemInstance.itemID);
             }
+            
+            equippedIndicator.SetActive(isEquipped);
+        }
 
-            // Setup button click
+        private void UpdateButton()
+        {
+            if (button == null) return;
+
+            button.interactable = itemData != null;
             button.onClick.RemoveAllListeners();
-            button.onClick.AddListener(() => onClick?.Invoke());
+
+            if (currentOnClick != null)
+            {
+                button.onClick.AddListener(() => currentOnClick?.Invoke());
+            }
         }
 
         private Color GetRarityColor(Rarity rarity)
@@ -112,13 +220,19 @@ namespace Ascension.Inventory.UI
             };
         }
 
+        #endregion
+
+        #region Debug / Tooltip
+        
         /// <summary>
         /// Show item info tooltip (placeholder for now)
         /// </summary>
         public void ShowTooltip()
         {
-            // TODO: Implement tooltip system
+            if (itemData == null) return;
             Debug.Log($"[ItemSlot] Tooltip: {itemData.GetInfoText()}");
         }
+
+        #endregion
     }
 }

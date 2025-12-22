@@ -38,5 +38,10 @@ MonoBehaviour:
   materials:
   - {fileID: 11400000, guid: d590e228ddad8bd429a3d54c32174cc7, type: 2}
   gear:
+  - {fileID: 11400000, guid: ce9d063c847e0ae40be6edb6b45d1d78, type: 2}
+  - {fileID: 11400000, guid: e83430f8cfaf9bb4c88c0c55e4c97b01, type: 2}
+  - {fileID: 11400000, guid: a50085cf1fdbd5e4f83111ef4725ed4f, type: 2}
+  - {fileID: 11400000, guid: b9d5c4017d06e704cabf1ed8477163ec, type: 2}
+  - {fileID: 11400000, guid: 2326c4db626e04e4bbe6fcd93dcf75f7, type: 2}
   - {fileID: 11400000, guid: 078887a9a61fe9d459f35eff0093fac3, type: 2}
   misc: []

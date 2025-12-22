@@ -95,13 +95,41 @@ Scripts/
 │   │   │   ├── InventoryItemPopup.cs
 │   │   │   └── InventoryGearPopup.cs
 │   │   └── UI/
+│   │       ├── StorageRoomContext.cs
 │   │       ├── StorageRoomUI.cs
 │   │       ├── ItemSlotUI.cs
 │   │       └── BuffLineUI.cs
 │   │
-│   └── EquipmentSystem/                     // In-progress module
-│       └── (files to come)
-│
+│   ├── EquipmentSystem/                     // In-progress module
+│   │   ├── Manager/
+│   │   │   └── EquipmentManager.cs (IGameService)
+│   │   │
+│   │   ├── Data/
+│   │   │   ├── EquippedGear.cs (Weapon, Helmet, Chest, etc.)
+│   │   │   └── HotbarLoadout.cs (Item1, Item2, Item3 references)
+│   │   │
+│   │   ├── Services/
+│   │   │   ├── GearSlotService.cs (Slot validation, type checking)
+│   │   │   ├── GearEquipService.cs (Equip/unequip logic)
+│   │   │   └── GearStatsService.cs (Calculate total item stats)
+│   │   │
+│   │   ├── UI/
+│   │   │   ├── EquipmentRoomContext.cs
+│   │   │   ├── EquipmentRoomUI.cs (Main controller)
+│   │   │   ├── GearSlotUI.cs (Individual gear slot display)
+│   │   │   ├── HotbarSlotUI.cs (Hotbar item slot)
+│   │   │   └── EquipmentStorageUI.cs (Filtered storage view)
+│   │   │
+│   │   └── Enums/
+│   │       └── EquipmentEnums.cs (GearSlotType, StorageFilter)
+│   │
+│   └── SharedUI/                          // NEW: Shared UI components
+│       ├── Ascension.SharedUI.asmdef
+│       ├── Popups/
+│       │   ├── GearPopup.cs
+│       │   ├── IGearPopupContext.cs
+│       └── Components/
+│           └── (future shared UI components)
 │
 ├── UI/                                     // UI module
 │   ├── Ascension.UI.asmdef
@@ -111,24 +139,24 @@ Scripts/
 │       └── DisclaimerController.cs
 │
 ├── Data/                                   // Pure data / scriptable objects
-│   ├── Ascension.Data.asmdef
-│   ├── Enums/
-│   │   └── WeaponEnums.cs
-│   ├── Save/
-│   │   └── SaveData.cs
-│   └── ScriptableObject/
-│       ├── Item/
-│       │   ├── ItemBaseSO.cs
-│       │   ├── WeaponSO.cs
-│       │   ├── WeaponRaritySO.cs
-│       │   ├── GearSO.cs
-│       │   ├── PotionSO.cs
-│       │   ├── MaterialSO.cs
-│       │   └── AbilitySO.cs
-│       ├── Character/
-│       │   └── CharacterBaseStatsSO.cs
-│       └── Database/
-│           └── GameDatabaseSO.cs
+    ├── Ascension.Data.asmdef
+    ├── Enums/
+    │   └── WeaponEnums.cs
+    ├── Save/
+    │   └── SaveData.cs
+    └── ScriptableObject/
+        ├── Item/
+        │   ├── ItemBaseSO.cs
+        │   ├── WeaponSO.cs
+        │   ├── WeaponRaritySO.cs
+        │   ├── GearSO.cs
+        │   ├── PotionSO.cs
+        │   ├── MaterialSO.cs
+        │   └── AbilitySO.cs
+        ├── Character/
+        │   └── CharacterBaseStatsSO.cs
+        └── Database/
+            └── GameDatabaseSO.cs
 
 ```
 
