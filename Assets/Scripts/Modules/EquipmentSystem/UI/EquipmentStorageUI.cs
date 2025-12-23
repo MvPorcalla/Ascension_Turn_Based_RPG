@@ -231,7 +231,7 @@ namespace Ascension.Equipment.UI
             // Show popup for weapons and gear
             if (itemData is WeaponSO || itemData is GearSO)
             {
-                var context = new EquipmentRoomContext();
+                var context = new EquipmentPopupContext ();
                 GearPopup.Instance.Show(itemData, item, context);
             }
             // Show skill popup for abilities

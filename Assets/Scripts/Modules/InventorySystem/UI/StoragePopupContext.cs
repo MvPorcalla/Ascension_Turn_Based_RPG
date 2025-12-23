@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════
-// Assets\Scripts\Modules\InventorySystem\UI\StorageRoomContext.cs
+// Assets\Scripts\Modules\InventorySystem\UI\StoragePopupContext.cs
 // Storage Room behavior for GearPopup
 // ════════════════════════════════════════════
 
@@ -12,11 +12,11 @@ using Ascension.SharedUI.Popups;
 
 namespace Ascension.Inventory.UI
 {
-    public class StorageRoomContext : IGearPopupContext
+    public class StoragePopupContext : IGearPopupContext
     {
         private ItemLocation _currentLocation;
 
-        public StorageRoomContext(ItemLocation location)
+        public StoragePopupContext(ItemLocation location)
         {
             _currentLocation = location;
         }
@@ -40,7 +40,7 @@ namespace Ascension.Inventory.UI
         {
             if (item == null || itemInstance == null || InventoryManager.Instance == null)
             {
-                Debug.LogError("[StorageRoomContext] Missing references");
+                Debug.LogError("[StoragePopupContext] Missing references");
                 return false;
             }
 
@@ -52,14 +52,14 @@ namespace Ascension.Inventory.UI
                 case ItemLocation.Storage:
                     success = InventoryManager.Instance.Inventory.MoveToBag(itemInstance, 1, database);
                     if (success)
-                        Debug.Log($"[StorageRoomContext] Moved {item.ItemName} to bag");
+                        Debug.Log($"[StoragePopupContext] Moved {item.ItemName} to bag");
                     break;
 
                 case ItemLocation.Bag:
                 case ItemLocation.Pocket:
                     success = InventoryManager.Instance.Inventory.MoveToStorage(itemInstance, 1, database);
                     if (success)
-                        Debug.Log($"[StorageRoomContext] Stored {item.ItemName}");
+                        Debug.Log($"[StoragePopupContext] Stored {item.ItemName}");
                     break;
             }
 

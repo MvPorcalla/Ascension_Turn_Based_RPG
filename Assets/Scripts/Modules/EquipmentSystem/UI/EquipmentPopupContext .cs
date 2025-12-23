@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════
-// Assets\Scripts\Modules\EquipmentSystem\UI\EquipmentRoomContext.cs
+// Assets\Scripts\Modules\EquipmentSystem\UI\EquipmentPopupContext .cs
 // Equipment Room behavior for GearPopup
 // Located in: Scripts/Modules/EquipmentSystem/UI/Contexts/
 // ════════════════════════════════════════════
@@ -13,11 +13,11 @@ using Ascension.SharedUI.Popups;
 
 namespace Ascension.Equipment.UI
 {
-    public class EquipmentRoomContext : IGearPopupContext
+    public class EquipmentPopupContext  : IGearPopupContext
     {
         private GearSlotService _slotService;
 
-        public EquipmentRoomContext()
+        public EquipmentPopupContext ()
         {
             _slotService = new GearSlotService();
         }
@@ -32,7 +32,7 @@ namespace Ascension.Equipment.UI
         {
             if (item == null || EquipmentManager.Instance == null)
             {
-                Debug.LogError("[EquipmentRoomContext] Missing references");
+                Debug.LogError("[EquipmentPopupContext ] Missing references");
                 return false;
             }
 
@@ -59,7 +59,7 @@ namespace Ascension.Equipment.UI
 
             if (!slotType.HasValue)
             {
-                Debug.LogError($"[EquipmentRoomContext] Cannot determine slot for {item.ItemName}");
+                Debug.LogError($"[EquipmentPopupContext ] Cannot determine slot for {item.ItemName}");
                 return false;
             }
 
@@ -67,11 +67,11 @@ namespace Ascension.Equipment.UI
 
             if (success)
             {
-                Debug.Log($"[EquipmentRoomContext] Equipped {item.ItemName}");
+                Debug.Log($"[EquipmentPopupContext ] Equipped {item.ItemName}");
             }
             else
             {
-                Debug.LogError($"[EquipmentRoomContext] Failed to equip {item.ItemName}");
+                Debug.LogError($"[EquipmentPopupContext ] Failed to equip {item.ItemName}");
             }
 
             return success;
@@ -83,7 +83,7 @@ namespace Ascension.Equipment.UI
 
             if (!slotType.HasValue)
             {
-                Debug.LogError($"[EquipmentRoomContext] Cannot find equipped slot for {item.ItemName}");
+                Debug.LogError($"[EquipmentPopupContext ] Cannot find equipped slot for {item.ItemName}");
                 return false;
             }
 
@@ -91,11 +91,11 @@ namespace Ascension.Equipment.UI
 
             if (success)
             {
-                Debug.Log($"[EquipmentRoomContext] Unequipped {item.ItemName}");
+                Debug.Log($"[EquipmentPopupContext ] Unequipped {item.ItemName}");
             }
             else
             {
-                Debug.LogError($"[EquipmentRoomContext] Failed to unequip {item.ItemName}");
+                Debug.LogError($"[EquipmentPopupContext ] Failed to unequip {item.ItemName}");
             }
 
             return success;

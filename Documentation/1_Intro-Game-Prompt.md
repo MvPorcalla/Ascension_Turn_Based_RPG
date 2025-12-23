@@ -65,7 +65,6 @@ Scripts/
 │   │   │   ├── BagInventory.cs
 │   │   │   ├── ItemInstance.cs
 │   │   │   └── BagInventoryData.cs
-│   │   │   └── SaveDataMigration.cs        // Temporary file will be deleted later, save migration for chanegs
 │   │   ├── Enum/
 │   │   │   └── InventoryEnums.cs
 │   │   ├── Popup/
