@@ -311,19 +311,102 @@ Also, in the Equipment Room, the accessory gear slots should allow equipping two
 
 ---
 
-Refactor my save logic so that abilities are stored in their own abilities section, instead of inside items.
+Here’s the **corrected version** that **only separates abilities** and **does NOT restructure inventory items**.
+Inventory stays flat and clean. Abilities move to their own section.
 
-Example:
+This is the right call.
+
+---
+
+### prompt (only separate abilities)
+
+> Refactor my save logic so that abilities are stored in their own `abilitiesData` section instead of being mixed into inventory items.
+>
+> Keep `inventoryData.items` as a single flat array (do NOT separate by category).
+>
+> Keep `equipmentData` and `skillLoadoutData` unchanged.
+>
+> Include sample item IDs, quantities, and locations.
+>
+> Output the full JSON ready to use.
+
+---
+
+### Full JSON (ready to use)
 
 ```json
-"inventoryData": {
-  "items": []
-},
-"abilities": {
+{
+  "metaData": {
+    "saveVersion": "1.1",
+    "createdTime": "2025-12-15 00:26:50",
+    "lastSaveTime": "2025-12-23 14:10:00",
+    "totalPlayTimeSeconds": 3720.25,
+    "saveCount": 86
+  },
+
+  "characterData": {
+    "playerName": "Medarru",
+    "level": 2,
+    "currentExperience": 120,
+    "currentHealth": 220.0,
+    "currentMana": 50.0,
+    "attributePoints": 5,
+    "strength": 30,
+    "agility": 6,
+    "intelligence": 2,
+    "endurance": 11,
+    "wisdom": 10
+  },
+
+  "inventoryData": {
+    "items": [
+      { "itemId": "weapon_iron_sword", "quantity": 1, "location": 0 },
+      { "itemId": "gear_leather_helmet", "quantity": 1, "location": 0 },
+      { "itemId": "gear_leather_chestplate", "quantity": 1, "location": 0 },
+      { "itemId": "gear_leather_gloves", "quantity": 1, "location": 0 },
+      { "itemId": "gear_leather_boots", "quantity": 1, "location": 0 },
+
+      { "itemId": "gear_accessory_iron_ring", "quantity": 1, "location": 0 },
+      { "itemId": "gear_accessory_iron_bracelet", "quantity": 1, "location": 0 },
+
+      { "itemId": "potion_minor_health_potion", "quantity": 5, "location": 0 },
+      { "itemId": "potion_minor_health_potion", "quantity": 7, "location": 1 },
+      { "itemId": "potion_minor_health_potion", "quantity": 6, "location": 2 },
+
+      { "itemId": "material_iron_ore", "quantity": 12, "location": 0 },
+      { "itemId": "material_wood", "quantity": 25, "location": 0 }
+    ],
+    "maxBagSlots": 12,
+    "maxPocketSlots": 6,
+    "maxStorageSlots": 60
+  },
+
+  "abilitiesData": {
+    "unlocked": [
+      "ability_fireball",
+      "ability_heal"
+    ],
+    "equipped": [
+      "ability_fireball"
+    ]
+  },
+
+  "equipmentData": {
+    "weaponId": "weapon_iron_sword",
+    "helmetId": "gear_leather_helmet",
+    "chestId": "gear_leather_chestplate",
+    "glovesId": "gear_leather_gloves",
+    "bootsId": "gear_leather_boots",
+    "accessory1Id": "gear_accessory_iron_ring",
+    "accessory2Id": "gear_accessory_iron_bracelet"
+  },
+
+  "skillLoadoutData": {
+    "normalSkill1Id": "ability_fireball",
+    "normalSkill2Id": "",
+    "ultimateSkillId": ""
+  }
 }
 ```
-
-Also, restructure inventoryData so that items are separated by category: weapons, armor (helmet, chestplate, gloves, boots), accessories, potions, and materials, instead of storing everything in a single items array.
-Keep equipmentData and skillLoadoutData the same, and include sample item IDs and quantities in each category. Output the full JSON ready to use.
 
 ---

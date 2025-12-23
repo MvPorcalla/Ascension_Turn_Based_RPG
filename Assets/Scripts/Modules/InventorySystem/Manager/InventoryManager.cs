@@ -77,9 +77,6 @@ namespace Ascension.Inventory.Manager
         /// </summary>
         public void LoadInventory(BagInventoryData data)
         {
-            // ✅ Auto-migrate old saves that don't have maxStorageSlots
-            SaveDataMigration.MigrateInventoryData(data);
-
             Inventory.allItems = data.items;
             Inventory.maxBagSlots = data.maxBagSlots;
             Inventory.maxPocketSlots = data.maxPocketSlots;
