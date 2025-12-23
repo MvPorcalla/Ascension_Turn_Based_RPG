@@ -311,7 +311,7 @@ Also, in the Equipment Room, the accessory gear slots should allow equipping two
 
 ---
 
-Refactor my save JSON so that abilities are stored in their own abilities section, instead of inside items.
+Refactor my save logic so that abilities are stored in their own abilities section, instead of inside items.
 
 Example:
 

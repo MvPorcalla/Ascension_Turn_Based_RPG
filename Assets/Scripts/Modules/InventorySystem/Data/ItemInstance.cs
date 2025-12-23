@@ -1,9 +1,10 @@
 // ──────────────────────────────────────────────────
 // Assets\Scripts\Modules\InventorySystem\Data\ItemInstance.cs
-// Represents an instance of an item in inventory/storage
+// Item instance data structure with enum-based location
 // ──────────────────────────────────────────────────
 
 using System;
+using Ascension.Inventory.Enums;
 
 namespace Ascension.Inventory.Data
 {
@@ -12,27 +13,47 @@ namespace Ascension.Inventory.Data
     {
         public string itemID;
         public int quantity;
-        public bool isInBag;
-        public bool isInPocket;
+        public ItemLocation location;
 
-        public ItemInstance(string itemID, int quantity = 1, bool isInBag = false, bool isInPocket = false)
+        // ═══════════════════════════════════════════════════════════
+        // Constructors
+        // ═══════════════════════════════════════════════════════════
+
+        public ItemInstance(string itemID, int quantity = 1, ItemLocation location = ItemLocation.Storage)
         {
             this.itemID = itemID;
             this.quantity = quantity;
-            this.isInBag = isInBag;
-            this.isInPocket = isInPocket;
+            this.location = location;
         }
+
+        // ═══════════════════════════════════════════════════════════
+        // Utility Methods
+        // ═══════════════════════════════════════════════════════════
 
         public ItemInstance Clone()
         {
-            return new ItemInstance(itemID, quantity, isInBag, isInPocket);
+            return new ItemInstance(itemID, quantity, location);
         }
 
         public string GetLocation()
         {
-            if (isInBag) return "Bag";
-            if (isInPocket) return "Pocket";
-            return "Storage";
+            return location switch
+            {
+                ItemLocation.Bag => "Bag",
+                ItemLocation.Pocket => "Pocket",
+                ItemLocation.Storage => "Storage",
+                _ => "Unknown"
+            };
+        }
+
+        public void SetLocation(ItemLocation newLocation)
+        {
+            location = newLocation;
+        }
+
+        public bool IsInLocation(ItemLocation checkLocation)
+        {
+            return location == checkLocation;
         }
     }
 }

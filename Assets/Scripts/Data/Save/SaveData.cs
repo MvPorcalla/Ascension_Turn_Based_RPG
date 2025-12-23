@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\Data\Save\SaveData.cs
-// Root save data structure for game persistence
+// Save data structures for serialization
 // ════════════════════════════════════════════
 
 using System;
@@ -24,10 +24,6 @@ namespace Ascension.Data.Save
     // SaveMetaData - Pure data, no logic
     // ════════════════════════════════════════════
 
-    /// <summary>
-    /// Metadata about the save file
-    /// All timestamps and version info set by SaveManager
-    /// </summary>
     [Serializable]
     public class SaveMetaData
     {
@@ -42,10 +38,6 @@ namespace Ascension.Data.Save
     // CharacterSaveData - Pure serializable data
     // ════════════════════════════════════════════
 
-    /// <summary>
-    /// Character state snapshot for persistence
-    /// Maps to CharacterStats but remains serialization-friendly
-    /// </summary>
     [Serializable]
     public class CharacterSaveData
     {
@@ -56,22 +48,17 @@ namespace Ascension.Data.Save
         public float currentMana;
         public int attributePoints;
         
-        // Base Attributes (matching CharacterAttributes)
-        public int strength;      // STR - Strength
-        public int agility;       // AGI - Agility
-        public int intelligence;  // INT - Intelligence
-        public int endurance;     // END - Endurance
-        public int wisdom;        // WIS - Wisdom
+        public int strength;
+        public int agility;
+        public int intelligence;
+        public int endurance;
+        public int wisdom;
     }
 
     // ════════════════════════════════════════════
-    // InventorySaveData - Pure serializable data
-    // ✅ UPDATED: Added maxPocketSlots and maxStorageSlots
+    // InventorySaveData
     // ════════════════════════════════════════════
 
-    /// <summary>
-    /// Inventory snapshot for persistence
-    /// </summary>
     [Serializable]
     public class InventorySaveData
     {
@@ -81,8 +68,13 @@ namespace Ascension.Data.Save
         public int maxStorageSlots = 60;
     }
 
+    // ════════════════════════════════════════════
+    // ItemInstanceData - ✅ MIGRATED to enum
+    // ════════════════════════════════════════════
+
     /// <summary>
-    /// Single item instance with location flags
+    /// ✅ MIGRATED: Uses int for ItemLocation enum serialization
+    /// Values: 0=Storage, 1=Pocket, 2=Bag
     /// </summary>
     [Serializable]
     public class ItemInstanceData
@@ -90,19 +82,18 @@ namespace Ascension.Data.Save
         public string itemId;
         public int quantity;
         
-        // Location flags for proper persistence
-        public bool isInBag;
-        public bool isInPocket;
-        // public bool isEquipped;
+        // ✅ NEW: Single location field (serialized as int)
+        public int location;  // 0=Storage, 1=Pocket, 2=Bag
+        
+        // ❌ REMOVED: Old boolean flags
+        // public bool isInBag;
+        // public bool isInPocket;
     }
 
     // ════════════════════════════════════════════
-    // EquipmentSaveData - Pure serializable data
+    // EquipmentSaveData
     // ════════════════════════════════════════════
 
-    /// <summary>
-    /// Equipped items snapshot for persistence
-    /// </summary>
     [Serializable]
     public class EquipmentSaveData
     {
@@ -116,16 +107,12 @@ namespace Ascension.Data.Save
     }
 
     // ════════════════════════════════════════════
-    // SkillLoadoutSaveData - Pure serializable data
+    // SkillLoadoutSaveData
     // ════════════════════════════════════════════
 
-    /// <summary>
-    /// Skill loadout configuration snapshot for persistence
-    /// </summary>
     [Serializable]
     public class SkillLoadoutSaveData
     {
-        // Skill slots only (consumables removed)
         public string normalSkill1Id;
         public string normalSkill2Id;
         public string ultimateSkillId;

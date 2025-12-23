@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════
 // Scripts/Modules/InventorySystem/Services/ItemQueryService.cs
-// 
+// Service for querying inventory items (read-only operations)
 // ══════════════════════════════════════════════════════════════════
 
 using System.Collections.Generic;
@@ -8,46 +8,45 @@ using System.Linq;
 using Ascension.Data.SO.Item;
 using Ascension.Data.SO.Database;
 using Ascension.Inventory.Data;
+using Ascension.Inventory.Enums;
 
 namespace Ascension.Inventory.Services
 {
     /// <summary>
     /// Service responsible for querying inventory items (read-only operations)
-    /// Extracted from BagInventory.cs to follow Single Responsibility Principle
+    /// ✅ MIGRATED: Now uses ItemLocation enum instead of boolean flags
     /// </summary>
     public class ItemQueryService
     {
         /// <summary>
-        /// Get all items in bag (excluding pocket and skills)
+        /// ✅ MIGRATED: Get all items in bag
         /// </summary>
         public List<ItemInstance> GetBagItems(List<ItemInstance> allItems)
         {
             return allItems.Where(item =>
-                item.isInBag &&
-                !item.isInPocket &&
+                item.location == ItemLocation.Bag &&
                 !IsSkill(item.itemID)
             ).ToList();
         }
 
         /// <summary>
-        /// Get all items in pocket
+        /// ✅ MIGRATED: Get all items in pocket
         /// </summary>
         public List<ItemInstance> GetPocketItems(List<ItemInstance> allItems)
         {
             return allItems.Where(item =>
-                item.isInPocket &&
+                item.location == ItemLocation.Pocket &&
                 !IsSkill(item.itemID)
             ).ToList();
         }
 
         /// <summary>
-        /// Get all items in storage (not in bag or pocket)
+        /// ✅ MIGRATED: Get all items in storage
         /// </summary>
         public List<ItemInstance> GetStorageItems(List<ItemInstance> allItems)
         {
             return allItems.Where(item =>
-                !item.isInBag &&
-                !item.isInPocket &&
+                item.location == ItemLocation.Storage &&
                 !IsSkill(item.itemID)
             ).ToList();
         }
@@ -139,18 +138,6 @@ namespace Ascension.Inventory.Services
         }
 
         /// <summary>
-        /// Check if item is a skill (managed separately from inventory)
-        /// </summary>
-        private bool IsSkill(string itemID)
-        {
-            return itemID.StartsWith("skill_") || itemID.StartsWith("ability_");
-        }
-
-        // ═══════════════════════════════════════════════════════════
-        // Storage-specific queries
-        // ═══════════════════════════════════════════════════════════
-
-        /// <summary>
         /// Get number of items in storage
         /// </summary>
         public int GetStorageItemCount(List<ItemInstance> allItems)
@@ -172,6 +159,33 @@ namespace Ascension.Inventory.Services
         public int GetEmptyStorageSlots(List<ItemInstance> allItems, int maxStorageSlots)
         {
             return maxStorageSlots - GetStorageItemCount(allItems);
+        }
+
+        /// <summary>
+        /// ✅ NEW: Get items by specific location
+        /// </summary>
+        public List<ItemInstance> GetItemsByLocation(List<ItemInstance> allItems, ItemLocation location)
+        {
+            return allItems.Where(item =>
+                item.location == location &&
+                !IsSkill(item.itemID)
+            ).ToList();
+        }
+
+        /// <summary>
+        /// ✅ NEW: Count items in specific location
+        /// </summary>
+        public int GetItemCountByLocation(List<ItemInstance> allItems, ItemLocation location)
+        {
+            return GetItemsByLocation(allItems, location).Count;
+        }
+
+        /// <summary>
+        /// Check if item is a skill (managed separately from inventory)
+        /// </summary>
+        private bool IsSkill(string itemID)
+        {
+            return itemID.StartsWith("skill_") || itemID.StartsWith("ability_");
         }
     }
 }

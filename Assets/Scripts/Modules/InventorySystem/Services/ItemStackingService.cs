@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════
 // Scripts/Modules/InventorySystem/Services/ItemStackingService.cs
-// STEP 2: Extract all stacking/merging logic
+// Service for item stacking logic (merge/split operations)
 // ══════════════════════════════════════════════════════════════════
 
 using System.Collections.Generic;
@@ -8,29 +8,28 @@ using System.Linq;
 using UnityEngine;
 using Ascension.Data.SO.Item;
 using Ascension.Inventory.Data;
+using Ascension.Inventory.Enums;
 
 namespace Ascension.Inventory.Services
 {
     /// <summary>
     /// Service responsible for item stacking logic (merge/split operations)
-    /// Extracted from BagInventory.cs to follow Single Responsibility Principle
+    /// ✅ MIGRATED: Now uses ItemLocation enum instead of boolean flags
     /// </summary>
     public class ItemStackingService
     {
         /// <summary>
-        /// Find existing stack in specific location that has room for more items
+        /// ✅ MIGRATED: Find existing stack in specific location that has room
         /// </summary>
         public ItemInstance FindStackWithSpace(
             List<ItemInstance> allItems,
             string itemID,
-            bool isInBag,
-            bool isInPocket,
+            ItemLocation location,
             int maxStackSize)
         {
             return allItems.FirstOrDefault(i =>
                 i.itemID == itemID &&
-                i.isInBag == isInBag &&
-                i.isInPocket == isInPocket &&
+                i.location == location &&
                 i.quantity < maxStackSize
             );
         }
@@ -58,14 +57,12 @@ namespace Ascension.Inventory.Services
         }
 
         /// <summary>
-        /// Add stackable items to inventory, creating new stacks as needed
-        /// Returns list of newly created stacks (doesn't modify existing stacks)
+        /// ✅ MIGRATED: Create new stacks with specific location
         /// </summary>
         public List<ItemInstance> CreateNewStacks(
             string itemID,
             int totalQuantity,
-            bool isInBag,
-            bool isInPocket,
+            ItemLocation location,
             int maxStackSize)
         {
             List<ItemInstance> newStacks = new List<ItemInstance>();
@@ -74,7 +71,7 @@ namespace Ascension.Inventory.Services
             while (remaining > 0)
             {
                 int stackSize = Mathf.Min(remaining, maxStackSize);
-                newStacks.Add(new ItemInstance(itemID, stackSize, isInBag, isInPocket));
+                newStacks.Add(new ItemInstance(itemID, stackSize, location));
                 remaining -= stackSize;
             }
 
@@ -102,21 +99,18 @@ namespace Ascension.Inventory.Services
             return new ItemInstance(
                 source.itemID,
                 quantityToSplit,
-                source.isInBag,
-                source.isInPocket
+                source.location  // ✅ Preserve location
             );
         }
 
         /// <summary>
-        /// Add quantity to existing stack, or create new stacks if needed
-        /// Modifies allItems list directly
+        /// ✅ MIGRATED: Add quantity to existing stack, or create new stacks if needed
         /// </summary>
         public void AddToExistingOrCreateNew(
             List<ItemInstance> allItems,
             string itemID,
             int quantity,
-            bool isInBag,
-            bool isInPocket,
+            ItemLocation location,
             int maxStackSize)
         {
             int remaining = quantity;
@@ -124,8 +118,7 @@ namespace Ascension.Inventory.Services
             // Try to fill existing stacks first
             var existingStacks = allItems
                 .Where(i => i.itemID == itemID &&
-                           i.isInBag == isInBag &&
-                           i.isInPocket == isInPocket &&
+                           i.location == location &&
                            i.quantity < maxStackSize)
                 .OrderBy(i => i.quantity) // Fill smallest stacks first
                 .ToList();
@@ -144,7 +137,7 @@ namespace Ascension.Inventory.Services
             // Create new stacks for remaining quantity
             if (remaining > 0)
             {
-                var newStacks = CreateNewStacks(itemID, remaining, isInBag, isInPocket, maxStackSize);
+                var newStacks = CreateNewStacks(itemID, remaining, location, maxStackSize);
                 allItems.AddRange(newStacks);
             }
         }

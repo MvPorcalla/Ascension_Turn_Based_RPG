@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════
 // Scripts/Modules/InventorySystem/Data/BagInventory.cs
-// Support for configurable max slots (for upgrades/save data)
+// Bag inventory data structure
 // ══════════════════════════════════════════════════════════════════
 
 using System;
@@ -10,6 +10,7 @@ using UnityEngine;
 using Ascension.Data.SO.Item;
 using Ascension.Data.SO.Database;
 using Ascension.Inventory.Services;
+using Ascension.Inventory.Enums;
 
 namespace Ascension.Inventory.Data
 {
@@ -20,12 +21,12 @@ namespace Ascension.Inventory.Data
         public List<ItemInstance> allItems = new List<ItemInstance>();
         public int maxBagSlots = 12;
         public int maxPocketSlots = 6;
-        public int maxStorageSlots = 60; // ✅ NEW: For future storage upgrades
+        public int maxStorageSlots = 60;
         #endregion
 
         #region Events
         public event Action OnInventoryChanged;
-        public event Action<int> OnMaxSlotsChanged; // ✅ NEW: Notify UI when slots upgraded
+        public event Action<int> OnMaxSlotsChanged;
         #endregion
 
         #region Services
@@ -35,17 +36,11 @@ namespace Ascension.Inventory.Data
         #endregion
 
         #region Constructor
-        /// <summary>
-        /// Default constructor - creates services internally
-        /// </summary>
         public BagInventory()
         {
             InitializeServices();
         }
 
-        /// <summary>
-        /// Constructor with optional service injection for testing
-        /// </summary>
         public BagInventory(
             ItemQueryService queryService = null,
             ItemStackingService stackingService = null,
@@ -115,6 +110,9 @@ namespace Ascension.Inventory.Data
 
         #region Add/Remove Methods
 
+        /// <summary>
+        /// ✅ MIGRATED: Add item with enum location
+        /// </summary>
         public bool AddItem(string itemID, int quantity = 1, bool addToBag = false, GameDatabaseSO database = null)
         {
             if (database == null)
@@ -130,26 +128,28 @@ namespace Ascension.Inventory.Data
                 return false;
             }
 
-            // Check bag space - if full, send to storage
-            if (addToBag && !HasBagSpace())
+            // Determine target location
+            ItemLocation targetLocation = ItemLocation.Storage;
+            
+            if (addToBag)
             {
-                Debug.LogWarning("[BagInventory] Bag full, sending to storage");
-                addToBag = false;
+                if (HasBagSpace())
+                    targetLocation = ItemLocation.Bag;
+                else
+                {
+                    Debug.LogWarning("[BagInventory] Bag full, sending to storage");
+                    if (!HasStorageSpace())
+                    {
+                        Debug.LogWarning($"[BagInventory] Storage full! ({GetStorageItemCount()}/{maxStorageSlots})");
+                        return false;
+                    }
+                }
             }
-
-            // ═══════════════════════════════════════════════════════════════
-            // ✅ Storage Full Check - Show warning and prevent adding
-            // ═══════════════════════════════════════════════════════════════
-            if (!addToBag && !HasStorageSpace())
+            else if (!HasStorageSpace())
             {
                 Debug.LogWarning($"[BagInventory] Storage full! ({GetStorageItemCount()}/{maxStorageSlots})");
-                
-                // TODO: Show popup to player
-                // StorageFullPopup.Show("Inventory is Full!");
-                
-                return false; // Prevent adding item
+                return false;
             }
-            // ═══════════════════════════════════════════════════════════════
 
             // Add stackable items
             if (itemData.IsStackable)
@@ -158,8 +158,7 @@ namespace Ascension.Inventory.Data
                     allItems,
                     itemID,
                     quantity,
-                    addToBag,
-                    false,
+                    targetLocation,
                     itemData.MaxStackSize
                 );
             }
@@ -168,29 +167,21 @@ namespace Ascension.Inventory.Data
                 // Add non-stackable items one by one
                 for (int i = 0; i < quantity; i++)
                 {
-                    // Re-check bag space mid-loop
-                    if (addToBag && !HasBagSpace())
+                    // Re-check space mid-loop
+                    if (targetLocation == ItemLocation.Bag && !HasBagSpace())
                     {
                         Debug.LogWarning("[BagInventory] Bag full, remaining items sent to storage");
-                        addToBag = false;
+                        targetLocation = ItemLocation.Storage;
                     }
 
-                    // ═══════════════════════════════════════════════════════════════
-                    // ✅ Storage Full Check (Inside Loop)
-                    // ═══════════════════════════════════════════════════════════════
-                    if (!addToBag && !HasStorageSpace())
+                    if (targetLocation == ItemLocation.Storage && !HasStorageSpace())
                     {
                         Debug.LogWarning($"[BagInventory] Storage full! Added {i}/{quantity} items");
-                        
-                        // TODO: Show popup to player
-                        // StorageFullPopup.Show("Inventory is Full!");
-                        
                         OnInventoryChanged?.Invoke();
                         return false;
                     }
-                    // ═══════════════════════════════════════════════════════════════
 
-                    allItems.Add(new ItemInstance(itemID, 1, addToBag, false));
+                    allItems.Add(new ItemInstance(itemID, 1, targetLocation));
                 }
             }
 
@@ -274,11 +265,8 @@ namespace Ascension.Inventory.Data
 
         #endregion
 
-        #region Slot Management (NEW)
+        #region Slot Management
 
-        /// <summary>
-        /// ✅ NEW: Upgrade bag slot capacity
-        /// </summary>
         public void UpgradeBagSlots(int additionalSlots)
         {
             maxBagSlots += additionalSlots;
@@ -286,9 +274,6 @@ namespace Ascension.Inventory.Data
             Debug.Log($"[BagInventory] Bag upgraded to {maxBagSlots} slots");
         }
 
-        /// <summary>
-        /// ✅ NEW: Upgrade pocket slot capacity
-        /// </summary>
         public void UpgradePocketSlots(int additionalSlots)
         {
             maxPocketSlots += additionalSlots;
@@ -296,9 +281,6 @@ namespace Ascension.Inventory.Data
             Debug.Log($"[BagInventory] Pocket upgraded to {maxPocketSlots} slots");
         }
 
-        /// <summary>
-        /// ✅ NEW: Upgrade storage slot capacity
-        /// </summary>
         public void UpgradeStorageSlots(int additionalSlots)
         {
             maxStorageSlots += additionalSlots;
@@ -306,9 +288,6 @@ namespace Ascension.Inventory.Data
             Debug.Log($"[BagInventory] Storage upgraded to {maxStorageSlots} slots");
         }
 
-        /// <summary>
-        /// ✅ NEW: Set all slot capacities (useful for loading save data)
-        /// </summary>
         public void SetSlotCapacities(int bagSlots, int pocketSlots, int storageSlots)
         {
             maxBagSlots = bagSlots;
@@ -322,20 +301,19 @@ namespace Ascension.Inventory.Data
 
         #region Utility Methods
 
-        /// 
-        /// Query EquipmentManager for equipped state
-        /// 
+        /// <summary>
+        /// ✅ MIGRATED: Store all bag items (move to storage)
+        /// </summary>
         public void StoreAllItems()
         {
             foreach (var item in GetBagItems().ToList())
             {
-                // Query EquipmentManager instead of stale flag
+                // Query EquipmentManager for equipped state
                 bool isEquipped = Equipment.Manager.EquipmentManager.Instance?.IsItemEquipped(item.itemID) ?? false;
                 
                 if (!isEquipped)
                 {
-                    item.isInBag = false;
-                    item.isInPocket = false;
+                    item.location = ItemLocation.Storage;
                 }
             }
 

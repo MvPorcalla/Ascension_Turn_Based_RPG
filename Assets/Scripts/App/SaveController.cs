@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\AppFlow\SaveController.cs
-// Controller for saving and loading game state
+// Save and load game state management
 // ════════════════════════════════════════════
 
 using UnityEngine;
@@ -10,6 +10,7 @@ using Ascension.Character.Stat;
 using Ascension.Character.Manager;
 using Ascension.Inventory.Manager;
 using Ascension.Inventory.Data;
+using Ascension.Inventory.Enums;
 using Ascension.Equipment.Manager;
 
 namespace Ascension.App
@@ -114,17 +115,10 @@ namespace Ascension.App
                 return false;
             }
             
-            // ✅ IMPORTANT: Load order matters!
-            // 1. Load inventory first (creates items in storage/bag/pocket)
+            // Load order matters
             LoadInventoryFromSave(saveData);
-            
-            // 2. Load equipment (marks items as equipped + calculates stats)
             LoadEquipmentFromSave(saveData);
-            
-            // 3. Load character (applies final stats)
             LoadPlayerFromSave(saveData);
-            
-            // 4. Load skill loadout
             LoadSkillLoadoutFromSave(saveData);
             
             OnLoadCompleted?.Invoke();
@@ -133,10 +127,7 @@ namespace Ascension.App
             return true;
         }
 
-        public bool SaveExists()
-        {
-            return _saveManager != null && _saveManager.SaveExists();
-        }
+        public bool SaveExists() => _saveManager != null && _saveManager.SaveExists();
 
         public bool DeleteSave()
         {
@@ -197,14 +188,13 @@ namespace Ascension.App
             _characterManager.LoadPlayer(stats);
             
             Debug.Log($"[SaveController] ✓ Loaded character: {stats.playerName}");
-            Debug.Log($"[SaveController]   Attributes - STR:{stats.attributes.STR} AGI:{stats.attributes.AGI} INT:{stats.attributes.INT} END:{stats.attributes.END} WIS:{stats.attributes.WIS}");
         }
         #endregion
 
-        #region Private Methods - Inventory Conversion
+        #region Private Methods - Inventory Conversion (✅ MIGRATED)
+        
         /// <summary>
-        /// ✅ CLEAN: Only saves item location (Bag/Pocket/Storage)
-        /// Equipment state is saved separately in EquipmentSaveData
+        /// ✅ MIGRATED: Convert ItemInstance (enum) → ItemInstanceData (int)
         /// </summary>
         private InventorySaveData ConvertToInventorySaveData()
         {
@@ -227,14 +217,12 @@ namespace Ascension.App
             {
                 ItemInstance item = bagData.items[i];
                 
-                // ✅ CLEAN: Only save location flags
+                // ✅ MIGRATED: enum → int conversion
                 itemArray[i] = new ItemInstanceData
                 {
                     itemId = item.itemID,
                     quantity = item.quantity,
-                    isInBag = item.isInBag,
-                    isInPocket = item.isInPocket
-                    // ❌ No isEquipped - that's in EquipmentSaveData
+                    location = (int)item.location  // ✅ Convert enum to int
                 };
             }
             
@@ -248,8 +236,7 @@ namespace Ascension.App
         }
 
         /// <summary>
-        /// ✅ CLEAN: Only restores item location
-        /// Equipment state is restored separately by LoadEquipmentFromSave()
+        /// ✅ MIGRATED: Convert ItemInstanceData (int) → ItemInstance (enum)
         /// </summary>
         private void LoadInventoryFromSave(SaveData saveData)
         {
@@ -265,7 +252,6 @@ namespace Ascension.App
                 return;
             }
 
-            // Convert InventorySaveData → BagInventoryData
             BagInventoryData bagData = new BagInventoryData
             {
                 maxBagSlots = saveData.inventoryData.maxBagSlots,
@@ -274,14 +260,15 @@ namespace Ascension.App
                 items = new System.Collections.Generic.List<ItemInstance>()
             };
             
-            // ✅ Restore location flags from save data
+            // ✅ MIGRATED: int → enum conversion
             foreach (var itemData in saveData.inventoryData.items)
             {
+                ItemLocation location = (ItemLocation)itemData.location;  // ✅ Convert int to enum
+                
                 ItemInstance item = new ItemInstance(
                     itemData.itemId, 
                     itemData.quantity, 
-                    itemData.isInBag,
-                    itemData.isInPocket
+                    location  // ✅ Pass enum directly
                 );
                 
                 bagData.items.Add(item);
@@ -289,26 +276,24 @@ namespace Ascension.App
             
             _inventoryManager.LoadInventory(bagData);
 
-            // ✅ Debug verification
             Debug.Log($"[SaveController] ✓ Loaded inventory: {bagData.items.Count} items");
-            Debug.Log($"[SaveController]   Slots - Bag:{bagData.maxBagSlots} Pocket:{bagData.maxPocketSlots} Storage:{bagData.maxStorageSlots}");
             
-            // ✅ Log item locations
+            // ✅ Log distribution
             int bagCount = 0, pocketCount = 0, storageCount = 0;
             foreach (var item in bagData.items)
             {
-                if (item.isInBag) bagCount++;
-                else if (item.isInPocket) pocketCount++;
-                else storageCount++;
+                switch (item.location)
+                {
+                    case ItemLocation.Bag: bagCount++; break;
+                    case ItemLocation.Pocket: pocketCount++; break;
+                    case ItemLocation.Storage: storageCount++; break;
+                }
             }
             Debug.Log($"[SaveController]   Distribution - Bag:{bagCount} Pocket:{pocketCount} Storage:{storageCount}");
         }
         #endregion
 
         #region Private Methods - Equipment Conversion
-        /// <summary>
-        /// ✅ Equipment state is tracked HERE, not in inventory
-        /// </summary>
         private EquipmentSaveData ConvertToEquipmentSaveData()
         {
             if (_equipmentManager != null)
@@ -328,9 +313,6 @@ namespace Ascension.App
             };
         }
 
-        /// <summary>
-        /// ✅ Equipment loading marks items as equipped in inventory
-        /// </summary>
         private void LoadEquipmentFromSave(SaveData saveData)
         {
             if (_equipmentManager == null)
