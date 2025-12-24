@@ -10,6 +10,7 @@ Combat is 1 vs multiple enemies per room (5–20). Turn order is determined by A
 ## Features
 - **Flexible Character Builds** – allocate points into Strength, Intelligence, Agility, Endurance, and Wisdom to define playstyle
 - **Modular Inventory & Equipment System** – manage weapons, armor, and consumables with intuitive UI
+- **Equipment-Driven Skill System** – skills are unlocked and usable based on equipped weapons, enabling dynamic, build-specific combat strategies
 - **Turn-Based Combat System** – tactical battles with dynamic actions
 - **Storage & Loadout UI** – optimized for mobile and scalable to PC
 - **Clean, Modular Code** – architecture designed for maintainability and future expansion
