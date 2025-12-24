@@ -50,60 +50,45 @@ Add visual indicators to show which items are currently equipped when viewing th
 
 ================================================================================================================
 
-### 1. **Separate Inventory from Storage**
+For context, I currently have two systems: the Equipment System and the Storage/Inventory System.
+Both of these use the inventory logic, but right now it feels like spaghetti code—I can barely tell what actually belongs to the inventory.
+Do you agree that I should make the Inventory System a separate module, and have both the Storage and Equipment systems use it? This would help avoid redundancy.
 
-* **Inventory Module**: Handles the **data structure** for items, quantities, metadata, etc. It doesn’t care if it’s a player’s bag, a chest, or equipment slots.
-* **Storage Module**: Handles **how items are presented, organized, and accessed**. Think UI, bag/pocket logic, tabs, filters, scroll positions.
+My plan:
+            ┌──────────────────────┐
+            │     InventoryCore    │   <-- Core module, UI-agnostic
+            │  (InventoryManager)  │
+            │----------------------│
+            │ - Stores all items   │
+            │ - Add/Remove items   │
+            │ - Stack management   │
+            │ - Query items        │
+            │ - Events (OnChange) │
+            └─────────▲────────────┘
+                      │
+          ┌───────────┴─────────────┐
+          │                         │
+          │                         │
+┌───────────────────────┐   ┌───────────────────────┐
+│   StorageSystem/UI     │   │  EquipmentSystem/UI   │
+│  (StorageInventoryUI)  │   │ (EquipmentStorageUI) │
+│------------------------│   │----------------------│
+│ - Filter items by type │   │ - Filter items by    │
+│ - Show empty slots     │   │   equipment type     │
+│ - Display slots        │   │ - Validate gear slot │
+│ - Handle clicks/popup  │   │ - Equip/unequip logic│
+│ - Subscribe to core    │   │ - Show popups (gear, │
+│   inventory events     │   │   abilities)         │
+└────────────────────────┘   └──────────────────────┘
+          │                         │
+          │                         │
+          ▼                         ▼
+     ┌───────────┐             ┌─────────────┐
+     │  Popups   │             │  Popups     │
+     │(Gear,Item,│             │ (Gear,      │
+     │  Potion)  │             │  Ability)   │
+     └───────────┘             └─────────────┘
 
-**Benefit:** You can reuse the Inventory module for anything that holds items—equipment, chest, vendor, etc.—without duplicating logic.
-
----
-
-### 2. **Make Bags/Pockets Modular**
-
-* Each bag/pocket becomes a **container** that plugs into Storage.
-* They can define capacity, allowed item types, etc.
-* The StorageManager just orchestrates them, no need to know the internal logic of Inventory.
-
-**Example structure:**
-
-```
-Inventory
- └─ manages items, add/remove, stack, queries
-
-StorageManager
- └─ manages UI, tabs, active bag/pocket, filters, scrolling
- └─ plugs in bags/pockets (modular)
-      └─ each bag/pocket wraps an Inventory instance or references Inventory
-```
-
----
-
-### 3. **Equipment Use Case**
-
-* Equipment could just be a special Inventory instance: no UI, just data.
-* When equipping an item, you move it from Storage → Equipment Inventory.
-* Your Inventory module doesn’t need to know where the item is being used—it just handles add/remove logic.
-
----
-
-### 4. **UI Logic vs Data Logic**
-
-* **Inventory** = pure data logic, can be tested independently.
-* **Storage/UI** = presentation and interaction.
-* Keeping them separate avoids the common “spaghetti code” where UI calls break data logic or vice versa.
-
----
-
-### ✅ My Take
-
-This is the cleanest path if you want:
-
-* **Reusability** (Inventory can be used anywhere)
-* **Modularity** (Bags/Pockets can be swapped, added, or removed)
-* **Maintainability** (UI/storage logic won’t mess with item handling)
-
-The only thing to watch for: **syncing Inventory and Storage**. You’ll need clear events or method calls when items are added/removed so the UI updates.
 
 
 ================================================================================================================

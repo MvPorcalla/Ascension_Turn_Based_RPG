@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════
 // Scripts/Modules/InventorySystem/Data/BagInventory.cs
-// Bag inventory data structure
+// inventory data structure
 // ══════════════════════════════════════════════════════════════════
 
 using System;
@@ -15,7 +15,7 @@ using Ascension.Inventory.Enums;
 namespace Ascension.Inventory.Data
 {
     [Serializable]
-    public class BagInventory
+    public class InventoryCore
     {
         #region Serialized Fields
         public List<ItemInstance> allItems = new List<ItemInstance>();
@@ -36,12 +36,12 @@ namespace Ascension.Inventory.Data
         #endregion
 
         #region Constructor
-        public BagInventory()
+        public InventoryCore()
         {
             InitializeServices();
         }
 
-        public BagInventory(
+        public InventoryCore(
             ItemQueryService queryService = null,
             ItemStackingService stackingService = null,
             ItemLocationService locationService = null)
@@ -117,14 +117,14 @@ namespace Ascension.Inventory.Data
         {
             if (database == null)
             {
-                Debug.LogError("[BagInventory] Database required to add items!");
+                Debug.LogError("[InventoryCore] Database required to add items!");
                 return false;
             }
 
             ItemBaseSO itemData = database.GetItem(itemID);
             if (itemData == null)
             {
-                Debug.LogError($"[BagInventory] Item not found: {itemID}");
+                Debug.LogError($"[InventoryCore] Item not found: {itemID}");
                 return false;
             }
 
@@ -137,17 +137,17 @@ namespace Ascension.Inventory.Data
                     targetLocation = ItemLocation.Bag;
                 else
                 {
-                    Debug.LogWarning("[BagInventory] Bag full, sending to storage");
+                    Debug.LogWarning("[InventoryCore] Bag full, sending to storage");
                     if (!HasStorageSpace())
                     {
-                        Debug.LogWarning($"[BagInventory] Storage full! ({GetStorageItemCount()}/{maxStorageSlots})");
+                        Debug.LogWarning($"[InventoryCore] Storage full! ({GetStorageItemCount()}/{maxStorageSlots})");
                         return false;
                     }
                 }
             }
             else if (!HasStorageSpace())
             {
-                Debug.LogWarning($"[BagInventory] Storage full! ({GetStorageItemCount()}/{maxStorageSlots})");
+                Debug.LogWarning($"[InventoryCore] Storage full! ({GetStorageItemCount()}/{maxStorageSlots})");
                 return false;
             }
 
@@ -170,13 +170,13 @@ namespace Ascension.Inventory.Data
                     // Re-check space mid-loop
                     if (targetLocation == ItemLocation.Bag && !HasBagSpace())
                     {
-                        Debug.LogWarning("[BagInventory] Bag full, remaining items sent to storage");
+                        Debug.LogWarning("[InventoryCore] Bag full, remaining items sent to storage");
                         targetLocation = ItemLocation.Storage;
                     }
 
                     if (targetLocation == ItemLocation.Storage && !HasStorageSpace())
                     {
-                        Debug.LogWarning($"[BagInventory] Storage full! Added {i}/{quantity} items");
+                        Debug.LogWarning($"[InventoryCore] Storage full! Added {i}/{quantity} items");
                         OnInventoryChanged?.Invoke();
                         return false;
                     }
@@ -193,7 +193,7 @@ namespace Ascension.Inventory.Data
         {
             if (!allItems.Contains(item))
             {
-                Debug.LogWarning("[BagInventory] Item not found in inventory");
+                Debug.LogWarning("[InventoryCore] Item not found in inventory");
                 return false;
             }
 
@@ -217,7 +217,7 @@ namespace Ascension.Inventory.Data
             ItemBaseSO itemData = database.GetItem(item.itemID);
             if (itemData == null)
             {
-                Debug.LogError($"[BagInventory] Item data not found: {item.itemID}");
+                Debug.LogError($"[InventoryCore] Item data not found: {item.itemID}");
                 return false;
             }
 
@@ -234,7 +234,7 @@ namespace Ascension.Inventory.Data
             ItemBaseSO itemData = database.GetItem(item.itemID);
             if (itemData == null)
             {
-                Debug.LogError($"[BagInventory] Item data not found: {item.itemID}");
+                Debug.LogError($"[InventoryCore] Item data not found: {item.itemID}");
                 return false;
             }
 
@@ -251,7 +251,7 @@ namespace Ascension.Inventory.Data
             ItemBaseSO itemData = database.GetItem(item.itemID);
             if (itemData == null)
             {
-                Debug.LogError($"[BagInventory] Item data not found: {item.itemID}");
+                Debug.LogError($"[InventoryCore] Item data not found: {item.itemID}");
                 return false;
             }
 
@@ -271,21 +271,21 @@ namespace Ascension.Inventory.Data
         {
             maxBagSlots += additionalSlots;
             OnMaxSlotsChanged?.Invoke(maxBagSlots);
-            Debug.Log($"[BagInventory] Bag upgraded to {maxBagSlots} slots");
+            Debug.Log($"[InventoryCore] Bag upgraded to {maxBagSlots} slots");
         }
 
         public void UpgradePocketSlots(int additionalSlots)
         {
             maxPocketSlots += additionalSlots;
             OnMaxSlotsChanged?.Invoke(maxPocketSlots);
-            Debug.Log($"[BagInventory] Pocket upgraded to {maxPocketSlots} slots");
+            Debug.Log($"[InventoryCore] Pocket upgraded to {maxPocketSlots} slots");
         }
 
         public void UpgradeStorageSlots(int additionalSlots)
         {
             maxStorageSlots += additionalSlots;
             OnMaxSlotsChanged?.Invoke(maxStorageSlots);
-            Debug.Log($"[BagInventory] Storage upgraded to {maxStorageSlots} slots");
+            Debug.Log($"[InventoryCore] Storage upgraded to {maxStorageSlots} slots");
         }
 
         public void SetSlotCapacities(int bagSlots, int pocketSlots, int storageSlots)
@@ -294,7 +294,7 @@ namespace Ascension.Inventory.Data
             maxPocketSlots = pocketSlots;
             maxStorageSlots = storageSlots;
             OnMaxSlotsChanged?.Invoke(maxStorageSlots);
-            Debug.Log($"[BagInventory] Slots set - Bag: {maxBagSlots}, Pocket: {maxPocketSlots}, Storage: {maxStorageSlots}");
+            Debug.Log($"[InventoryCore] Slots set - Bag: {maxBagSlots}, Pocket: {maxPocketSlots}, Storage: {maxStorageSlots}");
         }
 
         #endregion

@@ -209,7 +209,7 @@ namespace Ascension.App
                 };
             }
 
-            BagInventoryData bagData = _inventoryManager.SaveInventory();
+            InventoryCoreData bagData = _inventoryManager.SaveInventory();
             
             ItemInstanceData[] itemArray = new ItemInstanceData[bagData.items.Count];
             
@@ -252,7 +252,7 @@ namespace Ascension.App
                 return;
             }
 
-            BagInventoryData bagData = new BagInventoryData
+            InventoryCoreData bagData = new InventoryCoreData
             {
                 maxBagSlots = saveData.inventoryData.maxBagSlots,
                 maxPocketSlots = saveData.inventoryData.maxPocketSlots,

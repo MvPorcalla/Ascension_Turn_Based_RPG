@@ -19,7 +19,7 @@ namespace Ascension.Inventory.Manager
         [Header("References")]
         [SerializeField] private GameDatabaseSO database;
 
-        public BagInventory Inventory { get; private set; }
+        public InventoryCore Inventory { get; private set; }
         public GameDatabaseSO Database => database;
 
         public event System.Action OnInventoryLoaded;
@@ -45,7 +45,7 @@ namespace Ascension.Inventory.Manager
 
         private void InitializeInventory()
         {
-            Inventory = new BagInventory();
+            Inventory = new InventoryCore();
             Debug.Log("[InventoryManager] Inventory system created");
         }
 
@@ -75,7 +75,7 @@ namespace Ascension.Inventory.Manager
         /// <summary>
         /// ✅ UPDATED: Load inventory from save data with automatic migration
         /// </summary>
-        public void LoadInventory(BagInventoryData data)
+        public void LoadInventory(InventoryCoreData data)
         {
             Inventory.allItems = data.items;
             Inventory.maxBagSlots = data.maxBagSlots;
@@ -91,9 +91,9 @@ namespace Ascension.Inventory.Manager
         /// <summary>
         /// ✅ UPDATED: Save inventory to data (using FromInventory factory)
         /// </summary>
-        public BagInventoryData SaveInventory()
+        public InventoryCoreData SaveInventory()
         {
-            return BagInventoryData.FromInventory(Inventory);
+            return InventoryCoreData.FromInventory(Inventory);
         }
 
         /// <summary>

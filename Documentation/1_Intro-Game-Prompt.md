@@ -62,28 +62,31 @@ Scripts/
 │   │   ├── Manager/
 │   │   │   └── InventoryManager.cs
 │   │   ├── Data/
-│   │   │   ├── BagInventory.cs
-│   │   │   ├── ItemInstance.cs
-│   │   │   └── BagInventoryData.cs
+│   │   │   ├── InventoryCore.cs             // rename to InventoryCore.cs
+│   │   │   ├── InventoryCoreData.cs         // rename to InventoryCoreData.cs
+│   │   │   └── ItemInstance.cs
 │   │   ├── Enum/
 │   │   │   └── InventoryEnums.cs
 │   │   ├── Popup/
 │   │   │   ├── InventoryPotionPopup.cs
-│   │   │   ├── InventoryItemPopup.cs
-│   │   │   └── InventoryGearPopup.cs
+│   │   │   └── InventoryItemPopup.cs
 │   │   └── UI/
-│   │       ├── StorageRoomContext.cs
-│   │       ├── StorageRoomUI.cs
+│   │       ├── BagInventoryUI.cs
+│   │       ├── PocketInevtoryUI.cs
+│   │       ├── StorageInventoryUI.cs
+│   │       ├── StorageRoomController.cs
+│   │       ├── StoragePopupContext.cs
 │   │       ├── ItemSlotUI.cs
 │   │       └── BuffLineUI.cs
 │   │
 │   ├── EquipmentSystem/                     // In-progress module
 │   │   ├── Manager/
+│   │   │   ├── SkillLoadoutManager.cs
 │   │   │   └── EquipmentManager.cs (IGameService)
 │   │   │
 │   │   ├── Data/
 │   │   │   ├── EquippedGear.cs (Weapon, Helmet, Chest, etc.)
-│   │   │   └── HotbarLoadout.cs (Item1, Item2, Item3 references)
+│   │   │   └── SkillLoadout.cs (Item1, Item2, Item3 references)
 │   │   │
 │   │   ├── Services/
 │   │   │   ├── GearSlotService.cs (Slot validation, type checking)
@@ -91,10 +94,10 @@ Scripts/
 │   │   │   └── GearStatsService.cs (Calculate total item stats)
 │   │   │
 │   │   ├── UI/
-│   │   │   ├── EquipmentRoomContext.cs
+│   │   │   ├── EquipmentPopupContext.cs
 │   │   │   ├── EquipmentRoomUI.cs (Main controller)
 │   │   │   ├── GearSlotUI.cs (Individual gear slot display)
-│   │   │   ├── HotbarSlotUI.cs (Hotbar item slot)
+│   │   │   ├── SkillSlotUI.cs (Hotbar item slot)
 │   │   │   └── EquipmentStorageUI.cs (Filtered storage view)
 │   │   │
 │   │   └── Enums/
@@ -136,6 +139,3 @@ Scripts/
             └── GameDatabaseSO.cs
 
 ---
-
-Current issue:
-[describe system bug or refactor goal here]
