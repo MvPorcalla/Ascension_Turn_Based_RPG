@@ -3,7 +3,19 @@
 
 # Ascension: Turn-Based RPG
 
-Ascension is a turn-based RPG built in Unity 2022.3 LTS. Players manage a party of characters, plan strategies in tactical battles, and advance through engaging gameplay. The project currently focuses on core systems, targeting mobile platforms first, with PC support planned for the future.
+**Ascension** is a portrait-mode, mobile-first 2D turn-based RPG built in Unity 2022.3 LTS. Players can fully customize their characters’ stats, abilities, and equipment, creating unique builds instead of following fixed templates.
+
+Combat is 1 vs multiple enemies per room (5–20). Turn order is determined by Attack Speed. Skills have per-turn cooldowns and define their maximum number of selectable targets. The skill system is equipment-driven: equipped weapons unlock specific skills. Skills unlock via level and stat requirements rather than classes, and core stats (STR, AGI, END, WIS) are fully respeccable. Gear comes in rarity tiers. The theme is fantasy isekai, and the UI is tap-based.
+
+## Features
+- **Flexible Character Builds** – allocate points into Strength, Intelligence, Agility, Endurance, and Wisdom to define playstyle
+- **Modular Inventory & Equipment System** – manage weapons, armor, and consumables with intuitive UI
+- **Turn-Based Combat System** – tactical battles with dynamic actions
+- **Storage & Loadout UI** – optimized for mobile and scalable to PC
+- **Clean, Modular Code** – architecture designed for maintainability and future expansion
+
+## About This Project
+This is a personal prototype exploring **modular game architecture, clean UI/UX design, and scalable inventory systems**. It demonstrates my skills in **Unity development, C# programming, and game system design**, with a focus on creating **polished, player-friendly interfaces**.
 
 ---
 
