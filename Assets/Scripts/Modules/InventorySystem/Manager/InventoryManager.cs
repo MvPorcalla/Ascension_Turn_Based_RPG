@@ -1,51 +1,77 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\Modules\InventorySystem\Manager\InventoryManager.cs
-// ✅ UPDATED: Support for loading/saving slot capacities
-// Manages player inventory and item database
+// ✅ REFACTORED: Clean separation of concerns
 // ════════════════════════════════════════════
 
 using UnityEngine;
-using Ascension.Data.SO.Item;
 using Ascension.Data.SO.Database;
+using Ascension.Data.SO.Item;
 using Ascension.Inventory.Data;
 using Ascension.Core;
 
 namespace Ascension.Inventory.Manager
 {
+    /// <summary>
+    /// Main manager for the Inventory Module.
+    /// Provides a clean API for both Storage System and Equipment System.
+    /// </summary>
     public class InventoryManager : MonoBehaviour, IGameService
     {
+        #region Singleton
         public static InventoryManager Instance { get; private set; }
+        #endregion
 
+        #region Serialized Fields
         [Header("References")]
         [SerializeField] private GameDatabaseSO database;
+        #endregion
 
+        #region Properties
         public InventoryCore Inventory { get; private set; }
+        public SlotCapacityManager Capacity { get; private set; }
         public GameDatabaseSO Database => database;
+        #endregion
 
+        #region Events
         public event System.Action OnInventoryLoaded;
+        #endregion
 
+        #region Unity Callbacks
         private void Awake()
         {
             InitializeSingleton();
         }
+        #endregion
 
         #region IGameService Implementation
         /// <summary>
-        /// ✅ FIXED: Explicit initialization called by ServiceContainer
+        /// ✅ REFACTORED: Clean initialization
         /// </summary>
         public void Initialize()
         {
             Debug.Log("[InventoryManager] Initializing...");
             
+            InitializeCapacityManager();
             InitializeInventory();
             InitializeDatabase();
             
             Debug.Log("[InventoryManager] Ready");
         }
 
+        private void InitializeCapacityManager()
+        {
+            Capacity = new SlotCapacityManager(
+                bagSlots: 12,
+                pocketSlots: 6,
+                storageSlots: 60
+            );
+
+            Debug.Log("[InventoryManager] Capacity manager created");
+        }
+
         private void InitializeInventory()
         {
-            Inventory = new InventoryCore();
+            Inventory = new InventoryCore(Capacity);
             Debug.Log("[InventoryManager] Inventory system created");
         }
 
@@ -63,9 +89,9 @@ namespace Ascension.Inventory.Manager
         }
         #endregion
 
-        #region Public Methods
+        #region Public API - Core Operations
         /// <summary>
-        /// Add item to player inventory
+        /// Add item to inventory
         /// </summary>
         public bool AddItem(string itemID, int quantity = 1, bool addToBag = false)
         {
@@ -73,51 +99,96 @@ namespace Ascension.Inventory.Manager
         }
 
         /// <summary>
-        /// ✅ UPDATED: Load inventory from save data with automatic migration
+        /// Remove item from inventory
+        /// </summary>
+        public bool RemoveItem(ItemInstance item, int quantity = 1)
+        {
+            return Inventory.RemoveItem(item, quantity);
+        }
+
+        /// <summary>
+        /// Check if inventory has item
+        /// </summary>
+        public bool HasItem(string itemID, int quantity = 1)
+        {
+            return Inventory.HasItem(itemID, quantity);
+        }
+
+        /// <summary>
+        /// Get total count of specific item
+        /// </summary>
+        public int GetItemCount(string itemID)
+        {
+            return Inventory.GetItemCount(itemID);
+        }
+        #endregion
+
+        #region Public API - Capacity Management
+        /// <summary>
+        /// Upgrade bag capacity
+        /// </summary>
+        public void UpgradeBag(int additionalSlots)
+        {
+            Capacity.UpgradeBag(additionalSlots);
+        }
+
+        /// <summary>
+        /// Upgrade pocket capacity
+        /// </summary>
+        public void UpgradePocket(int additionalSlots)
+        {
+            Capacity.UpgradePocket(additionalSlots);
+        }
+
+        /// <summary>
+        /// Upgrade storage capacity
+        /// </summary>
+        public void UpgradeStorage(int additionalSlots)
+        {
+            Capacity.UpgradeStorage(additionalSlots);
+        }
+        #endregion
+
+        #region Public API - Save/Load
+        /// <summary>
+        /// ✅ REFACTORED: Load with capacity restoration
         /// </summary>
         public void LoadInventory(InventoryCoreData data)
         {
+            if (data == null)
+            {
+                Debug.LogWarning("[InventoryManager] Cannot load null data");
+                return;
+            }
+
+            // Restore capacity settings
+            Capacity.SetCapacities(
+                data.maxBagSlots,
+                data.maxPocketSlots,
+                data.maxStorageSlots
+            );
+
+            // Restore inventory items
             Inventory.allItems = data.items;
-            Inventory.maxBagSlots = data.maxBagSlots;
-            Inventory.maxPocketSlots = data.maxPocketSlots;
-            Inventory.maxStorageSlots = data.maxStorageSlots;
 
             Debug.Log($"[InventoryManager] Loaded {Inventory.allItems.Count} items");
-            Debug.Log($"[InventoryManager] Slots - Bag: {data.maxBagSlots}, Pocket: {data.maxPocketSlots}, Storage: {data.maxStorageSlots}");
+            Debug.Log($"[InventoryManager] Capacities - Bag: {data.maxBagSlots}, Pocket: {data.maxPocketSlots}, Storage: {data.maxStorageSlots}");
 
             OnInventoryLoaded?.Invoke();
         }
 
         /// <summary>
-        /// ✅ UPDATED: Save inventory to data (using FromInventory factory)
+        /// ✅ REFACTORED: Save with capacity data
         /// </summary>
         public InventoryCoreData SaveInventory()
         {
-            return InventoryCoreData.FromInventory(Inventory);
-        }
-
-        /// <summary>
-        /// ✅ NEW: Upgrade storage capacity (for room upgrade feature)
-        /// </summary>
-        public void UpgradeStorage(int additionalSlots)
-        {
-            Inventory.UpgradeStorageSlots(additionalSlots);
-        }
-
-        /// <summary>
-        /// ✅ NEW: Upgrade bag capacity
-        /// </summary>
-        public void UpgradeBag(int additionalSlots)
-        {
-            Inventory.UpgradeBagSlots(additionalSlots);
-        }
-
-        /// <summary>
-        /// ✅ NEW: Upgrade pocket capacity
-        /// </summary>
-        public void UpgradePocket(int additionalSlots)
-        {
-            Inventory.UpgradePocketSlots(additionalSlots);
+            return new InventoryCoreData
+            {
+                items = new System.Collections.Generic.List<ItemInstance>(Inventory.allItems),
+                maxBagSlots = Capacity.MaxBagSlots,
+                maxPocketSlots = Capacity.MaxPocketSlots,
+                maxStorageSlots = Capacity.MaxStorageSlots
+            };
         }
         #endregion
 
@@ -140,7 +211,7 @@ namespace Ascension.Inventory.Manager
         {
             if (database == null)
             {
-                Debug.LogError("database not assigned!");
+                Debug.LogError("Database not assigned!");
                 return;
             }
 
@@ -161,7 +232,6 @@ namespace Ascension.Inventory.Manager
             }
 
             Debug.Log($"[InventoryManager] Test items added! Total: {Inventory.allItems.Count}");
-            Debug.Log($"[InventoryManager] Abilities excluded from storage (managed separately)");
         }
 
         [ContextMenu("Debug: Clear All Items")]
@@ -171,101 +241,21 @@ namespace Ascension.Inventory.Manager
             Debug.Log("[InventoryManager] All items cleared!");
         }
 
-        [ContextMenu("Debug: Print Inventory")]
+        [ContextMenu("Debug: Print Inventory Summary")]
         public void DebugPrintInventory()
         {
-            Debug.Log($"=== BAG ITEMS ({Inventory.GetBagItemCount()}/{Inventory.maxBagSlots}) ===");
-            foreach (var item in Inventory.GetBagItems())
-            {
-                bool isEquipped = Equipment.Manager.EquipmentManager.Instance?.IsItemEquipped(item.itemID) ?? false;
-                string equippedTag = isEquipped ? "[EQUIPPED]" : "";
-                Debug.Log($"{item.itemID} x{item.quantity} {equippedTag}");
-            }
-
-            Debug.Log($"\n=== POCKET ITEMS ({Inventory.GetPocketItemCount()}/{Inventory.maxPocketSlots}) ===");
-            foreach (var item in Inventory.GetPocketItems())
-            {
-                Debug.Log($"{item.itemID} x{item.quantity}");
-            }
-
-            Debug.Log($"\n=== STORAGE ITEMS ({Inventory.GetStorageItems().Count}/{Inventory.maxStorageSlots}) ===");
-            foreach (var item in Inventory.GetStorageItems())
-            {
-                Debug.Log($"{item.itemID} x{item.quantity}");
-            }
-
-            Debug.Log($"\nTotal Items: {Inventory.allItems.Count}");
-            Debug.Log($"Empty Bag Slots: {Inventory.GetEmptyBagSlots()}");
-            Debug.Log($"Empty Pocket Slots: {Inventory.GetEmptyPocketSlots()}");
+            Debug.Log($"=== INVENTORY SUMMARY ===");
+            Debug.Log($"Bag: {Inventory.GetBagItemCount()}/{Capacity.MaxBagSlots}");
+            Debug.Log($"Pocket: {Inventory.GetPocketItemCount()}/{Capacity.MaxPocketSlots}");
+            Debug.Log($"Storage: {Inventory.GetStorageItemCount()}/{Capacity.MaxStorageSlots}");
+            Debug.Log($"Total Items: {Inventory.allItems.Count}");
         }
 
         [ContextMenu("Debug: Upgrade Storage (+10 slots)")]
         public void DebugUpgradeStorage()
         {
             UpgradeStorage(10);
-            Debug.Log($"[InventoryManager] Storage upgraded! New capacity: {Inventory.maxStorageSlots}");
         }
-
-        /// <summary>
-        /// This should fail gracefully when storage is full
-        /// </summary>
-        [ContextMenu("Debug: Test Storage Overflow")]
-        public void DebugTestStorageOverflow()
-        {
-            Debug.Log("=== TESTING STORAGE OVERFLOW ===");
-            
-            // 1. Check current capacity
-            int currentItems = Inventory.GetStorageItemCount();
-            int maxSlots = Inventory.maxStorageSlots;
-            int emptySlots = Inventory.GetEmptyStorageSlots();
-            
-            Debug.Log($"Current: {currentItems}/{maxSlots} (Empty: {emptySlots})");
-            
-            // 2. Fill storage to the brim
-            int itemsToAdd = emptySlots + 5; // Try to add MORE than available
-            Debug.Log($"Attempting to add {itemsToAdd} items (should fail after {emptySlots})...");
-            
-            for (int i = 0; i < itemsToAdd; i++)
-            {
-                bool success = AddItem("weapon_wooden_bow", 1, false);
-                
-                if (!success)
-                {
-                    Debug.LogWarning($"✓ Overflow protection worked! Failed at item {i + 1}");
-                    break;
-                }
-            }
-            
-            // 3. Verify final state
-            int finalCount = Inventory.GetStorageItemCount();
-            Debug.Log($"Final: {finalCount}/{maxSlots} (Empty: {Inventory.GetEmptyStorageSlots()})");
-            
-            if (finalCount == maxSlots)
-            {
-                Debug.Log("✅ PASS: Storage filled exactly to max capacity");
-            }
-            else if (finalCount > maxSlots)
-            {
-                Debug.LogError($"❌ FAIL: Storage overflow! {finalCount} > {maxSlots}");
-            }
-            else
-            {
-                Debug.Log($"⚠️ WARNING: Storage not full? {finalCount}/{maxSlots}");
-            }
-        }
-
-        /// <summary>
-        /// ✅ NEW: Quick check storage capacity
-        /// </summary>
-        [ContextMenu("Debug: Check Storage Capacity")]
-        public void DebugCheckStorageCapacity()
-        {
-            Debug.Log($"=== STORAGE CAPACITY ===");
-            Debug.Log($"Used: {Inventory.GetStorageItemCount()}/{Inventory.maxStorageSlots}");
-            Debug.Log($"Empty Slots: {Inventory.GetEmptyStorageSlots()}");
-            Debug.Log($"Can Add More: {(Inventory.HasStorageSpace() ? "YES" : "NO")}");
-        }
-
         #endregion
     }
 }

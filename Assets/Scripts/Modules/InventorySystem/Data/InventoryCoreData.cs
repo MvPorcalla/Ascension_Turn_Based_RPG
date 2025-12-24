@@ -1,12 +1,10 @@
 // ──────────────────────────────────────────────────
 // Assets\Scripts\Modules\InventorySystem\Data\InventoryCoreData.cs
-// Serializable data class for saving/loading BagInventory
+// Serializable data class for saving/loading inventory
 // ──────────────────────────────────────────────────
 
 using System;
 using System.Collections.Generic;
-using Ascension.Inventory.Manager;
-using Ascension.Inventory.Data;
 
 namespace Ascension.Inventory.Data
 {
@@ -16,19 +14,19 @@ namespace Ascension.Inventory.Data
         public List<ItemInstance> items = new List<ItemInstance>();
         public int maxBagSlots = 12;
         public int maxPocketSlots = 6;
-        public int maxStorageSlots = 60; // ✅ NEW: Storage capacity
+        public int maxStorageSlots = 60;
 
         /// <summary>
-        /// ✅ UPDATED: Create from BagInventory (includes storage slots)
+        /// ✅ FIXED: Create from InventoryManager (not InventoryCore)
         /// </summary>
-        public static InventoryCoreData FromInventory(InventoryCore inventory)
+        public static InventoryCoreData FromInventoryManager(Manager.InventoryManager manager)
         {
             return new InventoryCoreData
             {
-                items = new List<ItemInstance>(inventory.allItems),
-                maxBagSlots = inventory.maxBagSlots,
-                maxPocketSlots = inventory.maxPocketSlots,
-                maxStorageSlots = inventory.maxStorageSlots // ✅ NEW
+                items = new List<ItemInstance>(manager.Inventory.allItems),
+                maxBagSlots = manager.Capacity.MaxBagSlots,      // ✅ FIXED
+                maxPocketSlots = manager.Capacity.MaxPocketSlots, // ✅ FIXED
+                maxStorageSlots = manager.Capacity.MaxStorageSlots // ✅ FIXED
             };
         }
 

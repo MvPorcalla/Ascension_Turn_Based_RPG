@@ -11,9 +11,10 @@ using Ascension.Inventory.Manager;
 using Ascension.Inventory.Data;
 using Ascension.Inventory.Enums;
 using Ascension.Inventory.Popup;
+using Ascension.Inventory.UI;
 using Ascension.SharedUI.Popups;
 
-namespace Ascension.Inventory.UI
+namespace Ascension.Storage.UI
 {
     /// <summary>
     /// Displays and manages the storage inventory section with filtering

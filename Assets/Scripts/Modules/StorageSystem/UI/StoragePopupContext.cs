@@ -10,7 +10,7 @@ using Ascension.Inventory.Enums;
 using Ascension.Inventory.Manager;
 using Ascension.SharedUI.Popups;
 
-namespace Ascension.Inventory.UI
+namespace Ascension.Storage.UI
 {
     public class StoragePopupContext : IGearPopupContext
     {

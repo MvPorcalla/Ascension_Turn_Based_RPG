@@ -1,6 +1,6 @@
 // ──────────────────────────────────────────────────
-// Assets\Scripts\Modules\InventorySystem\UI\PocketInventoryUI.cs
-// Manages pocket inventory display and interaction
+// Assets\Scripts\Modules\InventorySystem\UI\BagInventoryUI.cs
+// Manages bag inventory display and interaction
 // ──────────────────────────────────────────────────
 
 using System.Collections.Generic;
@@ -10,21 +10,22 @@ using Ascension.Inventory.Manager;
 using Ascension.Inventory.Data;
 using Ascension.Inventory.Enums;
 using Ascension.Inventory.Popup;
+using Ascension.Inventory.UI;
 using Ascension.SharedUI.Popups;
 
-namespace Ascension.Inventory.UI
+namespace Ascension.Storage.UI
 {
     /// <summary>
-    /// Displays and manages the pocket inventory section
+    /// Displays and manages the bag inventory section
     /// </summary>
-    public class PocketInventoryUI : MonoBehaviour
+    public class BagInventoryUI : MonoBehaviour
     {
         [Header("UI References")]
-        [SerializeField] private Transform pocketContent;
+        [SerializeField] private Transform inventoryContent;
         [SerializeField] private GameObject itemSlotPrefab;
 
         [Header("Configuration")]
-        [SerializeField] private int maxPocketSlots = 6; // Should match InventoryManager
+        [SerializeField] private int maxBagSlots = 12; // Should match InventoryManager
 
         [Header("Popups")]
         [SerializeField] private InventoryItemPopup itemPopup;
@@ -39,7 +40,7 @@ namespace Ascension.Inventory.UI
         {
             InitializeSlots();
             SubscribeToEvents();
-            RefreshPocket();
+            RefreshBag();
         }
 
         private void OnDestroy()
@@ -55,8 +56,8 @@ namespace Ascension.Inventory.UI
         {
             if (InventoryManager.Instance != null)
             {
-                InventoryManager.Instance.Inventory.OnInventoryChanged += RefreshPocket;
-                InventoryManager.Instance.OnInventoryLoaded += RefreshPocket;
+                InventoryManager.Instance.Inventory.OnInventoryChanged += RefreshBag;
+                InventoryManager.Instance.OnInventoryLoaded += RefreshBag;
             }
         }
 
@@ -64,8 +65,8 @@ namespace Ascension.Inventory.UI
         {
             if (InventoryManager.Instance != null)
             {
-                InventoryManager.Instance.Inventory.OnInventoryChanged -= RefreshPocket;
-                InventoryManager.Instance.OnInventoryLoaded -= RefreshPocket;
+                InventoryManager.Instance.Inventory.OnInventoryChanged -= RefreshBag;
+                InventoryManager.Instance.OnInventoryLoaded -= RefreshBag;
             }
         }
 
@@ -75,7 +76,7 @@ namespace Ascension.Inventory.UI
 
         /// <summary>
         /// ✅ ONE-TIME: Create all slots upfront (runs once on scene load)
-        /// Performance: ~5-8ms on low-end devices (one-time cost)
+        /// Performance: ~10-15ms on low-end devices (one-time cost)
         /// </summary>
         private void InitializeSlots()
         {
@@ -84,18 +85,18 @@ namespace Ascension.Inventory.UI
             // Get actual max from InventoryManager if available
             if (InventoryManager.Instance != null)
             {
-                maxPocketSlots = InventoryManager.Instance.Inventory.maxPocketSlots;
+                maxBagSlots = InventoryManager.Instance.Capacity.MaxBagSlots;
             }
 
             // Pre-allocate all slots
-            for (int i = 0; i < maxPocketSlots; i++)
+            for (int i = 0; i < maxBagSlots; i++)
             {
-                GameObject slotObj = Instantiate(itemSlotPrefab, pocketContent);
+                GameObject slotObj = Instantiate(itemSlotPrefab, inventoryContent);
                 ItemSlotUI slotUI = slotObj.GetComponent<ItemSlotUI>();
 
                 if (slotUI == null)
                 {
-                    Debug.LogError("[PocketInventoryUI] ItemSlotUI component missing on prefab!");
+                    Debug.LogError("[BagInventoryUI] ItemSlotUI component missing on prefab!");
                     Destroy(slotObj);
                     continue;
                 }
@@ -105,7 +106,7 @@ namespace Ascension.Inventory.UI
             }
 
             isInitialized = true;
-            Debug.Log($"[PocketInventoryUI] Pre-allocated {maxPocketSlots} pocket slots");
+            Debug.Log($"[BagInventoryUI] Pre-allocated {maxBagSlots} bag slots");
         }
 
         #endregion
@@ -114,26 +115,26 @@ namespace Ascension.Inventory.UI
 
         /// <summary>
         /// ✅ OPTIMIZED: Only updates existing slots, NO instantiation
-        /// Performance: ~0.3-0.5ms per refresh (vs 10-15ms with old approach)
+        /// Performance: ~0.5-1ms per refresh (vs 20-30ms with old approach)
         /// </summary>
-        private void RefreshPocket()
+        private void RefreshBag()
         {
             if (!isInitialized)
             {
                 InitializeSlots();
             }
 
-            var pocketItems = InventoryManager.Instance.Inventory.GetPocketItems();
+            var bagItems = InventoryManager.Instance.Inventory.GetBagItems();
 
             // Update each slot (item or empty)
-            for (int i = 0; i < maxPocketSlots; i++)
+            for (int i = 0; i < maxBagSlots; i++)
             {
                 ItemSlotUI slot = slotCache[i];
 
-                if (i < pocketItems.Count)
+                if (i < bagItems.Count)
                 {
                     // Show item
-                    ItemInstance item = pocketItems[i];
+                    ItemInstance item = bagItems[i];
                     ItemBaseSO itemData = InventoryManager.Instance.Database.GetItem(item.itemID);
 
                     if (itemData != null)
@@ -143,7 +144,7 @@ namespace Ascension.Inventory.UI
                     }
                     else
                     {
-                        Debug.LogWarning($"[PocketInventoryUI] Item data not found: {item.itemID}");
+                        Debug.LogWarning($"[BagInventoryUI] Item data not found: {item.itemID}");
                         slot.ShowEmpty();
                         slot.gameObject.SetActive(true);
                     }
@@ -167,22 +168,22 @@ namespace Ascension.Inventory.UI
 
             if (itemData == null)
             {
-                Debug.LogError($"[PocketInventoryUI] Item data not found: {item.itemID}");
+                Debug.LogError($"[BagInventoryUI] Item data not found: {item.itemID}");
                 return;
             }
 
             // Route to appropriate popup based on item type
             if (itemData is PotionSO potion)
             {
-                potionPopup.ShowPotion(potion, item, ItemLocation.Pocket);
+                potionPopup.ShowPotion(potion, item, ItemLocation.Bag);
             }
             else if (itemData.IsStackable)
             {
-                itemPopup.ShowItem(itemData, item, ItemLocation.Pocket);
+                itemPopup.ShowItem(itemData, item, ItemLocation.Bag);
             }
             else if (itemData is WeaponSO || itemData is GearSO)
             {
-                var context = new StoragePopupContext(ItemLocation.Pocket);
+                var context = new StoragePopupContext(ItemLocation.Bag);
                 GearPopup.Instance.Show(itemData, item, context);
             }
         }
@@ -196,7 +197,7 @@ namespace Ascension.Inventory.UI
         /// </summary>
         public void ForceRefresh()
         {
-            RefreshPocket();
+            RefreshBag();
         }
 
         /// <summary>

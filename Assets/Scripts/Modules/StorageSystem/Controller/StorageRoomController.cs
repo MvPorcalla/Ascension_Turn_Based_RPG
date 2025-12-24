@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────────
-// Assets\Scripts\Modules\InventorySystem\UI\StorageRoomController.cs
+// Assets\Scripts\Modules\StorageSystem\Controller\StorageRoomController.cs
 // High-level coordinator for Storage Room scene
 // ──────────────────────────────────────────────────
 
@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Ascension.Inventory.Manager;
 
-namespace Ascension.Inventory.UI
+namespace Ascension.Storage.UI
 {
     /// <summary>
     /// Main controller for the Storage Room scene.

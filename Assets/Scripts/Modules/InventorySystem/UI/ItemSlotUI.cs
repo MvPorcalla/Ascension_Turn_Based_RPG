@@ -1,6 +1,6 @@
 // ──────────────────────────────────────────────────
 // Assets\Scripts\Modules\InventorySystem\UI\ItemSlotUI.cs
-// UI component for displaying an item slot in inventory/storage
+// UI component for displaying an item slot in inventory/storage/Equipment
 // ──────────────────────────────────────────────────
 
 using UnityEngine;

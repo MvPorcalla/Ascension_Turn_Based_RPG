@@ -11,7 +11,7 @@ using TMPro;
 /// Makes it easier to set up buff lines programmatically
 /// </summary>
 
-namespace Ascension.Inventory.UI
+namespace Ascension.SharedUI.Components
 {
     public class BuffLineUI : MonoBehaviour
     {
