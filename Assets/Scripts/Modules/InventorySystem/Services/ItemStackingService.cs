@@ -14,12 +14,12 @@ namespace Ascension.Inventory.Services
 {
     /// <summary>
     /// Service responsible for item stacking logic (merge/split operations)
-    /// ✅ MIGRATED: Now uses ItemLocation enum instead of boolean flags
+    /// Now uses ItemLocation enum instead of boolean flags
     /// </summary>
     public class ItemStackingService
     {
         /// <summary>
-        /// ✅ MIGRATED: Find existing stack in specific location that has room
+        /// Find existing stack in specific location that has room
         /// </summary>
         public ItemInstance FindStackWithSpace(
             List<ItemInstance> allItems,
@@ -57,7 +57,7 @@ namespace Ascension.Inventory.Services
         }
 
         /// <summary>
-        /// ✅ MIGRATED: Create new stacks with specific location
+        /// Create new stacks with specific location
         /// </summary>
         public List<ItemInstance> CreateNewStacks(
             string itemID,
@@ -99,12 +99,12 @@ namespace Ascension.Inventory.Services
             return new ItemInstance(
                 source.itemID,
                 quantityToSplit,
-                source.location  // ✅ Preserve location
+                source.location
             );
         }
 
         /// <summary>
-        /// ✅ MIGRATED: Add quantity to existing stack, or create new stacks if needed
+        /// Add quantity to existing stack, or create new stacks if needed
         /// </summary>
         public void AddToExistingOrCreateNew(
             List<ItemInstance> allItems,

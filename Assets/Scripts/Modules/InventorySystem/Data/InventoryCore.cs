@@ -29,7 +29,7 @@ namespace Ascension.Inventory.Data
         private ItemQueryService _queryService;
         private ItemStackingService _stackingService;
         private ItemLocationService _locationService;
-        private SlotCapacityManager _capacityManager; // ✅ NEW: Injected dependency
+        private SlotCapacityManager _capacityManager;
         #endregion
 
         #region Constructor
@@ -91,7 +91,7 @@ namespace Ascension.Inventory.Data
         public int GetStorageItemCount()
             => _queryService.GetStorageItemCount(allItems);
 
-        // ✅ REFACTORED: Delegate to capacity manager
+        // Delegate to capacity manager for space queries
         public bool HasBagSpace()
             => _capacityManager.HasSpace(ItemLocation.Bag, GetBagItemCount());
 
@@ -115,7 +115,7 @@ namespace Ascension.Inventory.Data
         #region Add/Remove Methods
 
         /// <summary>
-        /// ✅ REFACTORED: Add item with capacity validation
+        /// Add item to inventory with location preference and capacity checks
         /// </summary>
         public bool AddItem(string itemID, int quantity = 1, bool addToBag = false, GameDatabaseSO database = null)
         {
@@ -213,7 +213,6 @@ namespace Ascension.Inventory.Data
                 return false;
             }
 
-            // ✅ Use capacity manager for validation
             bool success = _locationService.MoveToBag(
                 allItems, 
                 item, 
@@ -273,7 +272,7 @@ namespace Ascension.Inventory.Data
         #region Utility Methods
 
         /// <summary>
-        /// ✅ REFACTORED: Store all bag items (excluding equipped gear)
+        /// Store all bag items (excluding equipped gear)
         /// </summary>
         public void StoreAllItems()
         {

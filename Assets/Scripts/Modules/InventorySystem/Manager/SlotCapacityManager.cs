@@ -6,13 +6,10 @@
 using System;
 using UnityEngine;
 using Ascension.Inventory.Enums;
+using Ascension.Inventory.Config;
 
 namespace Ascension.Inventory.Manager
 {
-    /// <summary>
-    /// Service responsible for managing slot capacities across all inventory locations.
-    /// Separates capacity management from core inventory logic.
-    /// </summary>
     public class SlotCapacityManager
     {
         #region Fields
@@ -32,18 +29,22 @@ namespace Ascension.Inventory.Manager
         #endregion
 
         #region Constructor
-        public SlotCapacityManager(int bagSlots = 12, int pocketSlots = 6, int storageSlots = 60)
+        /// <summary>
+        /// Constructor with optional custom capacities
+        /// </summary>
+        public SlotCapacityManager(
+            int bagSlots = -1,
+            int pocketSlots = -1,
+            int storageSlots = -1)
         {
-            _maxBagSlots = bagSlots;
-            _maxPocketSlots = pocketSlots;
-            _maxStorageSlots = storageSlots;
+            // Use config defaults if not specified
+            _maxBagSlots = bagSlots > 0 ? bagSlots : InventoryConfig.DEFAULT_BAG_SLOTS;
+            _maxPocketSlots = pocketSlots > 0 ? pocketSlots : InventoryConfig.DEFAULT_POCKET_SLOTS;
+            _maxStorageSlots = storageSlots > 0 ? storageSlots : InventoryConfig.DEFAULT_STORAGE_SLOTS;
         }
         #endregion
 
         #region Public Methods - Queries
-        /// <summary>
-        /// Get maximum slots for a specific location
-        /// </summary>
         public int GetMaxSlots(ItemLocation location)
         {
             return location switch
@@ -55,17 +56,11 @@ namespace Ascension.Inventory.Manager
             };
         }
 
-        /// <summary>
-        /// Check if a location has available space
-        /// </summary>
         public bool HasSpace(ItemLocation location, int currentItemCount)
         {
             return currentItemCount < GetMaxSlots(location);
         }
 
-        /// <summary>
-        /// Get number of empty slots in a location
-        /// </summary>
         public int GetEmptySlots(ItemLocation location, int currentItemCount)
         {
             return Mathf.Max(0, GetMaxSlots(location) - currentItemCount);
@@ -73,9 +68,6 @@ namespace Ascension.Inventory.Manager
         #endregion
 
         #region Public Methods - Upgrades
-        /// <summary>
-        /// Upgrade bag capacity
-        /// </summary>
         public void UpgradeBag(int additionalSlots)
         {
             if (additionalSlots <= 0)
@@ -89,9 +81,6 @@ namespace Ascension.Inventory.Manager
             Debug.Log($"[SlotCapacityManager] Bag upgraded to {_maxBagSlots} slots (+{additionalSlots})");
         }
 
-        /// <summary>
-        /// Upgrade pocket capacity
-        /// </summary>
         public void UpgradePocket(int additionalSlots)
         {
             if (additionalSlots <= 0)
@@ -105,9 +94,6 @@ namespace Ascension.Inventory.Manager
             Debug.Log($"[SlotCapacityManager] Pocket upgraded to {_maxPocketSlots} slots (+{additionalSlots})");
         }
 
-        /// <summary>
-        /// Upgrade storage capacity
-        /// </summary>
         public void UpgradeStorage(int additionalSlots)
         {
             if (additionalSlots <= 0)
@@ -121,9 +107,6 @@ namespace Ascension.Inventory.Manager
             Debug.Log($"[SlotCapacityManager] Storage upgraded to {_maxStorageSlots} slots (+{additionalSlots})");
         }
 
-        /// <summary>
-        /// Set all capacities at once (for loading save data)
-        /// </summary>
         public void SetCapacities(int bagSlots, int pocketSlots, int storageSlots)
         {
             _maxBagSlots = bagSlots;
@@ -135,18 +118,12 @@ namespace Ascension.Inventory.Manager
         #endregion
 
         #region Public Methods - Validation
-        /// <summary>
-        /// Validate if adding items would exceed capacity
-        /// </summary>
         public bool CanAddItems(ItemLocation location, int currentCount, int itemsToAdd)
         {
             int maxSlots = GetMaxSlots(location);
             return (currentCount + itemsToAdd) <= maxSlots;
         }
 
-        /// <summary>
-        /// Get overflow amount if adding items exceeds capacity
-        /// </summary>
         public int GetOverflowAmount(ItemLocation location, int currentCount, int itemsToAdd)
         {
             int maxSlots = GetMaxSlots(location);

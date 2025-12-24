@@ -1,9 +1,10 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\Modules\InventorySystem\Manager\InventoryManager.cs
-// ✅ REFACTORED: Clean separation of concerns
+// Main manager for the Inventory Module
 // ════════════════════════════════════════════
 
 using UnityEngine;
+using Ascension.Inventory.Config;
 using Ascension.Data.SO.Database;
 using Ascension.Data.SO.Item;
 using Ascension.Inventory.Data;
@@ -61,9 +62,9 @@ namespace Ascension.Inventory.Manager
         private void InitializeCapacityManager()
         {
             Capacity = new SlotCapacityManager(
-                bagSlots: 12,
-                pocketSlots: 6,
-                storageSlots: 60
+                bagSlots: InventoryConfig.DEFAULT_BAG_SLOTS,
+                pocketSlots: InventoryConfig.DEFAULT_POCKET_SLOTS,
+                storageSlots: InventoryConfig.DEFAULT_STORAGE_SLOTS
             );
 
             Debug.Log("[InventoryManager] Capacity manager created");
@@ -151,7 +152,7 @@ namespace Ascension.Inventory.Manager
 
         #region Public API - Save/Load
         /// <summary>
-        /// ✅ REFACTORED: Load with capacity restoration
+        /// Load inventory from data
         /// </summary>
         public void LoadInventory(InventoryCoreData data)
         {
@@ -178,7 +179,7 @@ namespace Ascension.Inventory.Manager
         }
 
         /// <summary>
-        /// ✅ REFACTORED: Save with capacity data
+        /// Save inventory to data
         /// </summary>
         public InventoryCoreData SaveInventory()
         {

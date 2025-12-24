@@ -13,7 +13,6 @@ namespace Ascension.Inventory.Services
 {
     /// <summary>
     /// Service responsible for moving items between locations
-    /// ✅ MIGRATED: Now uses ItemLocation enum instead of boolean flags
     /// </summary>
     public class ItemLocationService
     {
@@ -27,7 +26,7 @@ namespace Ascension.Inventory.Services
         }
 
         /// <summary>
-        /// ✅ MIGRATED: Move item to bag
+        /// Move item to bag
         /// </summary>
         public bool MoveToBag(
             List<ItemInstance> allItems,
@@ -52,7 +51,7 @@ namespace Ascension.Inventory.Services
         }
 
         /// <summary>
-        /// ✅ MIGRATED: Move item to pocket
+        /// Move item to pocket
         /// </summary>
         public bool MoveToPocket(
             List<ItemInstance> allItems,
@@ -77,7 +76,7 @@ namespace Ascension.Inventory.Services
         }
 
         /// <summary>
-        /// ✅ MIGRATED: Move item to storage
+        /// Move item to storage
         /// </summary>
         public bool MoveToStorage(
             List<ItemInstance> allItems,
@@ -95,7 +94,7 @@ namespace Ascension.Inventory.Services
         }
 
         /// <summary>
-        /// ✅ MIGRATED: Core movement logic - handles both stackable and non-stackable items
+        /// Core movement logic - handles both stackable and non-stackable items
         /// </summary>
         private bool MoveToLocation(
             List<ItemInstance> allItems,
@@ -115,7 +114,7 @@ namespace Ascension.Inventory.Services
         }
 
         /// <summary>
-        /// ✅ MIGRATED: Move stackable item - tries to merge with existing stacks
+        /// Move stackable item - tries to merge with existing stacks
         /// </summary>
         private bool MoveStackableItem(
             List<ItemInstance> allItems,
@@ -177,7 +176,7 @@ namespace Ascension.Inventory.Services
         }
 
         /// <summary>
-        /// ✅ MIGRATED: Move non-stackable item - just changes location
+        /// Move non-stackable item - just changes location
         /// </summary>
         private bool MoveNonStackableItem(
             List<ItemInstance> allItems,

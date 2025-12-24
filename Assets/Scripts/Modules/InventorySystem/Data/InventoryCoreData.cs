@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using Ascension.Inventory.Config;
 
 namespace Ascension.Inventory.Data
 {
@@ -12,37 +13,23 @@ namespace Ascension.Inventory.Data
     public class InventoryCoreData
     {
         public List<ItemInstance> items = new List<ItemInstance>();
-        public int maxBagSlots = 12;
-        public int maxPocketSlots = 6;
-        public int maxStorageSlots = 60;
+        public int maxBagSlots = InventoryConfig.DEFAULT_BAG_SLOTS;
+        public int maxPocketSlots = InventoryConfig.DEFAULT_POCKET_SLOTS; 
+        public int maxStorageSlots = InventoryConfig.DEFAULT_STORAGE_SLOTS;
 
         /// <summary>
-        /// ✅ FIXED: Create from InventoryManager (not InventoryCore)
-        /// </summary>
-        public static InventoryCoreData FromInventoryManager(Manager.InventoryManager manager)
-        {
-            return new InventoryCoreData
-            {
-                items = new List<ItemInstance>(manager.Inventory.allItems),
-                maxBagSlots = manager.Capacity.MaxBagSlots,      // ✅ FIXED
-                maxPocketSlots = manager.Capacity.MaxPocketSlots, // ✅ FIXED
-                maxStorageSlots = manager.Capacity.MaxStorageSlots // ✅ FIXED
-            };
-        }
-
-        /// <summary>
-        /// ✅ NEW: Default constructor with safe defaults
+        /// ✅ ONLY ONE default constructor
         /// </summary>
         public InventoryCoreData()
         {
             items = new List<ItemInstance>();
-            maxBagSlots = 12;
-            maxPocketSlots = 6;
-            maxStorageSlots = 60;
+            maxBagSlots = InventoryConfig.DEFAULT_BAG_SLOTS;
+            maxPocketSlots = InventoryConfig.DEFAULT_POCKET_SLOTS;
+            maxStorageSlots = InventoryConfig.DEFAULT_STORAGE_SLOTS;
         }
 
         /// <summary>
-        /// ✅ NEW: Constructor with custom slot capacities
+        /// Constructor with custom slot capacities
         /// </summary>
         public InventoryCoreData(int bagSlots, int pocketSlots, int storageSlots)
         {
@@ -50,6 +37,20 @@ namespace Ascension.Inventory.Data
             maxBagSlots = bagSlots;
             maxPocketSlots = pocketSlots;
             maxStorageSlots = storageSlots;
+        }
+
+        /// <summary>
+        /// Create from InventoryManager
+        /// </summary>
+        public static InventoryCoreData FromInventoryManager(Manager.InventoryManager manager)
+        {
+            return new InventoryCoreData
+            {
+                items = new List<ItemInstance>(manager.Inventory.allItems),
+                maxBagSlots = manager.Capacity.MaxBagSlots,
+                maxPocketSlots = manager.Capacity.MaxPocketSlots,
+                maxStorageSlots = manager.Capacity.MaxStorageSlots
+            };
         }
     }
 }

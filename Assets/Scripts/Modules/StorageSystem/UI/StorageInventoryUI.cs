@@ -13,6 +13,7 @@ using Ascension.Inventory.Enums;
 using Ascension.Inventory.Popup;
 using Ascension.Inventory.UI;
 using Ascension.SharedUI.Popups;
+using Ascension.Inventory.Config;
 
 namespace Ascension.Storage.UI
 {
@@ -253,7 +254,7 @@ namespace Ascension.Storage.UI
         #region Public Methods
 
         /// <summary>
-        /// ✅ Force a complete refresh (useful after loading save data)
+        /// Force a complete refresh (useful after loading save data)
         /// </summary>
         public void ForceRefresh()
         {
@@ -261,12 +262,12 @@ namespace Ascension.Storage.UI
         }
 
         /// <summary>
-        /// ✅ Get current slot count for debugging
+        /// Get current slot count for debugging
         /// </summary>
         public int GetSlotCount() => slotCache.Count;
 
         /// <summary>
-        /// ✅ Get current visible item count
+        /// Get current visible item count
         /// </summary>
         public int GetVisibleItemCount()
         {
@@ -280,7 +281,7 @@ namespace Ascension.Storage.UI
         }
 
         /// <summary>
-        /// ✅ Set maximum storage slots (useful for upgrades)
+        /// Set maximum storage slots (useful for upgrades)
         /// </summary>
         public void SetMaxStorageSlots(int newMax)
         {

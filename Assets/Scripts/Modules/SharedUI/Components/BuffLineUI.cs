@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────────
-// BuffLineUI.cs
+// Assets\Scripts\Modules\SharedUI\Components\BuffLineUI.cs
 // Optional helper script to set up buff line UI elements
 // ──────────────────────────────────────────────────
 

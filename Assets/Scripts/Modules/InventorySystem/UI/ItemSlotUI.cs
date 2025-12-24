@@ -40,7 +40,7 @@ namespace Ascension.Inventory.UI
         private Action currentOnClick;
 
         /// <summary>
-        /// ✅ OPTIMIZED: Setup slot with item data (used for initial creation)
+        /// Setup slot with item data (used for initial creation)
         /// </summary>
         public void Setup(ItemBaseSO data, ItemInstance instance, Action onClick)
         {
@@ -53,7 +53,7 @@ namespace Ascension.Inventory.UI
         }
 
         /// <summary>
-        /// ✅ NEW: Update existing slot without recreating (fast refresh)
+        /// Update existing slot without recreating (fast refresh)
         /// </summary>
         public void UpdateItem(ItemBaseSO data, ItemInstance instance, Action onClick)
         {
@@ -70,7 +70,7 @@ namespace Ascension.Inventory.UI
         }
 
         /// <summary>
-        /// ✅ NEW: Show as empty slot (no item)
+        /// Show as empty slot (no item)
         /// </summary>
         public void ShowEmpty()
         {
@@ -112,7 +112,7 @@ namespace Ascension.Inventory.UI
         }
 
         /// <summary>
-        /// ✅ OPTIMIZED: Check if slot is currently empty
+        /// Check if slot is currently empty
         /// </summary>
         public bool IsEmpty() => itemData == null;
 

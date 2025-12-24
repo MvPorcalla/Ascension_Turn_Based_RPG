@@ -4,6 +4,7 @@
 // ════════════════════════════════════════════
 
 using System;
+using Ascension.Inventory.Config;
 
 namespace Ascension.Data.Save
 {
@@ -63,9 +64,9 @@ namespace Ascension.Data.Save
     public class InventorySaveData
     {
         public ItemInstanceData[] items;
-        public int maxBagSlots = 12;
-        public int maxPocketSlots = 6;
-        public int maxStorageSlots = 60;
+        public int maxBagSlots = InventoryConfig.DEFAULT_BAG_SLOTS;
+        public int maxPocketSlots = InventoryConfig.DEFAULT_POCKET_SLOTS;
+        public int maxStorageSlots = InventoryConfig.DEFAULT_STORAGE_SLOTS;
     }
 
     // ════════════════════════════════════════════

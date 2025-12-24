@@ -14,12 +14,12 @@ namespace Ascension.Inventory.Services
 {
     /// <summary>
     /// Service responsible for querying inventory items (read-only operations)
-    /// ✅ MIGRATED: Now uses ItemLocation enum instead of boolean flags
+    /// Now uses ItemLocation enum instead of boolean flags
     /// </summary>
     public class ItemQueryService
     {
         /// <summary>
-        /// ✅ MIGRATED: Get all items in bag
+        /// Get all items in bag
         /// </summary>
         public List<ItemInstance> GetBagItems(List<ItemInstance> allItems)
         {
@@ -30,7 +30,7 @@ namespace Ascension.Inventory.Services
         }
 
         /// <summary>
-        /// ✅ MIGRATED: Get all items in pocket
+        /// Get all items in pocket
         /// </summary>
         public List<ItemInstance> GetPocketItems(List<ItemInstance> allItems)
         {
@@ -41,7 +41,7 @@ namespace Ascension.Inventory.Services
         }
 
         /// <summary>
-        /// ✅ MIGRATED: Get all items in storage
+        /// Get all items in storage
         /// </summary>
         public List<ItemInstance> GetStorageItems(List<ItemInstance> allItems)
         {
@@ -162,7 +162,7 @@ namespace Ascension.Inventory.Services
         }
 
         /// <summary>
-        /// ✅ NEW: Get items by specific location
+        /// Get items by specific location
         /// </summary>
         public List<ItemInstance> GetItemsByLocation(List<ItemInstance> allItems, ItemLocation location)
         {
@@ -173,7 +173,7 @@ namespace Ascension.Inventory.Services
         }
 
         /// <summary>
-        /// ✅ NEW: Count items in specific location
+        /// Count items in specific location
         /// </summary>
         public int GetItemCountByLocation(List<ItemInstance> allItems, ItemLocation location)
         {
