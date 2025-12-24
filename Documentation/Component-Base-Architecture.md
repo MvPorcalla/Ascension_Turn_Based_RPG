@@ -113,7 +113,7 @@ Scripts/
    ▼                    ▼                    ▼
 CharacterManager   InventoryManager     SaveManager
    │                    │                    │
-   └────── data ─────────┴────────── data ───┘
+   └────── data ────────┴────────── data ────┘
 
 This diagram illustrates module orchestration and allowed dependencies.
 

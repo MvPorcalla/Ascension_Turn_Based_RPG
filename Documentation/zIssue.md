@@ -50,46 +50,35 @@ Add visual indicators to show which items are currently equipped when viewing th
 
 ================================================================================================================
 
-For context, I currently have two systems: the Equipment System and the Storage/Inventory System.
-Both of these use the inventory logic, but right now it feels like spaghetti code—I can barely tell what actually belongs to the inventory.
-Do you agree that I should make the Inventory System a separate module, and have both the Storage and Equipment systems use it? This would help avoid redundancy.
+# Equipment room VIsual UI
 
-My plan:
-            ┌──────────────────────┐
-            │     InventoryCore    │   <-- Core module, UI-agnostic
-            │  (InventoryManager)  │
-            │----------------------│
-            │ - Stores all items   │
-            │ - Add/Remove items   │
-            │ - Stack management   │
-            │ - Query items        │
-            │ - Events (OnChange) │
-            └─────────▲────────────┘
-                      │
-          ┌───────────┴─────────────┐
-          │                         │
-          │                         │
-┌───────────────────────┐   ┌───────────────────────┐
-│   StorageSystem/UI     │   │  EquipmentSystem/UI   │
-│  (StorageInventoryUI)  │   │ (EquipmentStorageUI) │
-│------------------------│   │----------------------│
-│ - Filter items by type │   │ - Filter items by    │
-│ - Show empty slots     │   │   equipment type     │
-│ - Display slots        │   │ - Validate gear slot │
-│ - Handle clicks/popup  │   │ - Equip/unequip logic│
-│ - Subscribe to core    │   │ - Show popups (gear, │
-│   inventory events     │   │   abilities)         │
-└────────────────────────┘   └──────────────────────┘
-          │                         │
-          │                         │
-          ▼                         ▼
-     ┌───────────┐             ┌─────────────┐
-     │  Popups   │             │  Popups     │
-     │(Gear,Item,│             │ (Gear,      │
-     │  Potion)  │             │  Ability)   │
-     └───────────┘             └─────────────┘
+┌──────────────────────────────────────────────┐
+│ [Back]          Equipment Room               │
+└──────────────────────────────────────────────┘
+
+┌──────────────────────────┬───────────────────┐
+│ Player Stats (Core)      │ Gear Section      │
+│ ATK  DEF  HP  CRIT       │ [Helm] [Chest]    │
+│ [+ Advanced]             │ [Glov] [Boot ]    │
+│                          │ [Acc ] [Acc ]     │
+└──────────────────────────┴───────────────────┘
+
+┌──────────────────────────────────────────────┐
+│ Loadout (ACTIVE)                             │
+│ Weapon | Skill 1 | Skill 2 | Ultimate        │
+└──────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────┐
+│ Storage (Filtered Pool)                      │
+│ [Weapons] [Gear] [Skills] [Potions?] [Sort]  │
+│ ┌──┐ ┌──┐ ┌──┐ ┌──┐                          │
+│ └──┘ └──┘ └──┘ └──┘   Scrollable Grid        │
+└──────────────────────────────────────────────┘
 
 
+================================================================================================================
+
+TODO: Fix the Accessory Equipment it bugging it should be able to equip 2 but it only equip 1
 
 ================================================================================================================
 

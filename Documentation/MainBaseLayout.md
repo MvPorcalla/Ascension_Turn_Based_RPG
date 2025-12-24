@@ -115,9 +115,6 @@ Canvas (Screen Space - Overlay, 1920x1080)
 │    │    ├── NormalSkillSlot1
 │    │    ├── NormalSkillSlot2
 │    │    ├── UltimateSkillSlot
-│    │    ├── item1 (quick slot for consumables)
-│    │    ├── item2 (quick slot for consumables)
-│    │    └── item3 (quick slot for consumables)
 │    │     
 │    ├── StorageSection (only show Weapon, Gear, Skills, and Potions)
 │         ├── Background
