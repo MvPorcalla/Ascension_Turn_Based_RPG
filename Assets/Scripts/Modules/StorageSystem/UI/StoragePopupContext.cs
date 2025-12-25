@@ -45,25 +45,38 @@ namespace Ascension.Storage.UI
             }
 
             var database = InventoryManager.Instance.Database;
-            bool success = false;
+            InventoryResult result; // ✅ Changed to InventoryResult
 
             switch (_currentLocation)
             {
                 case ItemLocation.Storage:
-                    success = InventoryManager.Instance.Inventory.MoveToBag(itemInstance, 1, database);
-                    if (success)
-                        Debug.Log($"[StoragePopupContext] Moved {item.ItemName} to bag");
-                    break;
-
+                    result = InventoryManager.Instance.Inventory.MoveToBag(itemInstance, 1, database);
+                    if (result.Success) // ✅ Check .Success property
+                    {
+                        Debug.Log($"[StoragePopupContext] {result.Message}");
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[StoragePopupContext] {result.Message}");
+                    }
+                    return result.Success; // ✅ Return .Success
+                    
                 case ItemLocation.Bag:
                 case ItemLocation.Pocket:
-                    success = InventoryManager.Instance.Inventory.MoveToStorage(itemInstance, 1, database);
-                    if (success)
-                        Debug.Log($"[StoragePopupContext] Stored {item.ItemName}");
-                    break;
+                    result = InventoryManager.Instance.Inventory.MoveToStorage(itemInstance, 1, database);
+                    if (result.Success) // ✅ Check .Success property
+                    {
+                        Debug.Log($"[StoragePopupContext] {result.Message}");
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[StoragePopupContext] {result.Message}");
+                    }
+                    return result.Success; // ✅ Return .Success
+                    
+                default:
+                    return false;
             }
-
-            return success;
         }
 
         public bool CanPerformAction(ItemBaseSO item, ItemInstance itemInstance)

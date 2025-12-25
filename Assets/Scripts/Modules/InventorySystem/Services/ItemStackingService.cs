@@ -106,7 +106,7 @@ namespace Ascension.Inventory.Services
         /// <summary>
         /// Add quantity to existing stack, or create new stacks if needed
         /// </summary>
-        public void AddToExistingOrCreateNew(
+        public ItemInstance AddToExistingOrCreateNew(
             List<ItemInstance> allItems,
             string itemID,
             int quantity,
@@ -114,13 +114,14 @@ namespace Ascension.Inventory.Services
             int maxStackSize)
         {
             int remaining = quantity;
+            ItemInstance primaryItem = null;
 
             // Try to fill existing stacks first
             var existingStacks = allItems
                 .Where(i => i.itemID == itemID &&
-                           i.location == location &&
-                           i.quantity < maxStackSize)
-                .OrderBy(i => i.quantity) // Fill smallest stacks first
+                        i.location == location &&
+                        i.quantity < maxStackSize)
+                .OrderBy(i => i.quantity)
                 .ToList();
 
             foreach (var stack in existingStacks)
@@ -132,6 +133,10 @@ namespace Ascension.Inventory.Services
 
                 stack.quantity += amountToAdd;
                 remaining -= amountToAdd;
+
+                // Track the first item we modified
+                if (primaryItem == null)
+                    primaryItem = stack;
             }
 
             // Create new stacks for remaining quantity
@@ -139,7 +144,13 @@ namespace Ascension.Inventory.Services
             {
                 var newStacks = CreateNewStacks(itemID, remaining, location, maxStackSize);
                 allItems.AddRange(newStacks);
+
+                // If we didn't modify any existing stacks, the first new stack is primary
+                if (primaryItem == null && newStacks.Count > 0)
+                    primaryItem = newStacks[0];
             }
+
+            return primaryItem;
         }
 
         /// <summary>

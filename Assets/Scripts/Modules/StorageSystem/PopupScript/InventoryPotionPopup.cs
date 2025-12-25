@@ -514,18 +514,28 @@ namespace Ascension.Inventory.Popup
             
             if (buttonText == "Add to Pocket")
             {
-                if (InventoryManager.Instance.Inventory.MoveToPocket(currentItem, selectedQuantity, database))
+                var result = InventoryManager.Instance.Inventory.MoveToPocket(currentItem, selectedQuantity, database);
+                if (result.Success) // ✅ Check .Success
                 {
-                    Debug.Log($"Moved {selectedQuantity}x {currentPotion.ItemName} to pocket");
+                    Debug.Log($"[InventoryPotionPopup] {result.Message}");
                     ClosePopup();
+                }
+                else
+                {
+                    Debug.LogWarning($"[InventoryPotionPopup] {result.Message}");
                 }
             }
             else if (buttonText == "Store")
             {
-                if (InventoryManager.Instance.Inventory.MoveToStorage(currentItem, selectedQuantity, database))
+                var result = InventoryManager.Instance.Inventory.MoveToStorage(currentItem, selectedQuantity, database);
+                if (result.Success) // ✅ Check .Success
                 {
-                    Debug.Log($"Stored {selectedQuantity}x {currentPotion.ItemName}");
+                    Debug.Log($"[InventoryPotionPopup] {result.Message}");
                     ClosePopup();
+                }
+                else
+                {
+                    Debug.LogWarning($"[InventoryPotionPopup] {result.Message}");
                 }
             }
         }
@@ -537,18 +547,28 @@ namespace Ascension.Inventory.Popup
             
             if (buttonText == "Add to Bag")
             {
-                if (InventoryManager.Instance.Inventory.MoveToBag(currentItem, selectedQuantity, database))
+                var result = InventoryManager.Instance.Inventory.MoveToBag(currentItem, selectedQuantity, database);
+                if (result.Success) // ✅ Check .Success
                 {
-                    Debug.Log($"Moved {selectedQuantity}x {currentPotion.ItemName} to bag");
+                    Debug.Log($"[InventoryPotionPopup] {result.Message}");
                     ClosePopup();
+                }
+                else
+                {
+                    Debug.LogWarning($"[InventoryPotionPopup] {result.Message}");
                 }
             }
             else if (buttonText == "Store")
             {
-                if (InventoryManager.Instance.Inventory.MoveToStorage(currentItem, selectedQuantity, database))
+                var result = InventoryManager.Instance.Inventory.MoveToStorage(currentItem, selectedQuantity, database);
+                if (result.Success) // ✅ Check .Success
                 {
-                    Debug.Log($"Stored {selectedQuantity}x {currentPotion.ItemName}");
+                    Debug.Log($"[InventoryPotionPopup] {result.Message}");
                     ClosePopup();
+                }
+                else
+                {
+                    Debug.LogWarning($"[InventoryPotionPopup] {result.Message}");
                 }
             }
         }

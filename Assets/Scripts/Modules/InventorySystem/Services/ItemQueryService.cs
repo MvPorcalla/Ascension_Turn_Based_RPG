@@ -9,6 +9,7 @@ using Ascension.Data.SO.Item;
 using Ascension.Data.SO.Database;
 using Ascension.Inventory.Data;
 using Ascension.Inventory.Enums;
+using Ascension.Inventory.Constants;
 
 namespace Ascension.Inventory.Services
 {
@@ -185,7 +186,8 @@ namespace Ascension.Inventory.Services
         /// </summary>
         private bool IsSkill(string itemID)
         {
-            return itemID.StartsWith("skill_") || itemID.StartsWith("ability_");
+            return itemID.StartsWith(ItemIDPrefixes.Skill) || 
+                itemID.StartsWith(ItemIDPrefixes.Ability);
         }
     }
 }

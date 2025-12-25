@@ -201,18 +201,28 @@ namespace Ascension.Inventory.Popup
             
             if (buttonText == "Add to Pocket")
             {
-                if (InventoryManager.Instance.Inventory.MoveToPocket(currentItemInstance, selectedQuantity, database))
+                var result = InventoryManager.Instance.Inventory.MoveToPocket(currentItemInstance, selectedQuantity, database);
+                if (result.Success) // ✅ Check .Success
                 {
-                    Debug.Log($"Moved {selectedQuantity}x {currentItem.ItemName} to pocket");
+                    Debug.Log($"[InventoryItemPopup] {result.Message}");
                     ClosePopup();
+                }
+                else
+                {
+                    Debug.LogWarning($"[InventoryItemPopup] {result.Message}");
                 }
             }
             else if (buttonText == "Add to Bag")
             {
-                if (InventoryManager.Instance.Inventory.MoveToBag(currentItemInstance, selectedQuantity, database))
+                var result = InventoryManager.Instance.Inventory.MoveToBag(currentItemInstance, selectedQuantity, database);
+                if (result.Success) // ✅ Check .Success
                 {
-                    Debug.Log($"Moved {selectedQuantity}x {currentItem.ItemName} to bag");
+                    Debug.Log($"[InventoryItemPopup] {result.Message}");
                     ClosePopup();
+                }
+                else
+                {
+                    Debug.LogWarning($"[InventoryItemPopup] {result.Message}");
                 }
             }
         }
@@ -224,18 +234,28 @@ namespace Ascension.Inventory.Popup
             
             if (buttonText == "Add to Bag")
             {
-                if (InventoryManager.Instance.Inventory.MoveToBag(currentItemInstance, selectedQuantity, database))
+                var result = InventoryManager.Instance.Inventory.MoveToBag(currentItemInstance, selectedQuantity, database);
+                if (result.Success) // ✅ Check .Success
                 {
-                    Debug.Log($"Moved {selectedQuantity}x {currentItem.ItemName} to bag");
+                    Debug.Log($"[InventoryItemPopup] {result.Message}");
                     ClosePopup();
+                }
+                else
+                {
+                    Debug.LogWarning($"[InventoryItemPopup] {result.Message}");
                 }
             }
             else if (buttonText == "Store")
             {
-                if (InventoryManager.Instance.Inventory.MoveToStorage(currentItemInstance, selectedQuantity, database))
+                var result = InventoryManager.Instance.Inventory.MoveToStorage(currentItemInstance, selectedQuantity, database);
+                if (result.Success) // ✅ Check .Success
                 {
-                    Debug.Log($"Stored {selectedQuantity}x {currentItem.ItemName}");
+                    Debug.Log($"[InventoryItemPopup] {result.Message}");
                     ClosePopup();
+                }
+                else
+                {
+                    Debug.LogWarning($"[InventoryItemPopup] {result.Message}");
                 }
             }
         }

@@ -94,7 +94,7 @@ namespace Ascension.Inventory.Manager
         /// <summary>
         /// Add item to inventory
         /// </summary>
-        public bool AddItem(string itemID, int quantity = 1, bool addToBag = false)
+        public InventoryResult AddItem(string itemID, int quantity = 1, bool addToBag = false)
         {
             return Inventory.AddItem(itemID, quantity, addToBag, database);
         }
@@ -102,7 +102,7 @@ namespace Ascension.Inventory.Manager
         /// <summary>
         /// Remove item from inventory
         /// </summary>
-        public bool RemoveItem(ItemInstance item, int quantity = 1)
+        public InventoryResult RemoveItem(ItemInstance item, int quantity = 1)
         {
             return Inventory.RemoveItem(item, quantity);
         }
@@ -207,8 +207,10 @@ namespace Ascension.Inventory.Manager
         #endregion
 
         #region Debug Helpers
-        [ContextMenu("Debug: Add Test Items")]
-        public void DebugAddTestItems()
+        // In InventoryManager.cs
+
+        [ContextMenu("Debug: Add Test Items (With Results)")]
+        public void DebugAddTestItemsWithResults()
         {
             if (database == null)
             {
@@ -221,18 +223,19 @@ namespace Ascension.Inventory.Manager
                 if (item.ItemType == ItemType.Ability)
                     continue;
 
-                AddItem(item.ItemID, item.IsStackable ? 10 : 1, false);
-                Debug.Log($"Added {(item.IsStackable ? 10 : 1)}x {item.ItemName} to storage");
+                var result = AddItem(item.ItemID, item.IsStackable ? 10 : 1, false);
+                
+                if (result.Success)
+                {
+                    Debug.Log($"✅ {result.Message}");
+                }
+                else
+                {
+                    Debug.LogWarning($"❌ {result.Message} (Error: {result.ErrorCode})");
+                }
             }
 
-            var weapons = database.GetAllWeapons();
-            if (weapons.Count > 0)
-            {
-                AddItem(weapons[0].ItemID, 1, true);
-                Debug.Log($"Added {weapons[0].ItemName} to bag");
-            }
-
-            Debug.Log($"[InventoryManager] Test items added! Total: {Inventory.allItems.Count}");
+            Debug.Log($"[InventoryManager] Test completed! Total items: {Inventory.allItems.Count}");
         }
 
         [ContextMenu("Debug: Clear All Items")]
