@@ -80,8 +80,12 @@ Scripts/
 │   │   ├── Ascension.GameSystem.asmdef
 │   │   └── PotionManager.cs                        // Will be reworked later
 │   │
-│   ├── InventorySystem/
-│   │   ├── Ascension.Inventory.asmdef      // Future once all are solidified
+│   ├── InventorySystem/                            // 
+│   │   ├── Ascension.Inventory.asmdef              // Not implemented yet
+│   │   ├── Config/
+│   │   │   └── InventoryConfig.cs           
+│   │   ├── Constant/
+│   │   │   └── InventoryConstants.cs
 │   │   ├── Manager/
 │   │   │   └── InventoryManager.cs
 │   │   ├── Data/
@@ -89,7 +93,8 @@ Scripts/
 │   │   │   ├── InventoryCoreData.cs
 │   │   │   └── ItemInstance.cs
 │   │   ├── Enum/
-│   │   │   └── InventoryEnums.cs
+│   │       ├── InventoryEnums.cs
+│   │       └── ItemLocationExtensions
 │   │   ├── Popup/
 │   │   │   ├── InventoryPotionPopup.cs
 │   │   │   └── InventoryItemPopup.cs

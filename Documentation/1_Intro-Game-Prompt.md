@@ -55,7 +55,13 @@ Scripts/
 │   │       └── CharacterCreationManager.cs
 │   │
 │   ├── InventorySystem/                    // ✅ PURE DATA MODULE (no UI, no scenes)
-│   │   ├── Ascension.Inventory.asmdef
+│   │   ├── Ascension.Inventory.asmdef      // Not implemented yet
+│   │   │
+│   │   ├── Config/
+│   │   │   └── InventoryConfig.cs          // 
+│   │   │
+│   │   ├── Constant/
+│   │   │   └── InventoryConstants.cs       // 
 │   │   │
 │   │   ├── Manager/
 │   │   │   ├── InventoryManager.cs         // Singleton, IGameService
@@ -72,7 +78,8 @@ Scripts/
 │   │   │   └── ItemLocationService.cs      // Move items between locations
 │   │   │
 │   │   └── Enums/
-│   │       └── InventoryEnums.cs           // ItemLocation enum
+│   │       ├── InventoryEnums.cs           // ItemLocation enum
+│   │       └── ItemLocationExtensions
 │   │
 │   ├── StorageSystem/                       // ✅ STORAGE ROOM UI MODULE
 │   │   ├── Ascension.Storage.asmdef        // References: Inventory, SharedUI, Data

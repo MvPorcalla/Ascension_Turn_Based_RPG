@@ -18,7 +18,7 @@ namespace Ascension.Inventory.UI
         [SerializeField] private Button button;
         [SerializeField] private Image rarityBackground;
         [SerializeField] private Image itemIcon;
-        [SerializeField] private GameObject equippedIndicator;
+        [SerializeField] private GameObject equippedIndicator; 
         [SerializeField] private TMP_Text quantityText;
 
         [Header("Rarity Colors")]
