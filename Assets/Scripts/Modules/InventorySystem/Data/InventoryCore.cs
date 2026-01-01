@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════
 // Scripts/Modules/InventorySystem/Data/InventoryCore.cs
-// ✅ FIXED: Proper dependency injection (no silent overwrites)
+// Core data structure for managing inventory items
 // ══════════════════════════════════════════════════════════════════
 
 using System;
