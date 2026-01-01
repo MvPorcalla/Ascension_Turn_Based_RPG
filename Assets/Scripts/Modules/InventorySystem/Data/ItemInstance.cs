@@ -1,6 +1,6 @@
 // ──────────────────────────────────────────────────
 // Assets\Scripts\Modules\InventorySystem\Data\ItemInstance.cs
-// Item instance data structure with enum-based location
+// ✅ CLEANED: Removed redundant wrapper methods
 // ──────────────────────────────────────────────────
 
 using System;
@@ -16,7 +16,7 @@ namespace Ascension.Inventory.Data
         public ItemLocation location;
 
         // ═══════════════════════════════════════════════════════════
-        // Constructors
+        // Constructor
         // ═══════════════════════════════════════════════════════════
 
         public ItemInstance(string itemID, int quantity = 1, ItemLocation location = ItemLocation.Storage)
@@ -30,30 +30,12 @@ namespace Ascension.Inventory.Data
         // Utility Methods
         // ═══════════════════════════════════════════════════════════
 
+        /// <summary>
+        /// Creates a deep copy of this item instance
+        /// </summary>
         public ItemInstance Clone()
         {
             return new ItemInstance(itemID, quantity, location);
-        }
-
-        public string GetLocation()
-        {
-            return location switch
-            {
-                ItemLocation.Bag => "Bag",
-                ItemLocation.Pocket => "Pocket",
-                ItemLocation.Storage => "Storage",
-                _ => "Unknown"
-            };
-        }
-
-        public void SetLocation(ItemLocation newLocation)
-        {
-            location = newLocation;
-        }
-
-        public bool IsInLocation(ItemLocation checkLocation)
-        {
-            return location == checkLocation;
         }
     }
 }
