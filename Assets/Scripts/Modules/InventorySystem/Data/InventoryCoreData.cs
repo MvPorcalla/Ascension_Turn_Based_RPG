@@ -1,6 +1,6 @@
 // ──────────────────────────────────────────────────
 // Assets\Scripts\Modules\InventorySystem\Data\InventoryCoreData.cs
-// ✅ CLEANED: Removed redundant constructor body
+// Serializable data container for inventory save/load operations.
 // ──────────────────────────────────────────────────
 
 using System;
