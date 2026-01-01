@@ -3,6 +3,7 @@
 // Save and load game state management
 // ════════════════════════════════════════════
 
+using System;
 using UnityEngine;
 using Ascension.Core;
 using Ascension.Data.Save;
@@ -12,6 +13,7 @@ using Ascension.Inventory.Manager;
 using Ascension.Inventory.Data;
 using Ascension.Inventory.Enums;
 using Ascension.Equipment.Manager;
+using Ascension.Inventory.Config;
 
 namespace Ascension.App
 {
