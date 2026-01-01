@@ -1,6 +1,6 @@
 // ──────────────────────────────────────────────────
 // Assets\Scripts\Modules\InventorySystem\Data\ItemInstance.cs
-// ✅ CLEANED: Removed redundant wrapper methods
+// Serializable instance of an inventory item
 // ──────────────────────────────────────────────────
 
 using System;
