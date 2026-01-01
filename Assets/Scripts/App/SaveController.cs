@@ -210,6 +210,18 @@ namespace Ascension.App
             }
 
             InventoryCoreData bagData = _inventoryManager.SaveInventory();
+
+            if (bagData == null || bagData.items == null)
+            {
+                Debug.LogError("[SaveController] Failed to get inventory data");
+                return new InventorySaveData 
+                { 
+                    items = Array.Empty<ItemInstanceData>(),
+                    maxBagSlots = InventoryConfig.DEFAULT_BAG_SLOTS,
+                    maxPocketSlots = InventoryConfig.DEFAULT_POCKET_SLOTS,
+                    maxStorageSlots = InventoryConfig.DEFAULT_STORAGE_SLOTS
+                };
+            }
             
             ItemInstanceData[] itemArray = new ItemInstanceData[bagData.items.Count];
             
