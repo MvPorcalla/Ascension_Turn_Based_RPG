@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════
 // Scripts/Modules/InventorySystem/Data/InventoryCore.cs
-// ✅ REFACTORED: Pure inventory data structure (UI-agnostic)
+// ✅ FIXED: Proper dependency injection (no silent overwrites)
 // ══════════════════════════════════════════════════════════════════
 
 using System;
@@ -75,13 +75,22 @@ namespace Ascension.Inventory.Data
         private SlotCapacityManager _capacityManager;
         #endregion
 
-        #region Constructor
+        #region Constructors
+
+        /// <summary>
+        /// ✅ DEFAULT CONSTRUCTOR - Creates default services
+        /// Use this for normal gameplay
+        /// </summary>
         public InventoryCore(SlotCapacityManager capacityManager = null)
         {
             _capacityManager = capacityManager ?? new SlotCapacityManager();
             InitializeServices();
         }
 
+        /// <summary>
+        /// ✅ DEPENDENCY INJECTION CONSTRUCTOR - Accepts custom services
+        /// Use this for testing or custom implementations
+        /// </summary>
         public InventoryCore(
             SlotCapacityManager capacityManager,
             ItemQueryService queryService,
@@ -92,14 +101,22 @@ namespace Ascension.Inventory.Data
             _queryService = queryService ?? new ItemQueryService();
             _stackingService = stackingService ?? new ItemStackingService();
             _locationService = locationService ?? new ItemLocationService(_stackingService, _queryService);
+            
+            // ✅ CRITICAL: Do NOT call InitializeServices() here!
+            // Services are already set - calling InitializeServices() would overwrite them
         }
 
+        /// <summary>
+        /// ✅ FIXED: Only initializes services if they're null
+        /// Uses null-coalescing assignment (??=) to preserve injected dependencies
+        /// </summary>
         private void InitializeServices()
         {
-            _queryService = new ItemQueryService();
-            _stackingService = new ItemStackingService();
-            _locationService = new ItemLocationService(_stackingService, _queryService);
+            _queryService ??= new ItemQueryService();
+            _stackingService ??= new ItemStackingService();
+            _locationService ??= new ItemLocationService(_stackingService, _queryService);
         }
+
         #endregion
 
         #region Query Methods (Delegate to QueryService)
@@ -159,7 +176,7 @@ namespace Ascension.Inventory.Data
 
         /// <summary>
         /// Add item to inventory with location preference and capacity checks
-        /// ✅ IMPROVED: Now returns InventoryResult with detailed feedback
+        /// ✅ Returns InventoryResult with detailed feedback
         /// </summary>
         public InventoryResult AddItem(string itemID, int quantity = 1, bool addToBag = false, GameDatabaseSO database = null)
         {
@@ -232,7 +249,7 @@ namespace Ascension.Inventory.Data
 
         /// <summary>
         /// Remove item from inventory
-        /// ✅ IMPROVED: Now returns InventoryResult
+        /// ✅ Returns InventoryResult
         /// </summary>
         public InventoryResult RemoveItem(ItemInstance item, int quantity = 1)
         {
@@ -264,10 +281,14 @@ namespace Ascension.Inventory.Data
 
         /// <summary>
         /// Move item to bag
-        /// ✅ IMPROVED: Returns InventoryResult and uses new event system
+        /// ✅ Returns InventoryResult and uses new event system
         /// </summary>
         public InventoryResult MoveToBag(ItemInstance item, int quantity, GameDatabaseSO database)
         {
+            // ✅ Fast path: Check target location FIRST
+            if (item?.location == ItemLocation.Bag)
+                return InventoryResult.Fail("Item already in bag", InventoryErrorCode.AlreadyInLocation);
+
             // Validation
             if (item == null)
                 return InventoryResult.Fail("Item is null", InventoryErrorCode.InvalidOperation);
@@ -283,10 +304,6 @@ namespace Ascension.Inventory.Data
 
             if (quantity > item.quantity)
                 return InventoryResult.InsufficientQuantity(item.itemID, quantity, item.quantity);
-
-            // Already in bag?
-            if (item.location == ItemLocation.Bag)
-                return InventoryResult.Fail("Item already in bag", InventoryErrorCode.AlreadyInLocation);
 
             ItemBaseSO itemData = database.GetItem(item.itemID);
             if (itemData == null)
@@ -314,10 +331,14 @@ namespace Ascension.Inventory.Data
 
         /// <summary>
         /// Move item to pocket
-        /// ✅ IMPROVED: Returns InventoryResult and uses new event system
+        /// ✅ Returns InventoryResult and uses new event system
         /// </summary>
         public InventoryResult MoveToPocket(ItemInstance item, int quantity, GameDatabaseSO database)
         {
+            // ✅ Fast path: Check target location FIRST
+            if (item?.location == ItemLocation.Pocket)
+                return InventoryResult.Fail("Item already in pocket", InventoryErrorCode.AlreadyInLocation);
+
             // Validation
             if (item == null)
                 return InventoryResult.Fail("Item is null", InventoryErrorCode.InvalidOperation);
@@ -333,10 +354,6 @@ namespace Ascension.Inventory.Data
 
             if (quantity > item.quantity)
                 return InventoryResult.InsufficientQuantity(item.itemID, quantity, item.quantity);
-
-            // Already in pocket?
-            if (item.location == ItemLocation.Pocket)
-                return InventoryResult.Fail("Item already in pocket", InventoryErrorCode.AlreadyInLocation);
 
             ItemBaseSO itemData = database.GetItem(item.itemID);
             if (itemData == null)
@@ -364,10 +381,14 @@ namespace Ascension.Inventory.Data
 
         /// <summary>
         /// Move item to storage
-        /// ✅ IMPROVED: Returns InventoryResult and uses new event system
+        /// ✅ Returns InventoryResult and uses new event system
         /// </summary>
         public InventoryResult MoveToStorage(ItemInstance item, int quantity, GameDatabaseSO database)
         {
+            // ✅ Fast path: Check target location FIRST
+            if (item?.location == ItemLocation.Storage)
+                return InventoryResult.Fail("Item already in storage", InventoryErrorCode.AlreadyInLocation);
+
             // Validation
             if (item == null)
                 return InventoryResult.Fail("Item is null", InventoryErrorCode.InvalidOperation);
@@ -383,10 +404,6 @@ namespace Ascension.Inventory.Data
 
             if (quantity > item.quantity)
                 return InventoryResult.InsufficientQuantity(item.itemID, quantity, item.quantity);
-
-            // Already in storage?
-            if (item.location == ItemLocation.Storage)
-                return InventoryResult.Fail("Item already in storage", InventoryErrorCode.AlreadyInLocation);
 
             ItemBaseSO itemData = database.GetItem(item.itemID);
             if (itemData == null)
@@ -412,27 +429,37 @@ namespace Ascension.Inventory.Data
 
         /// <summary>
         /// Store all bag items (excluding equipped gear)
+        /// ✅ IMPROVED: Accepts delegate to decouple from EquipmentManager
         /// </summary>
-        public void StoreAllItems()
+        public void StoreAllItems(Func<string, bool> isEquippedChecker = null)
         {
+            // Default: nothing is equipped (safe fallback)
+            isEquippedChecker ??= (_) => false;
+
             var bagItems = GetBagItems();
+            var itemsToMove = new List<ItemInstance>();
+
             foreach (var item in bagItems)
             {
-                // Query EquipmentManager for equipped state
-                bool isEquipped = Equipment.Manager.EquipmentManager.Instance?.IsItemEquipped(item.itemID) ?? false;
-                
-                if (!isEquipped)
+                if (!isEquippedChecker(item.itemID))
                 {
-                    ItemLocation oldLocation = item.location;
-                    item.location = ItemLocation.Storage;
-                    
-                    // Fire move event for each item
-                    NotifyInventoryChanged(InventoryChangeType.ItemMoved, item, 0, oldLocation);
+                    itemsToMove.Add(item);
                 }
             }
 
-            // Still fire legacy event for bulk operations
-            OnInventoryChanged?.Invoke();
+            // Batch move
+            foreach (var item in itemsToMove)
+            {
+                ItemLocation oldLocation = item.location;
+                item.location = ItemLocation.Storage;
+                NotifyInventoryChanged(InventoryChangeType.ItemMoved, item, 0, oldLocation);
+            }
+
+            // Fire legacy event once
+            if (itemsToMove.Count > 0)
+            {
+                OnInventoryChanged?.Invoke();
+            }
         }
 
         public void ClearAll()
