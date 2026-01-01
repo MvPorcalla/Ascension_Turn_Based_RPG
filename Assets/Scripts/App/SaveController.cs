@@ -12,8 +12,8 @@ using Ascension.Character.Manager;
 using Ascension.Inventory.Manager;
 using Ascension.Inventory.Data;
 using Ascension.Inventory.Enums;
-using Ascension.Equipment.Manager;
 using Ascension.Inventory.Config;
+using Ascension.Equipment.Manager;
 
 namespace Ascension.App
 {
