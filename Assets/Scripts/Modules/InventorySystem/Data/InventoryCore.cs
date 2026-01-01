@@ -1,10 +1,11 @@
 // ══════════════════════════════════════════════════════════════════
 // Scripts/Modules/InventorySystem/Data/InventoryCore.cs
-// Core data structure for managing inventory items
+// Core data structure for managing inventory items and operations
 // ══════════════════════════════════════════════════════════════════
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Ascension.Data.SO.Item;
 using Ascension.Data.SO.Database;
@@ -26,10 +27,13 @@ namespace Ascension.Inventory.Data
         public event Action OnInventoryChanged;
 
         // ✅ Granular events for UI optimization
-        public event Action<ItemInstance, int> OnItemAdded;           // (item, quantity added)
-        public event Action<ItemInstance, int> OnItemRemoved;         // (item, quantity removed)
-        public event Action<ItemInstance, ItemLocation, ItemLocation> OnItemMoved;  // (item, from, to)
-        public event Action<ItemInstance, int, int> OnQuantityChanged;  // (item, oldQty, newQty)
+        public event Action<ItemInstance, int> OnItemAdded;
+        public event Action<ItemInstance, int> OnItemRemoved;
+        public event Action<ItemInstance, ItemLocation, ItemLocation> OnItemMoved;
+        public event Action<ItemInstance, int, int> OnQuantityChanged;
+        
+        // ✅ NEW: Batch event for bulk operations (optimization)
+        public event Action<List<ItemInstance>, ItemLocation, ItemLocation> OnBatchItemsMoved;
 
         /// <summary>
         /// Invoke all relevant events for an operation
@@ -77,20 +81,12 @@ namespace Ascension.Inventory.Data
 
         #region Constructors
 
-        /// <summary>
-        /// ✅ DEFAULT CONSTRUCTOR - Creates default services
-        /// Use this for normal gameplay
-        /// </summary>
         public InventoryCore(SlotCapacityManager capacityManager = null)
         {
             _capacityManager = capacityManager ?? new SlotCapacityManager();
             InitializeServices();
         }
 
-        /// <summary>
-        /// ✅ DEPENDENCY INJECTION CONSTRUCTOR - Accepts custom services
-        /// Use this for testing or custom implementations
-        /// </summary>
         public InventoryCore(
             SlotCapacityManager capacityManager,
             ItemQueryService queryService,
@@ -101,15 +97,8 @@ namespace Ascension.Inventory.Data
             _queryService = queryService ?? new ItemQueryService();
             _stackingService = stackingService ?? new ItemStackingService();
             _locationService = locationService ?? new ItemLocationService(_stackingService, _queryService);
-            
-            // ✅ CRITICAL: Do NOT call InitializeServices() here!
-            // Services are already set - calling InitializeServices() would overwrite them
         }
 
-        /// <summary>
-        /// ✅ FIXED: Only initializes services if they're null
-        /// Uses null-coalescing assignment (??=) to preserve injected dependencies
-        /// </summary>
         private void InitializeServices()
         {
             _queryService ??= new ItemQueryService();
@@ -151,7 +140,6 @@ namespace Ascension.Inventory.Data
         public int GetStorageItemCount()
             => _queryService.GetStorageItemCount(allItems);
 
-        // Delegate to capacity manager for space queries
         public bool HasBagSpace()
             => _capacityManager.HasSpace(ItemLocation.Bag, GetBagItemCount());
 
@@ -174,13 +162,8 @@ namespace Ascension.Inventory.Data
 
         #region Add/Remove Methods
 
-        /// <summary>
-        /// Add item to inventory with location preference and capacity checks
-        /// ✅ Returns InventoryResult with detailed feedback
-        /// </summary>
         public InventoryResult AddItem(string itemID, int quantity = 1, bool addToBag = false, GameDatabaseSO database = null)
         {
-            // Validation
             if (database == null)
                 return InventoryResult.DatabaseMissing();
 
@@ -191,7 +174,6 @@ namespace Ascension.Inventory.Data
             if (quantity <= 0)
                 return InventoryResult.Fail("Quantity must be positive", InventoryErrorCode.InvalidOperation);
 
-            // Determine target location
             ItemLocation targetLocation = DetermineTargetLocation(addToBag);
 
             if (targetLocation == ItemLocation.None)
@@ -199,7 +181,6 @@ namespace Ascension.Inventory.Data
 
             ItemInstance resultItem = null;
 
-            // Add stackable items
             if (itemData.IsStackable)
             {
                 resultItem = _stackingService.AddToExistingOrCreateNew(
@@ -212,10 +193,8 @@ namespace Ascension.Inventory.Data
             }
             else
             {
-                // Add non-stackable items one by one with capacity check
                 for (int i = 0; i < quantity; i++)
                 {
-                    // Re-check space mid-loop
                     if (!_capacityManager.HasSpace(targetLocation, GetItemCountByLocation(targetLocation)))
                     {
                         if (targetLocation == ItemLocation.Bag && HasStorageSpace())
@@ -225,7 +204,6 @@ namespace Ascension.Inventory.Data
                         }
                         else
                         {
-                            // Partial success
                             if (resultItem != null)
                             {
                                 NotifyInventoryChanged(InventoryChangeType.ItemAdded, resultItem, i);
@@ -247,10 +225,6 @@ namespace Ascension.Inventory.Data
             return InventoryResult.Ok(resultItem, $"Added {quantity}x {itemData.ItemName}");
         }
 
-        /// <summary>
-        /// Remove item from inventory
-        /// ✅ Returns InventoryResult
-        /// </summary>
         public InventoryResult RemoveItem(ItemInstance item, int quantity = 1)
         {
             if (!allItems.Contains(item))
@@ -279,17 +253,11 @@ namespace Ascension.Inventory.Data
 
         #region Location Methods (Delegate to LocationService)
 
-        /// <summary>
-        /// Move item to bag
-        /// ✅ Returns InventoryResult and uses new event system
-        /// </summary>
         public InventoryResult MoveToBag(ItemInstance item, int quantity, GameDatabaseSO database)
         {
-            // ✅ Fast path: Check target location FIRST
             if (item?.location == ItemLocation.Bag)
                 return InventoryResult.Fail("Item already in bag", InventoryErrorCode.AlreadyInLocation);
 
-            // Validation
             if (item == null)
                 return InventoryResult.Fail("Item is null", InventoryErrorCode.InvalidOperation);
 
@@ -309,7 +277,6 @@ namespace Ascension.Inventory.Data
             if (itemData == null)
                 return InventoryResult.ItemNotFound(item.itemID);
 
-            // ✅ Capture old location BEFORE the move
             ItemLocation oldLocation = item.location;
 
             bool success = _locationService.MoveToBag(
@@ -329,17 +296,11 @@ namespace Ascension.Inventory.Data
             return InventoryResult.NoSpace(ItemLocation.Bag);
         }
 
-        /// <summary>
-        /// Move item to pocket
-        /// ✅ Returns InventoryResult and uses new event system
-        /// </summary>
         public InventoryResult MoveToPocket(ItemInstance item, int quantity, GameDatabaseSO database)
         {
-            // ✅ Fast path: Check target location FIRST
             if (item?.location == ItemLocation.Pocket)
                 return InventoryResult.Fail("Item already in pocket", InventoryErrorCode.AlreadyInLocation);
 
-            // Validation
             if (item == null)
                 return InventoryResult.Fail("Item is null", InventoryErrorCode.InvalidOperation);
 
@@ -359,7 +320,6 @@ namespace Ascension.Inventory.Data
             if (itemData == null)
                 return InventoryResult.ItemNotFound(item.itemID);
 
-            // ✅ Capture old location BEFORE the move
             ItemLocation oldLocation = item.location;
 
             bool success = _locationService.MoveToPocket(
@@ -379,17 +339,11 @@ namespace Ascension.Inventory.Data
             return InventoryResult.NoSpace(ItemLocation.Pocket);
         }
 
-        /// <summary>
-        /// Move item to storage
-        /// ✅ Returns InventoryResult and uses new event system
-        /// </summary>
         public InventoryResult MoveToStorage(ItemInstance item, int quantity, GameDatabaseSO database)
         {
-            // ✅ Fast path: Check target location FIRST
             if (item?.location == ItemLocation.Storage)
                 return InventoryResult.Fail("Item already in storage", InventoryErrorCode.AlreadyInLocation);
 
-            // Validation
             if (item == null)
                 return InventoryResult.Fail("Item is null", InventoryErrorCode.InvalidOperation);
 
@@ -409,7 +363,6 @@ namespace Ascension.Inventory.Data
             if (itemData == null)
                 return InventoryResult.ItemNotFound(item.itemID);
 
-            // ✅ Capture old location BEFORE the move
             ItemLocation oldLocation = item.location;
 
             bool success = _locationService.MoveToStorage(allItems, item, quantity, itemData);
@@ -428,38 +381,36 @@ namespace Ascension.Inventory.Data
         #region Utility Methods
 
         /// <summary>
-        /// Store all bag items (excluding equipped gear)
-        /// ✅ IMPROVED: Accepts delegate to decouple from EquipmentManager
+        /// ✅ OPTIMIZED: Store all bag items using batch event
+        /// Fires ONE batch event instead of N individual events
         /// </summary>
         public void StoreAllItems(Func<string, bool> isEquippedChecker = null)
         {
             // Default: nothing is equipped (safe fallback)
             isEquippedChecker ??= (_) => false;
 
-            var bagItems = GetBagItems();
-            var itemsToMove = new List<ItemInstance>();
+            // ✅ Use LINQ for cleaner filtering
+            var itemsToMove = GetBagItems()
+                .Where(item => !isEquippedChecker(item.itemID))
+                .ToList();
 
-            foreach (var item in bagItems)
-            {
-                if (!isEquippedChecker(item.itemID))
-                {
-                    itemsToMove.Add(item);
-                }
-            }
+            // Early exit if nothing to move
+            if (itemsToMove.Count == 0)
+                return;
 
-            // Batch move
+            // Move all items at once
             foreach (var item in itemsToMove)
             {
-                ItemLocation oldLocation = item.location;
                 item.location = ItemLocation.Storage;
-                NotifyInventoryChanged(InventoryChangeType.ItemMoved, item, 0, oldLocation);
             }
 
-            // Fire legacy event once
-            if (itemsToMove.Count > 0)
-            {
-                OnInventoryChanged?.Invoke();
-            }
+            // ✅ Fire batch event ONCE (instead of N individual events)
+            OnBatchItemsMoved?.Invoke(itemsToMove, ItemLocation.Bag, ItemLocation.Storage);
+            
+            // Fire legacy event for backward compatibility
+            OnInventoryChanged?.Invoke();
+
+            Debug.Log($"[InventoryCore] Stored {itemsToMove.Count} items to storage");
         }
 
         public void ClearAll()
@@ -472,9 +423,6 @@ namespace Ascension.Inventory.Data
 
         #region Private Helpers
 
-        /// <summary>
-        /// Determine target location with capacity validation
-        /// </summary>
         private ItemLocation DetermineTargetLocation(bool preferBag)
         {
             if (preferBag && HasBagSpace())
@@ -483,7 +431,6 @@ namespace Ascension.Inventory.Data
             if (HasStorageSpace())
                 return ItemLocation.Storage;
 
-            // If bag was preferred but full, try storage as fallback
             if (preferBag && HasStorageSpace())
             {
                 Debug.LogWarning("[InventoryCore] Bag full, using storage");
