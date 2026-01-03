@@ -35905,6 +35905,7 @@ MonoBehaviour:
   storageInventoryUI: {fileID: 446500871}
   storeAllButton: {fileID: 402787535}
   backButton: {fileID: 1836789843}
+  feedbackText: {fileID: 0}
 --- !u!1 &1978051514
 GameObject:
   m_ObjectHideFlags: 0

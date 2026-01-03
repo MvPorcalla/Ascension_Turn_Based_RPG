@@ -1,6 +1,7 @@
 // ══════════════════════════════════════════════════════════════════
 // Scripts/Modules/InventorySystem/Services/ItemLocationService.cs
 // Service for moving items between locations
+// ✅ FIXED: Removed redundant space checks (caller validates)
 // ══════════════════════════════════════════════════════════════════
 
 using System.Collections.Generic;
@@ -12,7 +13,8 @@ using Ascension.Inventory.Enums;
 namespace Ascension.Inventory.Services
 {
     /// <summary>
-    /// Service responsible for moving items between locations
+    /// Service responsible for moving items between locations.
+    /// Assumes caller (InventoryCore) has already validated capacity.
     /// </summary>
     public class ItemLocationService
     {
@@ -26,7 +28,8 @@ namespace Ascension.Inventory.Services
         }
 
         /// <summary>
-        /// Move item to bag
+        /// Move item to bag.
+        /// ✅ FIXED: No space check - InventoryCore already validated
         /// </summary>
         public bool MoveToBag(
             List<ItemInstance> allItems,
@@ -35,23 +38,13 @@ namespace Ascension.Inventory.Services
             int maxBagSlots,
             ItemBaseSO itemData)
         {
-            if (item.location == ItemLocation.Bag)
-            {
-                Debug.LogWarning("[ItemLocationService] Item already in bag");
-                return false;
-            }
-
-            if (!_queryService.HasBagSpace(allItems, maxBagSlots))
-            {
-                Debug.LogWarning("[ItemLocationService] Bag is full");
-                return false;
-            }
-
+            // Note: maxBagSlots parameter kept for future use, but not validated here
             return MoveToLocation(allItems, item, quantity, ItemLocation.Bag, itemData);
         }
 
         /// <summary>
-        /// Move item to pocket
+        /// Move item to pocket.
+        /// ✅ FIXED: No space check - InventoryCore already validated
         /// </summary>
         public bool MoveToPocket(
             List<ItemInstance> allItems,
@@ -60,23 +53,13 @@ namespace Ascension.Inventory.Services
             int maxPocketSlots,
             ItemBaseSO itemData)
         {
-            if (item.location == ItemLocation.Pocket)
-            {
-                Debug.LogWarning("[ItemLocationService] Item already in pocket");
-                return false;
-            }
-
-            if (!_queryService.HasPocketSpace(allItems, maxPocketSlots))
-            {
-                Debug.LogWarning("[ItemLocationService] Pocket is full");
-                return false;
-            }
-
+            // Note: maxPocketSlots parameter kept for future use, but not validated here
             return MoveToLocation(allItems, item, quantity, ItemLocation.Pocket, itemData);
         }
 
         /// <summary>
-        /// Move item to storage
+        /// Move item to storage.
+        /// Storage has no capacity limit, so no validation needed.
         /// </summary>
         public bool MoveToStorage(
             List<ItemInstance> allItems,
@@ -84,12 +67,6 @@ namespace Ascension.Inventory.Services
             int quantity,
             ItemBaseSO itemData)
         {
-            if (item.location == ItemLocation.Storage)
-            {
-                Debug.LogWarning("[ItemLocationService] Item already in storage");
-                return false;
-            }
-
             return MoveToLocation(allItems, item, quantity, ItemLocation.Storage, itemData);
         }
 

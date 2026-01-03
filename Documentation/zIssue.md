@@ -171,7 +171,108 @@ ask me question first or script you want to see for full context before proceedi
 
 ============================================================
 
-TODO: NEXT - 🎯 Phase 2: Code Quality
+4. ItemQueryService: Performance Optimization ⚠️
+Current Code:
+csharppublic List<ItemInstance> GetBagItems(List<ItemInstance> allItems)
+{
+    return allItems.Where(item =>
+        item.location == ItemLocation.Bag &&
+        !IsSkill(item.itemID)
+    ).ToList();
+}
+Problem: Every call does a full O(n) scan with string prefix check.
+Optimization (if needed):
+csharp// Option 1: Cache results (invalidate on change)
+private Dictionary<ItemLocation, List<ItemInstance>> _cachedByLocation;
 
-✅ Continue to Phase 3 (Query Caching + ItemSlotUI optimization)
-✅ Continue to Phase 4 (Async support + Testing infrastructure)
+public List<ItemInstance> GetBagItems(List<ItemInstance> allItems)
+{
+    if (_cachedByLocation == null || _isDirty)
+    {
+        RebuildCache(allItems);
+    }
+    return _cachedByLocation[ItemLocation.Bag];
+}
+
+// Option 2: Pre-filter skills once
+private HashSet<string> _skillItemIDs = new HashSet<string>();
+
+private bool IsSkill(string itemID)
+{
+    return _skillItemIDs.Contains(itemID);  // O(1) instead of O(k) where k = prefix length
+}
+But honestly: Your current approach is fine for <1000 items. Only optimize if profiler shows issues.
+
+-------------------------------------------------
+
+5. Missing Transaction Support ⚠️
+Scenario: What if you want to:
+
+Remove 5 iron ore
+Remove 2 wood
+Add 1 sword
+
+But step 2 fails because you don't have enough wood?
+Current behavior: Step 1 already removed the iron! Now your inventory is inconsistent.
+Solution: Transaction pattern:
+csharppublic class InventoryTransaction
+{
+    private List<Action> _operations = new List<Action>();
+    private List<Action> _rollbacks = new List<Action>();
+    
+    public InventoryTransaction RemoveItem(string itemID, int quantity)
+    {
+        _operations.Add(() => {
+            var result = inventory.RemoveItem(itemID, quantity);
+            if (!result.Success) throw new Exception(result.Message);
+            
+            // Store rollback action
+            _rollbacks.Add(() => inventory.AddItem(itemID, quantity));
+        });
+        return this;
+    }
+    
+    public InventoryResult Commit()
+    {
+        try
+        {
+            foreach (var op in _operations)
+                op();
+            
+            return InventoryResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            // Rollback all operations
+            for (int i = _rollbacks.Count - 1; i >= 0; i--)
+                _rollbacks[i]();
+            
+            return InventoryResult.Fail(ex.Message);
+        }
+    }
+}
+
+// Usage:
+var transaction = new InventoryTransaction()
+    .RemoveItem("iron_ore", 5)
+    .RemoveItem("wood", 2)
+    .AddItem("sword_iron", 1);
+
+var result = transaction.Commit();
+This is advanced - only add if you have complex crafting/trading systems.
+
+
+
+
+==========================
+
+Add this to your InventoryManager:
+csharp[ContextMenu("Run All Tests")]
+public void RunAllTests()
+{
+    TestAddRemove();
+    TestStacking();
+    TestMoveBetweenLocations();
+    TestCapacityUpgrades();
+    Debug.Log("✅ All inventory tests passed!");
+}
