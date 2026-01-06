@@ -50,7 +50,8 @@ Scripts/
 │   ├── SaveManager.cs
 │   └── ServiceContainer.cs
 │
-├── Modules/                                // All gameplay modules
+├── Modules/
+│   │
 │   ├── CharacterSystem/
 │   │   ├── Ascension.Character.asmdef      // Future once all are solidified
 │   │   ├── Manager/
@@ -76,68 +77,93 @@ Scripts/
 │   │       ├── LevelUpManager.cs
 │   │       └── CharacterCreationManager.cs
 │   │
-│   ├── GameSystem/                                 // Game-wide systems, optional cross-module logic, Will be reworked into CombatSystem later
-│   │   ├── Ascension.GameSystem.asmdef
-│   │   └── PotionManager.cs                        // Will be reworked later
-│   │
-│   ├── InventorySystem/                            // 
-│   │   ├── Ascension.Inventory.asmdef              // Not implemented yet
+│   ├── InventorySystem/                    // ✅ PURE DATA MODULE (no UI, no scenes)
+│   │   ├── Ascension.Inventory.asmdef      // Not implemented yet
+│   │   │
 │   │   ├── Config/
-│   │   │   └── InventoryConfig.cs           
+│   │   │   └── InventoryConfig.cs          // 
+│   │   │
 │   │   ├── Constant/
-│   │   │   └── InventoryConstants.cs
-│   │   ├── Manager/
-│   │   │   └── InventoryManager.cs
-│   │   ├── Data/
-│   │   │   ├── InventoryCore.cs
-│   │   │   ├── InventoryCoreData.cs
-│   │   │   └── ItemInstance.cs
-│   │   ├── Enum/
-│   │       ├── InventoryEnums.cs
-│   │       └── ItemLocationExtensions
-│   │   ├── Popup/
-│   │   │   ├── InventoryPotionPopup.cs
-│   │   │   └── InventoryItemPopup.cs
-│   │   └── UI/
-│   │       ├── BagInventoryUI.cs
-│   │       ├── PocketInevtoryUI.cs
-│   │       ├── StorageInventoryUI.cs
-│   │       ├── StorageRoomController.cs
-│   │       ├── StoragePopupContext.cs
-│   │       ├── ItemSlotUI.cs
-│   │       └── BuffLineUI.cs
-│   │
-│   ├── EquipmentSystem/                     // In-progress module
-│   │   ├── Manager/
-│   │   │   ├── SkillLoadoutManager.cs
-│   │   │   └── EquipmentManager.cs (IGameService)
+│   │   │   └── InventoryConstants.cs       // 
 │   │   │
 │   │   ├── Data/
-│   │   │   ├── EquippedGear.cs (Weapon, Helmet, Chest, etc.)
-│   │   │   └── SkillLoadout.cs (Item1, Item2, Item3 references)
+│   │   │   ├── InventoryCore.cs            // The actual data container
+│   │   │   ├── InventoryCoreData.cs        // For save/load
+│   │   │   ├── InventoryResult.cs          // 
+│   │   │   └── ItemInstance.cs             // Individual item
+│   │   │
+│   │   ├── Enums/
+│   │   │   ├── InventoryEnums.cs           // ItemLocation enum
+│   │   │   └── ItemLocationExtensions
+│   │   │
+│   │   ├── Manager/
+│   │   │   ├── InventoryManager.cs         // Singleton, IGameService
+│   │   │   └── SlotCapacityManager.cs      // Manages slot limits
 │   │   │
 │   │   ├── Services/
-│   │   │   ├── GearSlotService.cs (Slot validation, type checking)
-│   │   │   ├── GearEquipService.cs (Equip/unequip logic)
-│   │   │   └── GearStatsService.cs (Calculate total item stats)
+│   │   │   ├── ItemQueryService.cs         // Get items by location
+│   │   │   ├── ItemStackingService.cs      // Stack merge/split
+│   │   │   └── ItemLocationService.cs      // Move items between locations
+│   │   │
+│   │   └── UI/
+│   │       └── ItemSlotUI.cs               // Reusable slot component
+│   │
+│   ├── StorageSystem/                       // ✅ STORAGE ROOM UI MODULE
+│   │   ├── Ascension.Storage.asmdef        // References: Inventory, SharedUI, Data
+│   │   │
+│   │   ├── Controller/
+│   │   │   └── StorageRoomController.cs    // Main storage room scene controller
+│   │   │
+│   │   ├── Enums/
+│   │   │   └── StorageEnums.cs             // StorageFilterType (if needed)
+│   │   │
+│   │   ├── Popup/
+│   │   │   ├── InventoryItemPopup.cs       // For stackable items (materials, misc)
+│   │   │   └── InventoryPotionPopup.cs     // For potions
+│   │   │
+│   │   └── UI/
+│   │       ├── BagInventoryUI.cs           // Displays bag (12 slots)
+│   │       ├── EquippedGearPreviewUI.cs       // 
+│   │       ├── EquippedGearSlotUI.cs       // Reusable slot component
+│   │       ├── StorageInventoryUI.cs       // Displays storage (60 slots)
+│   │       └── StoragePopupContext.cs      // Context provider for GearPopup
+│   │
+│   ├── EquipmentSystem/                     // ✅ EQUIPMENT ROOM UI MODULE
+│   │   ├── Ascension.Equipment.asmdef      // References: Inventory, Character, SharedUI
+│   │   │
+│   │   ├── Manager/
+│   │   │   ├── EquipmentManager.cs         // Manages equipped gear
+│   │   │   └── SkillLoadoutManager.cs      // Manages skill hotbar
+│   │   │
+│   │   ├── Data/
+│   │   │   ├── EquippedGear.cs             // 7 equipped slots
+│   │   │   └── SkillLoadout.cs             // 3 skill slots
+│   │   │
+│   │   ├── Services/
+│   │   │   ├── GearSlotService.cs          // Slot validation
+│   │   │   ├── GearEquipService.cs         // Equip/unequip logic
+│   │   │   └── GearStatsService.cs         // Calculate stats
 │   │   │
 │   │   ├── UI/
-│   │   │   ├── EquipmentPopupContext.cs
-│   │   │   ├── EquipmentRoomUI.cs (Main controller)
-│   │   │   ├── GearSlotUI.cs (Individual gear slot display)
-│   │   │   ├── SkillSlotUI.cs (Hotbar item slot)
-│   │   │   └── EquipmentStorageUI.cs (Filtered storage view)
+│   │   │   ├── EquipmentRoomController.cs  // Main equipment room scene controller
+│   │   │   ├── GearSlotUI.cs               // Individual gear slot (7 slots)
+│   │   │   ├── SkillSlotUI.cs              // Skill hotbar slot (3 slots)
+│   │   │   ├── EquipmentStorageUI.cs       // Filtered storage view
+│   │   │   └── EquipmentPopupContext.cs    // Context for equipment popups
 │   │   │
 │   │   └── Enums/
-│   │       └── EquipmentEnums.cs (GearSlotType, StorageFilter)
+│   │       └── EquipmentEnums.cs           // GearSlotType, EquipmentStorageFilter
 │   │
-│   └── SharedUI/                          // NEW: Shared UI components
+│   └── SharedUI/                            // ✅ SHARED UI COMPONENTS
 │       ├── Ascension.SharedUI.asmdef
+│       │
 │       ├── Popups/
-│       │   ├── GearPopup.cs
-│       │   ├── IGearPopupContext.cs
+│       │   ├── GearPopup.cs                // Shared gear/weapon popup
+│       │   └── IGearPopupContext.cs        // Interface for context
+│       │
 │       └── Components/
-│           └── (future shared UI components)
+│           └── BuffLineUI.cs               // Shared buff display component
+│    
 │
 ├── UI/                                     // UI module
 │   ├── Ascension.UI.asmdef
@@ -165,7 +191,7 @@ Scripts/
         │   └── CharacterBaseStatsSO.cs
         └── Database/
             └── GameDatabaseSO.cs
-
+            
 ```
 
 ---

@@ -63,23 +63,27 @@ Scripts/
 │   │   ├── Constant/
 │   │   │   └── InventoryConstants.cs       // 
 │   │   │
-│   │   ├── Manager/
-│   │   │   ├── InventoryManager.cs         // Singleton, IGameService
-│   │   │   └── SlotCapacityManager.cs      // Manages slot limits
-│   │   │
 │   │   ├── Data/
 │   │   │   ├── InventoryCore.cs            // The actual data container
 │   │   │   ├── InventoryCoreData.cs        // For save/load
+│   │   │   ├── InventoryResult.cs          // 
 │   │   │   └── ItemInstance.cs             // Individual item
+│   │   │
+│   │   ├── Enums/
+│   │   │   ├── InventoryEnums.cs           // ItemLocation enum
+│   │   │   └── ItemLocationExtensions
+│   │   │
+│   │   ├── Manager/
+│   │   │   ├── InventoryManager.cs         // Singleton, IGameService
+│   │   │   └── SlotCapacityManager.cs      // Manages slot limits
 │   │   │
 │   │   ├── Services/
 │   │   │   ├── ItemQueryService.cs         // Get items by location
 │   │   │   ├── ItemStackingService.cs      // Stack merge/split
 │   │   │   └── ItemLocationService.cs      // Move items between locations
 │   │   │
-│   │   └── Enums/
-│   │       ├── InventoryEnums.cs           // ItemLocation enum
-│   │       └── ItemLocationExtensions
+│   │   └── UI/
+│   │       └── ItemSlotUI.cs               // Reusable slot component
 │   │
 │   ├── StorageSystem/                       // ✅ STORAGE ROOM UI MODULE
 │   │   ├── Ascension.Storage.asmdef        // References: Inventory, SharedUI, Data
@@ -87,19 +91,19 @@ Scripts/
 │   │   ├── Controller/
 │   │   │   └── StorageRoomController.cs    // Main storage room scene controller
 │   │   │
-│   │   ├── UI/
-│   │   │   ├── BagInventoryUI.cs           // Displays bag (12 slots)
-│   │   │   ├── PocketInventoryUI.cs        // Displays pocket (6 slots)
-│   │   │   ├── StorageInventoryUI.cs       // Displays storage (60 slots)
-│   │   │   └── ItemSlotUI.cs               // Reusable slot component
+│   │   ├── Enums/
+│   │   │   └── StorageEnums.cs             // StorageFilterType (if needed)
 │   │   │
 │   │   ├── Popup/
 │   │   │   ├── InventoryItemPopup.cs       // For stackable items (materials, misc)
-│   │   │   ├── InventoryPotionPopup.cs     // For potions
-│   │   │   └── StoragePopupContext.cs      // Context provider for GearPopup
+│   │   │   └── InventoryPotionPopup.cs     // For potions
 │   │   │
-│   │   └── Enums/
-│   │       └── StorageEnums.cs             // StorageFilterType (if needed)
+│   │   └── UI/
+│   │       ├── BagInventoryUI.cs           // Displays bag (12 slots)
+│   │       ├── EquippedGearPreviewUI.cs       // 
+│   │       ├── EquippedGearSlotUI.cs       // Reusable slot component
+│   │       ├── StorageInventoryUI.cs       // Displays storage (60 slots)
+│   │       └── StoragePopupContext.cs      // Context provider for GearPopup
 │   │
 │   ├── EquipmentSystem/                     // ✅ EQUIPMENT ROOM UI MODULE
 │   │   ├── Ascension.Equipment.asmdef      // References: Inventory, Character, SharedUI

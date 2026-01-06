@@ -102,12 +102,62 @@ Canvas
 │     │                          │    └── Quantity (TMP - max x999 after that new slot)
 │     │                          ├── ...
 │     │
-│     ├── StorageRoomPanel (Full screen)
-│     │     ├── Roomheader
-│     │     ├── BagInventorySection
-│     │     ├── PocketSection
-│     │     └── StorageSection
-│     │
+├── StorageRoomPanel    (fills screen)
+│    ├── Roomheader
+│    │    ├── backButton
+│    │    └── Title
+│    │
+│    ├── BagInventorySection (Players Bag 12 Max slots (can be increase by equipable bag))
+│    │    ├── Bagheader
+│    │    │    ├── Title
+│    │    │    └── StoreAllButton
+│    │    │         └── text (TMP)
+│    │    └── BagPanel
+│    │         └── BagViewport
+│    │              └── BagContent (GridLayoutGroup)
+│    │                   ├── EmptySlot (Prefab)
+│    │                   │    ├── Button (button)
+│    │                   │    ├── ItemIcon (Image)
+│    │                   │    ├── EquipedIndicator
+│    │                   │    └── Quantity (TMP - max x999 after that new slot)
+│    │                   ├── ...
+│    │ 
+│    ├── EquippedGearPreview   ← (EquippedGearPreviewUI)
+│    │     ├── PreviewHeader
+│    │     └── PreviewContent
+│    │         ├── GPS_Weapon
+│    │         │    ├── Background   ← Image
+│    │         │    ├── Icon         ← Image
+│    │         │    ├── EmptyOverlay ← Image or GO
+│    │         │    └── Label        ← TMP_Text (optional)
+│    │         ├── GPS_Helmet
+│    │         ├── GPS_Chest
+│    │         ├── GPS_Gloves
+│    │         ├── GPS_Boots
+│    │         ├── GPS_Acc1
+│    │         └── GPS_Acc2
+│    │
+│    └── StorageSection (All Items Player have including weapon, misc, potion, gear, materials, etc)
+│         ├── Storageheader
+│         │    ├── background
+│         │    └── Title
+│         ├── SortSection
+│              ├── SortButtons
+│         │         ├── AllItemButton
+│         │         ├── WeaponButton
+│         │         ├── GearButton
+│         │         ├── PotionButton
+│         │         ├── MaterialsButton
+│         │         ├── MiscButton
+│         └── StoragePanel
+│              └── StorageViewport
+│                   └── StorageContent (GridLayoutGroup)
+│                        ├── SitemSlot (Prefab)
+│                        │    ├── Button (button)
+│                        │    ├── ItemIcon (Image)
+│                        │    ├── EquipedIndicator
+│                        │    └── Quantity (TMP - max x999 after that new slot)
+│                        ├── ...
 
 │ 
 ├── MenuPanelsLayer (empty GameObject)

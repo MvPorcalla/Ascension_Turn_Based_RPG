@@ -154,25 +154,21 @@ Canvas (Screen Space - Overlay, 1920x1080)
 │    │                   │    ├── EquipedIndicator
 │    │                   │    └── Quantity (TMP - max x999 after that new slot)
 │    │                   ├── ...
-│    ├── PocketSection (Players Bag 12 Max slots (can be increase by equipable bag))
-│    │    ├── Pocektheader
-│    │    │    ├── Title
-│    │    │    └── StoreAllButton
-│    │    │         └── text (TMP)
-│    │    └── EquippedGearPreview   ← (EquippedGearPreviewUI)
-│    │          ├── PreviewHeader
-│    │          └── PreviewContent  ← Grid Layout Group
-│    │              ├── GPS_Weapon
-│    │              │    ├── Background   ← Image
-│    │              │    ├── Icon         ← Image
-│    │              │    ├── EmptyOverlay ← Image or GO
-│    │              │    └── Label        ← TMP_Text (optional)
-│    │              ├── GPS_Helmet
-│    │              ├── GPS_Chest
-│    │              ├── GPS_Gloves
-│    │              ├── GPS_Boots
-│    │              ├── GPS_Acc1
-│    │              └── GPS_Acc2
+│    │ 
+│    ├── EquippedGearPreview   ← (EquippedGearPreviewUI)
+│    │     ├── PreviewHeader
+│    │     └── PreviewContent
+│    │         ├── GPS_Weapon
+│    │         │    ├── Background   ← Image
+│    │         │    ├── Icon         ← Image
+│    │         │    ├── EmptyOverlay ← Image or GO
+│    │         │    └── Label        ← TMP_Text (optional)
+│    │         ├── GPS_Helmet
+│    │         ├── GPS_Chest
+│    │         ├── GPS_Gloves
+│    │         ├── GPS_Boots
+│    │         ├── GPS_Acc1
+│    │         └── GPS_Acc2
 │    │
 │    └── StorageSection (All Items Player have including weapon, misc, potion, gear, materials, etc)
 │         ├── Storageheader
