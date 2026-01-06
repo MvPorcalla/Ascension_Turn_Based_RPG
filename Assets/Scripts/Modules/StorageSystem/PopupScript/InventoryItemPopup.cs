@@ -1,6 +1,7 @@
 // ──────────────────────────────────────────────────
 // InventoryItemPopup.cs
 // UI popup for displaying item details and actions
+// ✅ FIXED: Pocket logic completely removed
 // ──────────────────────────────────────────────────
 
 using UnityEngine;
@@ -40,8 +41,8 @@ namespace Ascension.Inventory.Popup
         [SerializeField] private Slider quantitySlider;
 
         [Header("Action Buttons")]
-        [SerializeField] private Button addToPocketButton;
-        [SerializeField] private Button addToBagButton;
+        [SerializeField] private Button actionButton1;
+        [SerializeField] private Button actionButton2;
 
         private ItemBaseSO currentItem;
         private ItemInstance currentItemInstance;
@@ -50,19 +51,16 @@ namespace Ascension.Inventory.Popup
 
         private void Start()
         {
-            // Setup button listeners
             backButton.onClick.AddListener(ClosePopup);
             
-            // Quantity controls
             plus5Button.onClick.AddListener(() => AdjustQuantity(5));
             plus1Button.onClick.AddListener(() => AdjustQuantity(1));
             minus1Button.onClick.AddListener(() => AdjustQuantity(-1));
             minus5Button.onClick.AddListener(() => AdjustQuantity(-5));
             quantitySlider.onValueChanged.AddListener(OnSliderChanged);
 
-            // Action buttons
-            addToPocketButton.onClick.AddListener(OnAddToPocketClicked);
-            addToBagButton.onClick.AddListener(OnAddToBagClicked);
+            actionButton1.onClick.AddListener(OnActionButton1Clicked);
+            actionButton2.onClick.AddListener(OnActionButton2Clicked);
 
             popupContainer.SetActive(false);
         }
@@ -76,10 +74,8 @@ namespace Ascension.Inventory.Popup
 
             popupContainer.SetActive(true);
 
-            // Setup header
             itemName.text = item.ItemName;
 
-            // Setup icon
             if (itemIcon != null)
             {
                 if (item.Icon != null)
@@ -94,24 +90,18 @@ namespace Ascension.Inventory.Popup
                 }
             }
 
-            // Setup description
             if (itemDescription != null)
                 itemDescription.text = item.Description;
 
-            // Setup quantity display
             if (quantityText != null)
                 quantityText.text = "Quantity:";
 
-            // Setup quantity controls
             SetupQuantityControls(itemInstance.quantity);
-
-            // Setup action buttons visibility
             SetupActionButtons(fromLocation);
         }
 
         private void SetupQuantityControls(int maxQuantity)
         {
-            // Setup slider
             quantitySlider.minValue = 1;
             quantitySlider.maxValue = maxQuantity;
             quantitySlider.value = 1;
@@ -121,34 +111,26 @@ namespace Ascension.Inventory.Popup
 
         private void SetupActionButtons(ItemLocation fromLocation)
         {
-            // Setup buttons based on current location
+            // ✅ SIMPLIFIED: Only 2 buttons - Bag and Storage
             switch (fromLocation)
             {
                 case ItemLocation.Storage:
-                    // From storage: [Add to Pocket] [Add to Bag]
-                    addToPocketButton.gameObject.SetActive(true);
-                    addToBagButton.gameObject.SetActive(true);
-                    
-                    SetButtonText(addToPocketButton, "Add to Pocket");
-                    SetButtonText(addToBagButton, "Add to Bag");
-                    break;
-
-                case ItemLocation.Pocket:
-                    // From pocket: [Add to Bag] [Store]
-                    addToPocketButton.gameObject.SetActive(true); // ✅ Show both buttons
-                    addToBagButton.gameObject.SetActive(true);
-                    
-                    SetButtonText(addToPocketButton, "Add to Bag");
-                    SetButtonText(addToBagButton, "Store");
+                    // From storage: [Add to Bag] [Close]
+                    actionButton1.gameObject.SetActive(true);
+                    actionButton2.gameObject.SetActive(false);
+                    SetButtonText(actionButton1, "Add to Bag");
                     break;
 
                 case ItemLocation.Bag:
-                    // From bag: [Add to Pocket] [Store]
-                    addToPocketButton.gameObject.SetActive(true);
-                    addToBagButton.gameObject.SetActive(true);
-                    
-                    SetButtonText(addToPocketButton, "Add to Pocket");
-                    SetButtonText(addToBagButton, "Store");
+                    // From bag: [Store] [Close]
+                    actionButton1.gameObject.SetActive(true);
+                    actionButton2.gameObject.SetActive(false);
+                    SetButtonText(actionButton1, "Store");
+                    break;
+
+                default:
+                    actionButton1.gameObject.SetActive(false);
+                    actionButton2.gameObject.SetActive(false);
                     break;
             }
         }
@@ -194,70 +176,42 @@ namespace Ascension.Inventory.Popup
         #endregion
 
         #region Action Handlers
-        private void OnAddToPocketClicked()
-        {
-            var buttonText = addToPocketButton.GetComponentInChildren<TMP_Text>()?.text;
-            var database = InventoryManager.Instance.Database;
-            
-            if (buttonText == "Add to Pocket")
-            {
-                var result = InventoryManager.Instance.Inventory.MoveToPocket(currentItemInstance, selectedQuantity, database);
-                if (result.Success) // ✅ Check .Success
-                {
-                    Debug.Log($"[InventoryItemPopup] {result.Message}");
-                    ClosePopup();
-                }
-                else
-                {
-                    Debug.LogWarning($"[InventoryItemPopup] {result.Message}");
-                }
-            }
-            else if (buttonText == "Add to Bag")
-            {
-                var result = InventoryManager.Instance.Inventory.MoveToBag(currentItemInstance, selectedQuantity, database);
-                if (result.Success) // ✅ Check .Success
-                {
-                    Debug.Log($"[InventoryItemPopup] {result.Message}");
-                    ClosePopup();
-                }
-                else
-                {
-                    Debug.LogWarning($"[InventoryItemPopup] {result.Message}");
-                }
-            }
-        }
 
-        private void OnAddToBagClicked()
+        private void OnActionButton1Clicked()
         {
-            var buttonText = addToBagButton.GetComponentInChildren<TMP_Text>()?.text;
+            var buttonText = actionButton1.GetComponentInChildren<TMP_Text>()?.text;
             var database = InventoryManager.Instance.Database;
+            InventoryResult result;
             
             if (buttonText == "Add to Bag")
             {
-                var result = InventoryManager.Instance.Inventory.MoveToBag(currentItemInstance, selectedQuantity, database);
-                if (result.Success) // ✅ Check .Success
-                {
-                    Debug.Log($"[InventoryItemPopup] {result.Message}");
-                    ClosePopup();
-                }
-                else
-                {
-                    Debug.LogWarning($"[InventoryItemPopup] {result.Message}");
-                }
+                result = InventoryManager.Instance.Inventory.MoveToBag(currentItemInstance, selectedQuantity, database);
             }
             else if (buttonText == "Store")
             {
-                var result = InventoryManager.Instance.Inventory.MoveToStorage(currentItemInstance, selectedQuantity, database);
-                if (result.Success) // ✅ Check .Success
-                {
-                    Debug.Log($"[InventoryItemPopup] {result.Message}");
-                    ClosePopup();
-                }
-                else
-                {
-                    Debug.LogWarning($"[InventoryItemPopup] {result.Message}");
-                }
+                result = InventoryManager.Instance.Inventory.MoveToStorage(currentItemInstance, selectedQuantity, database);
             }
+            else
+            {
+                Debug.LogWarning($"[InventoryItemPopup] Unknown button action: {buttonText}");
+                return;
+            }
+
+            if (result.Success)
+            {
+                Debug.Log($"[InventoryItemPopup] {result.Message}");
+                ClosePopup();
+            }
+            else
+            {
+                Debug.LogWarning($"[InventoryItemPopup] {result.Message}");
+            }
+        }
+
+        private void OnActionButton2Clicked()
+        {
+            // Reserved for future use
+            ClosePopup();
         }
 
         private void ClosePopup()

@@ -207,5 +207,25 @@ namespace Ascension.Storage.UI
         public int GetSlotCount() => slotCache.Count;
 
         #endregion
+
+        /// <summary>
+        /// ✅ NEW: Alias for ForceRefresh() - called by StorageRoomController
+        /// </summary>
+        public void Initialize()
+        {
+            // Already handled by Start(), but provide for external callers
+            if (!isInitialized)
+            {
+                InitializeSlots();
+            }
+        }
+
+        /// <summary>
+        /// ✅ NEW: Alias for RefreshBag() - called by StorageRoomController
+        /// </summary>
+        public void RefreshDisplay()
+        {
+            RefreshBag();
+        }
     }
 }

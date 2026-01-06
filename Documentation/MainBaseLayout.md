@@ -159,15 +159,20 @@ Canvas (Screen Space - Overlay, 1920x1080)
 │    │    │    ├── Title
 │    │    │    └── StoreAllButton
 │    │    │         └── text (TMP)
-│    │    └── PocketPanel
-│    │         └── PocektViewport
-│    │              └── PocketContent (GridLayoutGroup)
-│    │                   ├── EmptySlot (Prefab)
-│    │                   │    ├── Button (button)
-│    │                   │    ├── ItemIcon (Image)
-│    │                   │    ├── EquipedIndicator
-│    │                   │    └── Quantity (TMP - max x999 after that new slot)
-│    │                   ├── ...
+│    │    └── EquippedGearPreview   ← (EquippedGearPreviewUI)
+│    │          ├── PreviewHeader
+│    │          └── PreviewContent  ← Grid Layout Group
+│    │              ├── GPS_Weapon
+│    │              │    ├── Background   ← Image
+│    │              │    ├── Icon         ← Image
+│    │              │    ├── EmptyOverlay ← Image or GO
+│    │              │    └── Label        ← TMP_Text (optional)
+│    │              ├── GPS_Helmet
+│    │              ├── GPS_Chest
+│    │              ├── GPS_Gloves
+│    │              ├── GPS_Boots
+│    │              ├── GPS_Acc1
+│    │              └── GPS_Acc2
 │    │
 │    └── StorageSection (All Items Player have including weapon, misc, potion, gear, materials, etc)
 │         ├── Storageheader

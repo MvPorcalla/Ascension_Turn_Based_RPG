@@ -1,6 +1,7 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\AppFlow\SaveController.cs
 // Save and load game state management
+// ✅ FINAL: Migration logic removed after cleanup period
 // ════════════════════════════════════════════
 
 using System;
@@ -117,7 +118,6 @@ namespace Ascension.App
                 return false;
             }
             
-            // Load order matters
             LoadInventoryFromSave(saveData);
             LoadEquipmentFromSave(saveData);
             LoadPlayerFromSave(saveData);
@@ -193,11 +193,8 @@ namespace Ascension.App
         }
         #endregion
 
-        #region Private Methods - Inventory Conversion (✅ MIGRATED)
+        #region Private Methods - Inventory Conversion (✅ CLEANED)
         
-        /// <summary>
-        /// ✅ MIGRATED: Convert ItemInstance (enum) → ItemInstanceData (int)
-        /// </summary>
         private InventorySaveData ConvertToInventorySaveData()
         {
             if (_inventoryManager == null)
@@ -205,9 +202,8 @@ namespace Ascension.App
                 return new InventorySaveData 
                 { 
                     items = new ItemInstanceData[0], 
-                    maxBagSlots = 12,
-                    maxPocketSlots = 6,
-                    maxStorageSlots = 60
+                    maxBagSlots = InventoryConfig.DEFAULT_BAG_SLOTS,
+                    maxStorageSlots = InventoryConfig.DEFAULT_STORAGE_SLOTS
                 };
             }
 
@@ -220,7 +216,6 @@ namespace Ascension.App
                 { 
                     items = Array.Empty<ItemInstanceData>(),
                     maxBagSlots = InventoryConfig.DEFAULT_BAG_SLOTS,
-                    maxPocketSlots = InventoryConfig.DEFAULT_POCKET_SLOTS,
                     maxStorageSlots = InventoryConfig.DEFAULT_STORAGE_SLOTS
                 };
             }
@@ -231,12 +226,11 @@ namespace Ascension.App
             {
                 ItemInstance item = bagData.items[i];
                 
-                // ✅ MIGRATED: enum → int conversion
                 itemArray[i] = new ItemInstanceData
                 {
                     itemId = item.itemID,
                     quantity = item.quantity,
-                    location = (int)item.location  // ✅ Convert enum to int
+                    location = (int)item.location
                 };
             }
             
@@ -244,13 +238,12 @@ namespace Ascension.App
             {
                 items = itemArray,
                 maxBagSlots = bagData.maxBagSlots,
-                maxPocketSlots = bagData.maxPocketSlots,
                 maxStorageSlots = bagData.maxStorageSlots
             };
         }
 
         /// <summary>
-        /// ✅ MIGRATED: Convert ItemInstanceData (int) → ItemInstance (enum)
+        /// ✅ CLEANED: Simple load without migration logic
         /// </summary>
         private void LoadInventoryFromSave(SaveData saveData)
         {
@@ -269,20 +262,18 @@ namespace Ascension.App
             InventoryCoreData bagData = new InventoryCoreData
             {
                 maxBagSlots = saveData.inventoryData.maxBagSlots,
-                maxPocketSlots = saveData.inventoryData.maxPocketSlots,
                 maxStorageSlots = saveData.inventoryData.maxStorageSlots,
                 items = new System.Collections.Generic.List<ItemInstance>()
             };
             
-            // ✅ MIGRATED: int → enum conversion
             foreach (var itemData in saveData.inventoryData.items)
             {
-                ItemLocation location = (ItemLocation)itemData.location;  // ✅ Convert int to enum
+                ItemLocation location = (ItemLocation)itemData.location;
                 
                 ItemInstance item = new ItemInstance(
                     itemData.itemId, 
                     itemData.quantity, 
-                    location  // ✅ Pass enum directly
+                    location
                 );
                 
                 bagData.items.Add(item);
@@ -291,19 +282,6 @@ namespace Ascension.App
             _inventoryManager.LoadInventory(bagData);
 
             Debug.Log($"[SaveController] ✓ Loaded inventory: {bagData.items.Count} items");
-            
-            // ✅ Log distribution
-            int bagCount = 0, pocketCount = 0, storageCount = 0;
-            foreach (var item in bagData.items)
-            {
-                switch (item.location)
-                {
-                    case ItemLocation.Bag: bagCount++; break;
-                    case ItemLocation.Pocket: pocketCount++; break;
-                    case ItemLocation.Storage: storageCount++; break;
-                }
-            }
-            Debug.Log($"[SaveController]   Distribution - Bag:{bagCount} Pocket:{pocketCount} Storage:{storageCount}");
         }
         #endregion
 

@@ -1,6 +1,7 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\Modules\InventorySystem\Manager\InventoryManager.cs
 // Main manager for the Inventory Module
+// ✅ REFACTORED: All pocket-related API removed
 // ════════════════════════════════════════════
 
 using UnityEngine;
@@ -12,10 +13,6 @@ using Ascension.Core;
 
 namespace Ascension.Inventory.Manager
 {
-    /// <summary>
-    /// Main manager for the Inventory Module.
-    /// Provides a clean API for both Storage System and Equipment System.
-    /// </summary>
     public class InventoryManager : MonoBehaviour, IGameService
     {
         #region Singleton
@@ -45,9 +42,6 @@ namespace Ascension.Inventory.Manager
         #endregion
 
         #region IGameService Implementation
-        /// <summary>
-        /// ✅ REFACTORED: Clean initialization
-        /// </summary>
         public void Initialize()
         {
             Debug.Log("[InventoryManager] Initializing...");
@@ -63,7 +57,6 @@ namespace Ascension.Inventory.Manager
         {
             Capacity = new SlotCapacityManager(
                 bagSlots: InventoryConfig.DEFAULT_BAG_SLOTS,
-                pocketSlots: InventoryConfig.DEFAULT_POCKET_SLOTS,
                 storageSlots: InventoryConfig.DEFAULT_STORAGE_SLOTS
             );
 
@@ -91,33 +84,21 @@ namespace Ascension.Inventory.Manager
         #endregion
 
         #region Public API - Core Operations
-        /// <summary>
-        /// Add item to inventory
-        /// </summary>
         public InventoryResult AddItem(string itemID, int quantity = 1, bool addToBag = false)
         {
             return Inventory.AddItem(itemID, quantity, addToBag, database);
         }
 
-        /// <summary>
-        /// Remove item from inventory
-        /// </summary>
         public InventoryResult RemoveItem(ItemInstance item, int quantity = 1)
         {
             return Inventory.RemoveItem(item, quantity);
         }
 
-        /// <summary>
-        /// Check if inventory has item
-        /// </summary>
         public bool HasItem(string itemID, int quantity = 1)
         {
             return Inventory.HasItem(itemID, quantity);
         }
 
-        /// <summary>
-        /// Get total count of specific item
-        /// </summary>
         public int GetItemCount(string itemID)
         {
             return Inventory.GetItemCount(itemID);
@@ -125,25 +106,11 @@ namespace Ascension.Inventory.Manager
         #endregion
 
         #region Public API - Capacity Management
-        /// <summary>
-        /// Upgrade bag capacity
-        /// </summary>
         public void UpgradeBag(int additionalSlots)
         {
             Capacity.UpgradeBag(additionalSlots);
         }
 
-        /// <summary>
-        /// Upgrade pocket capacity
-        /// </summary>
-        public void UpgradePocket(int additionalSlots)
-        {
-            Capacity.UpgradePocket(additionalSlots);
-        }
-
-        /// <summary>
-        /// Upgrade storage capacity
-        /// </summary>
         public void UpgradeStorage(int additionalSlots)
         {
             Capacity.UpgradeStorage(additionalSlots);
@@ -151,9 +118,6 @@ namespace Ascension.Inventory.Manager
         #endregion
 
         #region Public API - Save/Load
-        /// <summary>
-        /// Load inventory from data
-        /// </summary>
         public void LoadInventory(InventoryCoreData data)
         {
             if (data == null)
@@ -162,10 +126,9 @@ namespace Ascension.Inventory.Manager
                 return;
             }
 
-            // Restore capacity settings
+            // Restore capacity settings (pocket slot count ignored)
             Capacity.SetCapacities(
                 data.maxBagSlots,
-                data.maxPocketSlots,
                 data.maxStorageSlots
             );
 
@@ -173,21 +136,17 @@ namespace Ascension.Inventory.Manager
             Inventory.allItems = data.items;
 
             Debug.Log($"[InventoryManager] Loaded {Inventory.allItems.Count} items");
-            Debug.Log($"[InventoryManager] Capacities - Bag: {data.maxBagSlots}, Pocket: {data.maxPocketSlots}, Storage: {data.maxStorageSlots}");
+            Debug.Log($"[InventoryManager] Capacities - Bag: {data.maxBagSlots}, Storage: {data.maxStorageSlots}");
 
             OnInventoryLoaded?.Invoke();
         }
 
-        /// <summary>
-        /// Save inventory to data
-        /// </summary>
         public InventoryCoreData SaveInventory()
         {
             return new InventoryCoreData
             {
                 items = new System.Collections.Generic.List<ItemInstance>(Inventory.allItems),
                 maxBagSlots = Capacity.MaxBagSlots,
-                maxPocketSlots = Capacity.MaxPocketSlots,
                 maxStorageSlots = Capacity.MaxStorageSlots
             };
         }
@@ -207,8 +166,6 @@ namespace Ascension.Inventory.Manager
         #endregion
 
         #region Debug Helpers
-        // In InventoryManager.cs
-
         [ContextMenu("Debug: Add Test Items (With Results)")]
         public void DebugAddTestItemsWithResults()
         {
@@ -250,7 +207,6 @@ namespace Ascension.Inventory.Manager
         {
             Debug.Log($"=== INVENTORY SUMMARY ===");
             Debug.Log($"Bag: {Inventory.GetBagItemCount()}/{Capacity.MaxBagSlots}");
-            Debug.Log($"Pocket: {Inventory.GetPocketItemCount()}/{Capacity.MaxPocketSlots}");
             Debug.Log($"Storage: {Inventory.GetStorageItemCount()}/{Capacity.MaxStorageSlots}");
             Debug.Log($"Total Items: {Inventory.allItems.Count}");
         }

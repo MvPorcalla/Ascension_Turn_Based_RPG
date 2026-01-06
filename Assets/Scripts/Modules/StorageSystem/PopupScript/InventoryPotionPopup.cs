@@ -1,13 +1,14 @@
 // ──────────────────────────────────────────────────
 // Assets\Scripts\Modules\InventorySystem\PopupScript\InventoryPotionPopup.cs
 // UI Popup for displaying potion details and actions
+// ✅ FIXED: Pocket logic completely removed
 // ──────────────────────────────────────────────────
 
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
-using Ascension.GameSystem; // potion manager
+using Ascension.GameSystem;
 using Ascension.Data.SO.Item;
 using Ascension.Data.SO.Character;
 using Ascension.Inventory.Data;
@@ -15,7 +16,6 @@ using Ascension.Inventory.Enums;
 using Ascension.Inventory.Manager;
 using Ascension.Character.Stat;
 using Ascension.Character.Manager;
-
 
 namespace Ascension.Inventory.Popup
 {
@@ -50,8 +50,8 @@ namespace Ascension.Inventory.Popup
 
         [Header("Action Buttons")]
         [SerializeField] private Button useButton;
-        [SerializeField] private Button addToPocketButton;
-        [SerializeField] private Button addToBagButton;
+        [SerializeField] private Button actionButton1;
+        [SerializeField] private Button actionButton2;
 
         private PotionSO currentPotion;
         private ItemInstance currentItem;
@@ -60,20 +60,17 @@ namespace Ascension.Inventory.Popup
 
         private void Start()
         {
-            // Setup button listeners
             backButton.onClick.AddListener(ClosePopup);
             
-            // Quantity controls
             plus5Button.onClick.AddListener(() => AdjustQuantity(5));
             plus1Button.onClick.AddListener(() => AdjustQuantity(1));
             minus1Button.onClick.AddListener(() => AdjustQuantity(-1));
             minus5Button.onClick.AddListener(() => AdjustQuantity(-5));
             quantitySlider.onValueChanged.AddListener(OnSliderChanged);
 
-            // Action buttons
             useButton.onClick.AddListener(OnUseClicked);
-            addToPocketButton.onClick.AddListener(OnAddToPocketClicked);
-            addToBagButton.onClick.AddListener(OnAddToBagClicked);
+            actionButton1.onClick.AddListener(OnActionButton1Clicked);
+            actionButton2.onClick.AddListener(OnActionButton2Clicked);
 
             popupContainer.SetActive(false);
         }
@@ -87,10 +84,8 @@ namespace Ascension.Inventory.Popup
 
             popupContainer.SetActive(true);
 
-            // Setup header
             itemName.text = potion.ItemName;
 
-            // Setup icon
             if (potionIcon != null)
             {
                 if (potion.Icon != null)
@@ -105,21 +100,14 @@ namespace Ascension.Inventory.Popup
                 }
             }
 
-            // Setup potion type
             DisplayPotionType(potion);
-
-            // Setup buff effects
             DisplayBuffEffects(potion);
 
-            // Setup description
             if (potionDescription != null)
                 potionDescription.text = potion.Description;
 
-            // Setup quantity controls
             SetupQuantityControls(item.quantity);
-
-            // Setup action buttons visibility
-            SetupActionButtons(fromLocation, item);
+            SetupActionButtons(fromLocation);
         }
 
         private void DisplayPotionType(PotionSO potion)
@@ -145,13 +133,11 @@ namespace Ascension.Inventory.Popup
 
         private void DisplayBuffEffects(PotionSO potion)
         {
-            // Clear existing buffs
             foreach (Transform child in buffEffectContent)
             {
                 Destroy(child.gameObject);
             }
 
-            // Display based on potion type
             switch (potion.potionType)
             {
                 case PotionType.HealthPotion:
@@ -283,7 +269,6 @@ namespace Ascension.Inventory.Popup
 
         private string GetBuffValueText(BuffType buffType, float value)
         {
-            // Percentage-based buffs
             if (buffType == BuffType.Speed || 
                 buffType == BuffType.CritRate || 
                 buffType == BuffType.AttackSpeed || 
@@ -292,14 +277,12 @@ namespace Ascension.Inventory.Popup
                 return $"+{value}%";
             }
             
-            // Boolean buffs (no value needed)
             if (buffType == BuffType.Invisibility || 
                 buffType == BuffType.Invulnerability)
             {
                 return "Active";
             }
 
-            // Flat value buffs
             return $"+{value}";
         }
 
@@ -313,12 +296,10 @@ namespace Ascension.Inventory.Popup
 
             GameObject buffObj = Instantiate(buffTypePrefab, buffEffectContent);
 
-            // Find text components - try multiple naming conventions
             TMP_Text labelText = buffObj.transform.Find("TextLabel")?.GetComponent<TMP_Text>();
             TMP_Text valueText = buffObj.transform.Find("textValue")?.GetComponent<TMP_Text>();
             TMP_Text durationText = buffObj.transform.Find("textDuration")?.GetComponent<TMP_Text>();
 
-            // Alternative: Get all TMP_Text components if specific finds fail
             if (labelText == null || valueText == null || durationText == null)
             {
                 TMP_Text[] texts = buffObj.GetComponentsInChildren<TMP_Text>();
@@ -330,7 +311,6 @@ namespace Ascension.Inventory.Popup
                 }
             }
 
-            // Set the text values
             if (labelText != null) labelText.text = buffType;
             if (valueText != null) valueText.text = value;
             if (durationText != null) durationText.text = duration;
@@ -338,7 +318,6 @@ namespace Ascension.Inventory.Popup
 
         private void SetupQuantityControls(int maxQuantity)
         {
-            // Setup slider
             quantitySlider.minValue = 1;
             quantitySlider.maxValue = maxQuantity;
             quantitySlider.value = 1;
@@ -346,43 +325,30 @@ namespace Ascension.Inventory.Popup
             UpdateQuantityDisplay();
         }
 
-        private void SetupActionButtons(ItemLocation fromLocation, ItemInstance item)
+        private void SetupActionButtons(ItemLocation fromLocation)
         {
-            // Use button - always show for consumables
             useButton.gameObject.SetActive(true);
 
-            // Setup buttons based on current location
+            // ✅ SIMPLIFIED: Only 2 movement buttons - Bag and Storage
             switch (fromLocation)
             {
                 case ItemLocation.Storage:
-                    // From storage: [Use Item] [Add to Pocket] [Add to Bag]
-                    addToPocketButton.gameObject.SetActive(true);
-                    addToBagButton.gameObject.SetActive(true);
-                    
-                    SetButtonText(addToPocketButton, "Add to Pocket");
-                    SetButtonText(addToBagButton, "Add to Bag");
-                    break;
-
-                case ItemLocation.Pocket:
-                    // From pocket: [Use Item] [Add to Bag] [Store]
-                    addToPocketButton.gameObject.SetActive(false);
-                    addToBagButton.gameObject.SetActive(true);
-                    
-                    // Bag button becomes "Add to Bag" (middle position)
-                    SetButtonText(addToBagButton, "Add to Bag");
-                    
-                    // We need a third button for "Store" - use the pocket button but relabel
-                    addToPocketButton.gameObject.SetActive(true);
-                    SetButtonText(addToPocketButton, "Store");
+                    // From storage: [Use] [Add to Bag] [Close]
+                    actionButton1.gameObject.SetActive(true);
+                    actionButton2.gameObject.SetActive(false);
+                    SetButtonText(actionButton1, "Add to Bag");
                     break;
 
                 case ItemLocation.Bag:
-                    // From bag: [Use Item] [Add to Pocket] [Store]
-                    addToPocketButton.gameObject.SetActive(true);
-                    addToBagButton.gameObject.SetActive(true);
-                    
-                    SetButtonText(addToPocketButton, "Add to Pocket");
-                    SetButtonText(addToBagButton, "Store");
+                    // From bag: [Use] [Store] [Close]
+                    actionButton1.gameObject.SetActive(true);
+                    actionButton2.gameObject.SetActive(false);
+                    SetButtonText(actionButton1, "Store");
+                    break;
+
+                default:
+                    actionButton1.gameObject.SetActive(false);
+                    actionButton2.gameObject.SetActive(false);
                     break;
             }
         }
@@ -431,7 +397,6 @@ namespace Ascension.Inventory.Popup
 
         private void OnUseClicked()
         {
-            // Validate managers exist
             if (PotionManager.Instance == null)
             {
                 Debug.LogError("[PotionPopupUI] PotionManager not found!");
@@ -450,7 +415,6 @@ namespace Ascension.Inventory.Popup
                 return;
             }
 
-            // Get player stats from CharacterManager
             CharacterStats CharacterStats = CharacterManager.Instance.CurrentPlayer;
             CharacterBaseStatsSO baseStats = CharacterManager.Instance.BaseStats;
 
@@ -460,7 +424,6 @@ namespace Ascension.Inventory.Popup
                 return;
             }
 
-            // Try to use potions one by one
             int successfulUses = 0;
             for (int i = 0; i < selectedQuantity; i++)
             {
@@ -472,7 +435,6 @@ namespace Ascension.Inventory.Popup
                 }
                 else
                 {
-                    // Stop if potion can't be used (combat restriction, etc.)
                     if (successfulUses > 0)
                     {
                         Debug.LogWarning($"[PotionPopupUI] Could only use {successfulUses}/{selectedQuantity} potions");
@@ -481,22 +443,17 @@ namespace Ascension.Inventory.Popup
                 }
             }
 
-            // Remove successfully used potions from inventory
             if (successfulUses > 0)
             {
                 InventoryManager.Instance.Inventory.RemoveItem(currentItem, successfulUses);
                 Debug.Log($"[PotionPopupUI] Used {successfulUses}x {currentPotion.ItemName}");
                 
-                // HUD will auto-update via CharacterManager events (OnHealthChanged)
-                
-                // Close popup if all items were used or inventory is empty
                 if (successfulUses == selectedQuantity || currentItem.quantity <= 0)
                 {
                     ClosePopup();
                 }
                 else
                 {
-                    // Update quantity controls for remaining items
                     selectedQuantity = Mathf.Min(selectedQuantity, currentItem.quantity);
                     SetupQuantityControls(currentItem.quantity);
                 }
@@ -507,70 +464,41 @@ namespace Ascension.Inventory.Popup
             }
         }
 
-        private void OnAddToPocketClicked()
+        private void OnActionButton1Clicked()
         {
-            var buttonText = addToPocketButton.GetComponentInChildren<TMP_Text>()?.text;
+            var buttonText = actionButton1.GetComponentInChildren<TMP_Text>()?.text;
             var database = InventoryManager.Instance.Database;
-            
-            if (buttonText == "Add to Pocket")
-            {
-                var result = InventoryManager.Instance.Inventory.MoveToPocket(currentItem, selectedQuantity, database);
-                if (result.Success) // ✅ Check .Success
-                {
-                    Debug.Log($"[InventoryPotionPopup] {result.Message}");
-                    ClosePopup();
-                }
-                else
-                {
-                    Debug.LogWarning($"[InventoryPotionPopup] {result.Message}");
-                }
-            }
-            else if (buttonText == "Store")
-            {
-                var result = InventoryManager.Instance.Inventory.MoveToStorage(currentItem, selectedQuantity, database);
-                if (result.Success) // ✅ Check .Success
-                {
-                    Debug.Log($"[InventoryPotionPopup] {result.Message}");
-                    ClosePopup();
-                }
-                else
-                {
-                    Debug.LogWarning($"[InventoryPotionPopup] {result.Message}");
-                }
-            }
-        }
-
-        private void OnAddToBagClicked()
-        {
-            var buttonText = addToBagButton.GetComponentInChildren<TMP_Text>()?.text;
-            var database = InventoryManager.Instance.Database;
+            InventoryResult result;
             
             if (buttonText == "Add to Bag")
             {
-                var result = InventoryManager.Instance.Inventory.MoveToBag(currentItem, selectedQuantity, database);
-                if (result.Success) // ✅ Check .Success
-                {
-                    Debug.Log($"[InventoryPotionPopup] {result.Message}");
-                    ClosePopup();
-                }
-                else
-                {
-                    Debug.LogWarning($"[InventoryPotionPopup] {result.Message}");
-                }
+                result = InventoryManager.Instance.Inventory.MoveToBag(currentItem, selectedQuantity, database);
             }
             else if (buttonText == "Store")
             {
-                var result = InventoryManager.Instance.Inventory.MoveToStorage(currentItem, selectedQuantity, database);
-                if (result.Success) // ✅ Check .Success
-                {
-                    Debug.Log($"[InventoryPotionPopup] {result.Message}");
-                    ClosePopup();
-                }
-                else
-                {
-                    Debug.LogWarning($"[InventoryPotionPopup] {result.Message}");
-                }
+                result = InventoryManager.Instance.Inventory.MoveToStorage(currentItem, selectedQuantity, database);
             }
+            else
+            {
+                Debug.LogWarning($"[InventoryPotionPopup] Unknown button action: {buttonText}");
+                return;
+            }
+
+            if (result.Success)
+            {
+                Debug.Log($"[InventoryPotionPopup] {result.Message}");
+                ClosePopup();
+            }
+            else
+            {
+                Debug.LogWarning($"[InventoryPotionPopup] {result.Message}");
+            }
+        }
+
+        private void OnActionButton2Clicked()
+        {
+            // Reserved for future use
+            ClosePopup();
         }
 
         private void ClosePopup()

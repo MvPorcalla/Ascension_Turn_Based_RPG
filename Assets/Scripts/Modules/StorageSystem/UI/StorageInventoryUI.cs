@@ -311,5 +311,25 @@ namespace Ascension.Storage.UI
         }
 
         #endregion
+
+        /// <summary>
+        /// ✅ NEW: Alias for InitializeSlots() - called by StorageRoomController
+        /// </summary>
+        public void Initialize()
+        {
+            if (!isInitialized)
+            {
+                InitializeSlots();
+                SetupFilterButtons();
+            }
+        }
+
+        /// <summary>
+        /// ✅ NEW: Alias for RefreshStorage() - called by StorageRoomController
+        /// </summary>
+        public void RefreshDisplay()
+        {
+            RefreshStorage();
+        }
     }
 }

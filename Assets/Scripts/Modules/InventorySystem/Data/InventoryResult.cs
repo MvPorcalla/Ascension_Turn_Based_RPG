@@ -1,7 +1,6 @@
 // ══════════════════════════════════════════════════════════════════
 // Scripts/Modules/InventorySystem/Data/InventoryResult.cs
 // Result pattern for inventory operations
-// ✅ ENHANCED: Added helper methods for better usability
 // ══════════════════════════════════════════════════════════════════
 
 using System;

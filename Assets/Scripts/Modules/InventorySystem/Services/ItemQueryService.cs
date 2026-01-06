@@ -13,10 +13,6 @@ using Ascension.Inventory.Constants;
 
 namespace Ascension.Inventory.Services
 {
-    /// <summary>
-    /// Service responsible for querying inventory items (read-only operations)
-    /// Now uses ItemLocation enum instead of boolean flags
-    /// </summary>
     public class ItemQueryService
     {
         /// <summary>
@@ -26,17 +22,6 @@ namespace Ascension.Inventory.Services
         {
             return allItems.Where(item =>
                 item.location == ItemLocation.Bag &&
-                !IsSkill(item.itemID)
-            ).ToList();
-        }
-
-        /// <summary>
-        /// Get all items in pocket
-        /// </summary>
-        public List<ItemInstance> GetPocketItems(List<ItemInstance> allItems)
-        {
-            return allItems.Where(item =>
-                item.location == ItemLocation.Pocket &&
                 !IsSkill(item.itemID)
             ).ToList();
         }
@@ -99,14 +84,6 @@ namespace Ascension.Inventory.Services
         }
 
         /// <summary>
-        /// Get number of items in pocket
-        /// </summary>
-        public int GetPocketItemCount(List<ItemInstance> allItems)
-        {
-            return GetPocketItems(allItems).Count;
-        }
-
-        /// <summary>
         /// Check if bag has available space
         /// </summary>
         public bool HasBagSpace(List<ItemInstance> allItems, int maxBagSlots)
@@ -115,27 +92,11 @@ namespace Ascension.Inventory.Services
         }
 
         /// <summary>
-        /// Check if pocket has available space
-        /// </summary>
-        public bool HasPocketSpace(List<ItemInstance> allItems, int maxPocketSlots)
-        {
-            return GetPocketItemCount(allItems) < maxPocketSlots;
-        }
-
-        /// <summary>
         /// Get number of empty bag slots
         /// </summary>
         public int GetEmptyBagSlots(List<ItemInstance> allItems, int maxBagSlots)
         {
             return maxBagSlots - GetBagItemCount(allItems);
-        }
-
-        /// <summary>
-        /// Get number of empty pocket slots
-        /// </summary>
-        public int GetEmptyPocketSlots(List<ItemInstance> allItems, int maxPocketSlots)
-        {
-            return maxPocketSlots - GetPocketItemCount(allItems);
         }
 
         /// <summary>
@@ -187,7 +148,7 @@ namespace Ascension.Inventory.Services
         private bool IsSkill(string itemID)
         {
             return itemID.StartsWith(ItemIDPrefixes.Skill) || 
-                itemID.StartsWith(ItemIDPrefixes.Ability);
+                   itemID.StartsWith(ItemIDPrefixes.Ability);
         }
     }
 }

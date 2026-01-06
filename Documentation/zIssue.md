@@ -276,3 +276,32 @@ public void RunAllTests()
     TestCapacityUpgrades();
     Debug.Log("✅ All inventory tests passed!");
 }
+
+=============================================
+
+Enhancement 2: Filter State Persistence
+csharp// In StorageInventoryUI.cs
+private const string FILTER_PREF_KEY = "StorageFilter";
+
+private void SetFilter(ItemType? filterType)
+{
+    currentFilter = filterType;
+    PlayerPrefs.SetInt(FILTER_PREF_KEY, (int)(filterType ?? -1));
+    RefreshStorage();
+    UpdateFilterButtonStates();
+}
+
+private void Start()
+{
+    // ... existing code ...
+    
+    // Restore last filter
+    int savedFilter = PlayerPrefs.GetInt(FILTER_PREF_KEY, -1);
+    if (savedFilter >= 0)
+        currentFilter = (ItemType)savedFilter;
+}
+
+TODO: 
+
+When item Gear is equipped make it remove from the storage
+

@@ -1,7 +1,6 @@
 // ══════════════════════════════════════════════════════════════════
 // Scripts/Modules/InventorySystem/Services/ItemLocationService.cs
 // Service for moving items between locations
-// ✅ FIXED: Removed redundant space checks (caller validates)
 // ══════════════════════════════════════════════════════════════════
 
 using System.Collections.Generic;
@@ -28,8 +27,7 @@ namespace Ascension.Inventory.Services
         }
 
         /// <summary>
-        /// Move item to bag.
-        /// ✅ FIXED: No space check - InventoryCore already validated
+        /// Move item to bag
         /// </summary>
         public bool MoveToBag(
             List<ItemInstance> allItems,
@@ -38,28 +36,11 @@ namespace Ascension.Inventory.Services
             int maxBagSlots,
             ItemBaseSO itemData)
         {
-            // Note: maxBagSlots parameter kept for future use, but not validated here
             return MoveToLocation(allItems, item, quantity, ItemLocation.Bag, itemData);
         }
 
         /// <summary>
-        /// Move item to pocket.
-        /// ✅ FIXED: No space check - InventoryCore already validated
-        /// </summary>
-        public bool MoveToPocket(
-            List<ItemInstance> allItems,
-            ItemInstance item,
-            int quantity,
-            int maxPocketSlots,
-            ItemBaseSO itemData)
-        {
-            // Note: maxPocketSlots parameter kept for future use, but not validated here
-            return MoveToLocation(allItems, item, quantity, ItemLocation.Pocket, itemData);
-        }
-
-        /// <summary>
-        /// Move item to storage.
-        /// Storage has no capacity limit, so no validation needed.
+        /// Move item to storage
         /// </summary>
         public bool MoveToStorage(
             List<ItemInstance> allItems,
@@ -100,7 +81,6 @@ namespace Ascension.Inventory.Services
             ItemLocation targetLocation,
             ItemBaseSO itemData)
         {
-            // Find existing stack at destination
             var existingStack = _stackingService.FindStackWithSpace(
                 allItems,
                 source.itemID,
@@ -112,7 +92,6 @@ namespace Ascension.Inventory.Services
 
             if (existingStack != null)
             {
-                // Transfer to existing stack
                 int transferred = _stackingService.TransferToStack(
                     source,
                     existingStack,
@@ -122,19 +101,16 @@ namespace Ascension.Inventory.Services
 
                 remaining -= transferred;
 
-                // Remove source if empty
                 if (_stackingService.ShouldRemoveStack(source))
                 {
                     allItems.Remove(source);
                 }
             }
 
-            // If still have items to move, create new stack or move entire source
             if (remaining > 0)
             {
                 if (remaining < source.quantity)
                 {
-                    // Split off the quantity we want to move
                     var splitStack = _stackingService.SplitStack(source, remaining);
                     if (splitStack != null)
                     {
@@ -144,7 +120,6 @@ namespace Ascension.Inventory.Services
                 }
                 else
                 {
-                    // Move entire source stack
                     source.location = targetLocation;
                 }
             }
@@ -163,7 +138,6 @@ namespace Ascension.Inventory.Services
         {
             if (quantity < source.quantity)
             {
-                // Split off items to move
                 var splitStack = _stackingService.SplitStack(source, quantity);
                 if (splitStack != null)
                 {
@@ -173,7 +147,6 @@ namespace Ascension.Inventory.Services
             }
             else
             {
-                // Move entire item
                 source.location = targetLocation;
             }
 

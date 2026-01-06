@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════
 // Scripts/Modules/InventorySystem/Manager/SlotCapacityManager.cs
-// Manages inventory slot capacities (bag, pocket, storage)
+// Manages inventory slot capacities (bag and storage only)
 // ══════════════════════════════════════════════════════════════════
 
 using System;
@@ -14,13 +14,11 @@ namespace Ascension.Inventory.Manager
     {
         #region Fields
         private int _maxBagSlots;
-        private int _maxPocketSlots;
         private int _maxStorageSlots;
         #endregion
 
         #region Properties
         public int MaxBagSlots => _maxBagSlots;
-        public int MaxPocketSlots => _maxPocketSlots;
         public int MaxStorageSlots => _maxStorageSlots;
         #endregion
 
@@ -34,12 +32,9 @@ namespace Ascension.Inventory.Manager
         /// </summary>
         public SlotCapacityManager(
             int bagSlots = -1,
-            int pocketSlots = -1,
             int storageSlots = -1)
         {
-            // Use config defaults if not specified
             _maxBagSlots = bagSlots > 0 ? bagSlots : InventoryConfig.DEFAULT_BAG_SLOTS;
-            _maxPocketSlots = pocketSlots > 0 ? pocketSlots : InventoryConfig.DEFAULT_POCKET_SLOTS;
             _maxStorageSlots = storageSlots > 0 ? storageSlots : InventoryConfig.DEFAULT_STORAGE_SLOTS;
         }
         #endregion
@@ -50,7 +45,6 @@ namespace Ascension.Inventory.Manager
             return location switch
             {
                 ItemLocation.Bag => _maxBagSlots,
-                ItemLocation.Pocket => _maxPocketSlots,
                 ItemLocation.Storage => _maxStorageSlots,
                 _ => 0
             };
@@ -81,19 +75,6 @@ namespace Ascension.Inventory.Manager
             Debug.Log($"[SlotCapacityManager] Bag upgraded to {_maxBagSlots} slots (+{additionalSlots})");
         }
 
-        public void UpgradePocket(int additionalSlots)
-        {
-            if (additionalSlots <= 0)
-            {
-                Debug.LogWarning($"[SlotCapacityManager] Invalid pocket upgrade: {additionalSlots}");
-                return;
-            }
-
-            _maxPocketSlots += additionalSlots;
-            OnCapacityChanged?.Invoke(ItemLocation.Pocket, _maxPocketSlots);
-            Debug.Log($"[SlotCapacityManager] Pocket upgraded to {_maxPocketSlots} slots (+{additionalSlots})");
-        }
-
         public void UpgradeStorage(int additionalSlots)
         {
             if (additionalSlots <= 0)
@@ -107,13 +88,12 @@ namespace Ascension.Inventory.Manager
             Debug.Log($"[SlotCapacityManager] Storage upgraded to {_maxStorageSlots} slots (+{additionalSlots})");
         }
 
-        public void SetCapacities(int bagSlots, int pocketSlots, int storageSlots)
+        public void SetCapacities(int bagSlots, int storageSlots)
         {
             _maxBagSlots = bagSlots;
-            _maxPocketSlots = pocketSlots;
             _maxStorageSlots = storageSlots;
 
-            Debug.Log($"[SlotCapacityManager] Capacities set - Bag: {bagSlots}, Pocket: {pocketSlots}, Storage: {storageSlots}");
+            Debug.Log($"[SlotCapacityManager] Capacities set - Bag: {bagSlots}, Storage: {storageSlots}");
         }
         #endregion
 

@@ -1,6 +1,7 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\Data\Save\SaveData.cs
 // Save data structures for serialization
+// ✅ FINAL: Pocket completely removed
 // ════════════════════════════════════════════
 
 using System;
@@ -8,9 +9,6 @@ using Ascension.Inventory.Config;
 
 namespace Ascension.Data.Save
 {
-    /// <summary>
-    /// Root save data container
-    /// </summary>
     [Serializable]
     public class SaveData
     {
@@ -21,10 +19,6 @@ namespace Ascension.Data.Save
         public SkillLoadoutSaveData skillLoadoutData;
     }
 
-    // ════════════════════════════════════════════
-    // SaveMetaData - Pure data, no logic
-    // ════════════════════════════════════════════
-
     [Serializable]
     public class SaveMetaData
     {
@@ -34,10 +28,6 @@ namespace Ascension.Data.Save
         public float totalPlayTimeSeconds;
         public int saveCount;
     }
-
-    // ════════════════════════════════════════════
-    // CharacterSaveData - Pure serializable data
-    // ════════════════════════════════════════════
 
     [Serializable]
     public class CharacterSaveData
@@ -56,44 +46,25 @@ namespace Ascension.Data.Save
         public int wisdom;
     }
 
-    // ════════════════════════════════════════════
-    // InventorySaveData
-    // ════════════════════════════════════════════
-
     [Serializable]
     public class InventorySaveData
     {
         public ItemInstanceData[] items;
         public int maxBagSlots = InventoryConfig.DEFAULT_BAG_SLOTS;
-        public int maxPocketSlots = InventoryConfig.DEFAULT_POCKET_SLOTS;
         public int maxStorageSlots = InventoryConfig.DEFAULT_STORAGE_SLOTS;
     }
 
-    // ════════════════════════════════════════════
-    // ItemInstanceData - ✅ MIGRATED to enum
-    // ════════════════════════════════════════════
-
     /// <summary>
-    /// ✅ MIGRATED: Uses int for ItemLocation enum serialization
-    /// Values: 0=Storage, 1=Pocket, 2=Bag
+    /// Item instance data for serialization
+    /// Values: 0=Storage, 2=Bag
     /// </summary>
     [Serializable]
     public class ItemInstanceData
     {
         public string itemId;
         public int quantity;
-        
-        // ✅ NEW: Single location field (serialized as int)
-        public int location;  // 0=Storage, 1=Pocket, 2=Bag
-        
-        // ❌ REMOVED: Old boolean flags
-        // public bool isInBag;
-        // public bool isInPocket;
+        public int location;  // 0=Storage, 2=Bag
     }
-
-    // ════════════════════════════════════════════
-    // EquipmentSaveData
-    // ════════════════════════════════════════════
 
     [Serializable]
     public class EquipmentSaveData
@@ -106,10 +77,6 @@ namespace Ascension.Data.Save
         public string accessory1Id;
         public string accessory2Id;
     }
-
-    // ════════════════════════════════════════════
-    // SkillLoadoutSaveData
-    // ════════════════════════════════════════════
 
     [Serializable]
     public class SkillLoadoutSaveData

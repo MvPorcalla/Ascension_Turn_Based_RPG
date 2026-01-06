@@ -1,6 +1,7 @@
 // ══════════════════════════════════════════════════════════════════
 // Assets\Scripts\Modules\InventorySystem\Config\InventoryConfig.cs
 // Centralized inventory configuration constants
+// ✅ REFACTORED: Pocket system completely removed
 // ══════════════════════════════════════════════════════════════════
 
 namespace Ascension.Inventory.Config
@@ -12,6 +13,26 @@ namespace Ascension.Inventory.Config
     public static class InventoryConfig
     {
         // ═══════════════════════════════════════════════════════════
+        // 🎮 FEATURE TOGGLES
+        // ═══════════════════════════════════════════════════════════
+        
+        /// <summary>
+        /// Enable/disable bag inventory system
+        /// Set to FALSE to use storage-only inventory
+        /// </summary>
+        public const bool ENABLE_BAG = true;
+        
+        // ═══════════════════════════════════════════════════════════
+        // 🎨 UI DISPLAY OPTIONS
+        // ═══════════════════════════════════════════════════════════
+        
+        /// <summary>
+        /// Show equipped gear preview in storage room
+        /// Replaces the old pocket inventory display
+        /// </summary>
+        public const bool SHOW_EQUIPPED_GEAR_IN_STORAGE = true;
+        
+        // ═══════════════════════════════════════════════════════════
         // Default Slot Capacities
         // ═══════════════════════════════════════════════════════════
         
@@ -19,11 +40,6 @@ namespace Ascension.Inventory.Config
         /// Default bag slots (player's main inventory)
         /// </summary>
         public const int DEFAULT_BAG_SLOTS = 12;
-        
-        /// <summary>
-        /// Default pocket slots (quick access for consumables)
-        /// </summary>
-        public const int DEFAULT_POCKET_SLOTS = 6;
         
         /// <summary>
         /// Default storage slots (home storage)
@@ -40,18 +56,25 @@ namespace Ascension.Inventory.Config
         public const int MAX_BAG_SLOTS = 24;
         
         /// <summary>
-        /// Maximum pocket slots after all upgrades
-        /// </summary>
-        public const int MAX_POCKET_SLOTS = 12;
-        
-        /// <summary>
         /// Maximum storage slots after all upgrades
         /// </summary>
         public const int MAX_STORAGE_SLOTS = 200;
         
         // ═══════════════════════════════════════════════════════════
-        // Upgrade Costs (optional, for future upgrade system)
+        // Runtime Helpers
         // ═══════════════════════════════════════════════════════════
-
+        
+        /// <summary>
+        /// Check if location is enabled in config
+        /// </summary>
+        public static bool IsLocationEnabled(Ascension.Inventory.Enums.ItemLocation location)
+        {
+            return location switch
+            {
+                Ascension.Inventory.Enums.ItemLocation.Bag => ENABLE_BAG,
+                Ascension.Inventory.Enums.ItemLocation.Storage => true, // Always enabled
+                _ => false // Pocket and None are disabled
+            };
+        }
     }
 }

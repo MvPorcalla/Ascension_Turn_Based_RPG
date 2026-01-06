@@ -1,6 +1,7 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\Modules\InventorySystem\UI\StoragePopupContext.cs
 // Storage Room behavior for GearPopup
+// ✅ FIXED: Pocket logic removed
 // ════════════════════════════════════════════
 
 using UnityEngine;
@@ -29,8 +30,6 @@ namespace Ascension.Storage.UI
                     return "Add to Bag";
                 case ItemLocation.Bag:
                     return "Store";
-                case ItemLocation.Pocket:
-                    return "Store";
                 default:
                     return "Action";
             }
@@ -45,13 +44,13 @@ namespace Ascension.Storage.UI
             }
 
             var database = InventoryManager.Instance.Database;
-            InventoryResult result; // ✅ Changed to InventoryResult
+            InventoryResult result;
 
             switch (_currentLocation)
             {
                 case ItemLocation.Storage:
                     result = InventoryManager.Instance.Inventory.MoveToBag(itemInstance, 1, database);
-                    if (result.Success) // ✅ Check .Success property
+                    if (result.Success)
                     {
                         Debug.Log($"[StoragePopupContext] {result.Message}");
                     }
@@ -59,12 +58,11 @@ namespace Ascension.Storage.UI
                     {
                         Debug.LogWarning($"[StoragePopupContext] {result.Message}");
                     }
-                    return result.Success; // ✅ Return .Success
+                    return result.Success;
                     
                 case ItemLocation.Bag:
-                case ItemLocation.Pocket:
                     result = InventoryManager.Instance.Inventory.MoveToStorage(itemInstance, 1, database);
-                    if (result.Success) // ✅ Check .Success property
+                    if (result.Success)
                     {
                         Debug.Log($"[StoragePopupContext] {result.Message}");
                     }
@@ -72,9 +70,10 @@ namespace Ascension.Storage.UI
                     {
                         Debug.LogWarning($"[StoragePopupContext] {result.Message}");
                     }
-                    return result.Success; // ✅ Return .Success
+                    return result.Success;
                     
                 default:
+                    Debug.LogWarning($"[StoragePopupContext] Unhandled location: {_currentLocation}");
                     return false;
             }
         }
