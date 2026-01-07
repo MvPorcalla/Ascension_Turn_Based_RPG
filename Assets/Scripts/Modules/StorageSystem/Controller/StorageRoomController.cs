@@ -1,3 +1,8 @@
+// ════════════════════════════════════════════
+// Assets\Scripts\Modules\StorageSystem\Controller\StorageRoomController.cs
+// Main controller for the Storage Room scene
+// ════════════════════════════════════════════
+
 using UnityEngine;
 using Ascension.Inventory.Manager;
 using Ascension.Equipment.Manager;
@@ -5,9 +10,10 @@ using Ascension.Storage.UI;
 
 namespace Ascension.Storage.Controller
 {
-    // NOTE:
-    // Pocket inventory has been permanently deprecated.
-    // Storage Room only displays Bag, Storage, and Equipped Gear preview.
+    /// <summary>
+    /// Storage Room only displays Bag, Storage, and Equipped Gear preview.
+    /// Pocket inventory has been permanently deprecated.
+    /// </summary>
     public class StorageRoomController : MonoBehaviour
     {
         [Header("Inventory Displays")]
@@ -20,6 +26,8 @@ namespace Ascension.Storage.Controller
         private InventoryManager _inventoryManager;
         private EquipmentManager _equipmentManager;
 
+        #region Lifecycle
+
         private void Start()
         {
             InitializeManagers();
@@ -31,6 +39,10 @@ namespace Ascension.Storage.Controller
         {
             UnsubscribeFromEvents();
         }
+
+        #endregion
+
+        #region Initialization
 
         private void InitializeManagers()
         {
@@ -52,6 +64,10 @@ namespace Ascension.Storage.Controller
             // EquippedGearPreviewUI auto-initializes and listens to equipment events
         }
 
+        #endregion
+
+        #region Event Management
+
         private void SubscribeToEvents()
         {
             if (_inventoryManager?.Inventory == null) return;
@@ -66,6 +82,10 @@ namespace Ascension.Storage.Controller
             _inventoryManager.Inventory.OnInventoryChanged -= RefreshAllDisplays;
         }
 
+        #endregion
+
+        #region Refresh Logic
+
         private void RefreshAllDisplays()
         {
             if (!isActiveAndEnabled) return;
@@ -77,14 +97,24 @@ namespace Ascension.Storage.Controller
             // DO NOT refresh it here.
         }
 
-        // Store All button (excludes equipped items)
-        public void OnStoreAllButtonClicked()
-        {
-            if (_inventoryManager?.Inventory == null) return;
+        #endregion
 
-            _inventoryManager.Inventory.StoreAllItems(
-                itemId => _equipmentManager?.IsItemEquipped(itemId) ?? false
-            );
+        #region Debug Helpers
+
+        [ContextMenu("Debug: Print Current State")]
+        private void DebugPrintState()
+        {
+            if (_inventoryManager == null)
+            {
+                Debug.LogError("InventoryManager not found!");
+                return;
+            }
+
+            Debug.Log("=== STORAGE ROOM STATE ===");
+            Debug.Log($"Bag: {_inventoryManager.Inventory.GetBagItemCount()}/{_inventoryManager.Capacity.MaxBagSlots}");
+            Debug.Log($"Storage: {_inventoryManager.Inventory.GetStorageItemCount()}/{_inventoryManager.Capacity.MaxStorageSlots}");
         }
+
+        #endregion
     }
 }

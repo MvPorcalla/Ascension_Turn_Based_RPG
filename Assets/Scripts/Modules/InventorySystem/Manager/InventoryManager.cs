@@ -4,6 +4,7 @@
 // ✅ REFACTORED: All pocket-related API removed
 // ════════════════════════════════════════════
 
+using System;
 using UnityEngine;
 using Ascension.Inventory.Config;
 using Ascension.Data.SO.Database;
@@ -84,9 +85,23 @@ namespace Ascension.Inventory.Manager
         #endregion
 
         #region Public API - Core Operations
-        public InventoryResult AddItem(string itemID, int quantity = 1, bool addToBag = false)
+
+        /// <summary>
+        /// Add item to player's bag (world loot, shop purchases)
+        /// Returns BagFull error if no space - caller must handle
+        /// </summary>
+        public InventoryResult AddToBag(string itemID, int quantity = 1)
         {
-            return Inventory.AddItem(itemID, quantity, addToBag, database);
+            return Inventory.AddToBag(itemID, quantity, database);
+        }
+
+        /// <summary>
+        /// Add item to storage (explicit transfers, mail, crafting)
+        /// Returns StorageFull error if no space - caller must handle
+        /// </summary>
+        public InventoryResult AddToStorage(string itemID, int quantity = 1)
+        {
+            return Inventory.AddToStorage(itemID, quantity, database);
         }
 
         public InventoryResult RemoveItem(ItemInstance item, int quantity = 1)
@@ -180,7 +195,8 @@ namespace Ascension.Inventory.Manager
                 if (item.ItemType == ItemType.Ability)
                     continue;
 
-                var result = AddItem(item.ItemID, item.IsStackable ? 10 : 1, false);
+                // ✅ FIXED: Use AddToStorage instead of AddItem
+                var result = AddToStorage(item.ItemID, item.IsStackable ? 10 : 1);
                 
                 if (result.Success)
                 {

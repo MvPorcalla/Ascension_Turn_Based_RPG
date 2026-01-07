@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════
 // Scripts/Modules/InventorySystem/Data/InventoryCore.cs
-// Core data structure for managing inventory items and operations
+// ✅ REFACTORED: Strict location separation, no auto-fallback
 // ══════════════════════════════════════════════════════════════════
 
 using System;
@@ -143,9 +143,13 @@ namespace Ascension.Inventory.Data
 
         #endregion
 
-        #region Add/Remove Methods
+        #region Add/Remove Methods - REFACTORED
 
-        public InventoryResult AddItem(string itemID, int quantity = 1, bool addToBag = false, GameDatabaseSO database = null)
+        /// <summary>
+        /// Add item to BAG ONLY. Fails if bag is full.
+        /// Use this for: World loot, shop purchases, quest rewards
+        /// </summary>
+        public InventoryResult AddToBag(string itemID, int quantity = 1, GameDatabaseSO database = null)
         {
             if (database == null)
                 return InventoryResult.DatabaseMissing();
@@ -157,16 +161,57 @@ namespace Ascension.Inventory.Data
             if (quantity <= 0)
                 return InventoryResult.Fail("Quantity must be positive", InventoryErrorCode.InvalidOperation);
 
-            ItemLocation targetLocation = DetermineTargetLocation(addToBag);
+            // STRICT: Only check BAG capacity, no fallback
+            if (!CanAddToBag(itemData.IsStackable ? 1 : quantity))
+                return InventoryResult.BagFull();
 
-            if (targetLocation == ItemLocation.None)
-                return InventoryResult.NoSpace(addToBag ? ItemLocation.Bag : ItemLocation.Storage);
+            // Add the item
+            ItemInstance resultItem = AddToLocationInternal(itemID, quantity, ItemLocation.Bag, itemData);
 
-            ItemInstance resultItem = null;
+            NotifyInventoryChanged(InventoryChangeType.ItemAdded, resultItem, quantity);
+            return InventoryResult.Ok(resultItem, $"Added {quantity}x {itemData.ItemName} to bag");
+        }
 
+        /// <summary>
+        /// Add item to STORAGE ONLY. Fails if storage is full.
+        /// Use this for: Explicit storage transfers, mail rewards, crafting output
+        /// </summary>
+        public InventoryResult AddToStorage(string itemID, int quantity = 1, GameDatabaseSO database = null)
+        {
+            if (database == null)
+                return InventoryResult.DatabaseMissing();
+
+            ItemBaseSO itemData = database.GetItem(itemID);
+            if (itemData == null)
+                return InventoryResult.ItemNotFound(itemID);
+
+            if (quantity <= 0)
+                return InventoryResult.Fail("Quantity must be positive", InventoryErrorCode.InvalidOperation);
+
+            // STRICT: Only check STORAGE capacity, no fallback
+            if (!CanAddToStorage(itemData.IsStackable ? 1 : quantity))
+                return InventoryResult.StorageFull();
+
+            // Add the item
+            ItemInstance resultItem = AddToLocationInternal(itemID, quantity, ItemLocation.Storage, itemData);
+
+            NotifyInventoryChanged(InventoryChangeType.ItemAdded, resultItem, quantity);
+            return InventoryResult.Ok(resultItem, $"Added {quantity}x {itemData.ItemName} to storage");
+        }
+
+        /// <summary>
+        /// PRIVATE: Core adding logic (shared by AddToBag and AddToStorage)
+        /// Caller MUST validate capacity first!
+        /// </summary>
+        private ItemInstance AddToLocationInternal(
+            string itemID, 
+            int quantity, 
+            ItemLocation targetLocation, 
+            ItemBaseSO itemData)
+        {
             if (itemData.IsStackable)
             {
-                resultItem = _stackingService.AddToExistingOrCreateNew(
+                return _stackingService.AddToExistingOrCreateNew(
                     allItems,
                     itemID,
                     quantity,
@@ -176,36 +221,16 @@ namespace Ascension.Inventory.Data
             }
             else
             {
+                // Non-stackable: Add one item at a time
+                ItemInstance lastItem = null;
                 for (int i = 0; i < quantity; i++)
                 {
-                    if (!_capacityManager.HasSpace(targetLocation, GetItemCountByLocation(targetLocation)))
-                    {
-                        if (targetLocation == ItemLocation.Bag && HasStorageSpace())
-                        {
-                            Debug.LogWarning("[InventoryCore] Bag full, remaining items sent to storage");
-                            targetLocation = ItemLocation.Storage;
-                        }
-                        else
-                        {
-                            if (resultItem != null)
-                            {
-                                NotifyInventoryChanged(InventoryChangeType.ItemAdded, resultItem, i);
-                            }
-                            return InventoryResult.Fail(
-                                $"{targetLocation} full! Added {i}/{quantity} items", 
-                                InventoryErrorCode.NoSpace
-                            );
-                        }
-                    }
-
                     var newItem = new ItemInstance(itemID, 1, targetLocation);
                     allItems.Add(newItem);
-                    resultItem = newItem;
+                    lastItem = newItem;
                 }
+                return lastItem;
             }
-
-            NotifyInventoryChanged(InventoryChangeType.ItemAdded, resultItem, quantity);
-            return InventoryResult.Ok(resultItem, $"Added {quantity}x {itemData.ItemName}");
         }
 
         public InventoryResult RemoveItem(ItemInstance item, int quantity = 1)
@@ -276,7 +301,8 @@ namespace Ascension.Inventory.Data
                 return InventoryResult.Ok(item, $"Moved {quantity}x to bag");
             }
 
-            return InventoryResult.NoSpace(ItemLocation.Bag);
+            // ✅ FIXED: Return specific error code
+            return InventoryResult.BagFull();
         }
 
         public InventoryResult MoveToStorage(ItemInstance item, int quantity, GameDatabaseSO database)
@@ -313,7 +339,8 @@ namespace Ascension.Inventory.Data
                 return InventoryResult.Ok(item, $"Moved {quantity}x to storage");
             }
 
-            return InventoryResult.Fail("Failed to move to storage", InventoryErrorCode.Unknown);
+            // ✅ FIXED: Return specific error code
+            return InventoryResult.StorageFull();
         }
 
         #endregion
@@ -321,10 +348,16 @@ namespace Ascension.Inventory.Data
         #region Utility Methods
 
         /// <summary>
-        /// Store all bag items using batch event
+        /// ✅ FIXED: Store all bag items using proper MoveToStorage API
         /// </summary>
-        public void StoreAllItems(Func<string, bool> isEquippedChecker = null)
+        public void StoreAllItems(Func<string, bool> isEquippedChecker, GameDatabaseSO database)
         {
+            if (database == null)
+            {
+                Debug.LogError("[InventoryCore] Database required for StoreAllItems");
+                return;
+            }
+
             isEquippedChecker ??= (_) => false;
 
             var itemsToMove = GetBagItems()
@@ -334,15 +367,33 @@ namespace Ascension.Inventory.Data
             if (itemsToMove.Count == 0)
                 return;
 
+            int transferred = 0;
+            int failed = 0;
+            var successfulMoves = new List<ItemInstance>();
+
             foreach (var item in itemsToMove)
             {
-                item.location = ItemLocation.Storage;
+                var result = MoveToStorage(item, item.quantity, database);
+                
+                if (result.Success)
+                {
+                    transferred++;
+                    successfulMoves.Add(item);
+                }
+                else
+                {
+                    failed++;
+                    Debug.LogWarning($"[InventoryCore] Failed to store {item.itemID}: {result.Message}");
+                }
             }
 
-            OnBatchItemsMoved?.Invoke(itemsToMove, ItemLocation.Bag, ItemLocation.Storage);
-            OnInventoryChanged?.Invoke();
+            if (successfulMoves.Count > 0)
+            {
+                OnBatchItemsMoved?.Invoke(successfulMoves, ItemLocation.Bag, ItemLocation.Storage);
+                OnInventoryChanged?.Invoke();
+            }
 
-            Debug.Log($"[InventoryCore] Stored {itemsToMove.Count} items to storage");
+            Debug.Log($"[InventoryCore] Stored {transferred} items to storage (failed: {failed})");
         }
 
         public void ClearAll()
@@ -355,21 +406,20 @@ namespace Ascension.Inventory.Data
 
         #region Private Helpers
 
-        private ItemLocation DetermineTargetLocation(bool preferBag)
+        /// <summary>
+        /// ✅ NEW: Check if we can add N items to bag (accounts for stacking)
+        /// </summary>
+        private bool CanAddToBag(int itemsToAdd)
         {
-            if (preferBag && HasBagSpace())
-                return ItemLocation.Bag;
+            return _capacityManager.CanAddItems(ItemLocation.Bag, GetBagItemCount(), itemsToAdd);
+        }
 
-            if (HasStorageSpace())
-                return ItemLocation.Storage;
-
-            if (preferBag && HasStorageSpace())
-            {
-                Debug.LogWarning("[InventoryCore] Bag full, using storage");
-                return ItemLocation.Storage;
-            }
-
-            return ItemLocation.None;
+        /// <summary>
+        /// ✅ NEW: Check if we can add N items to storage (accounts for stacking)
+        /// </summary>
+        private bool CanAddToStorage(int itemsToAdd)
+        {
+            return _capacityManager.CanAddItems(ItemLocation.Storage, GetStorageItemCount(), itemsToAdd);
         }
 
         private int GetItemCountByLocation(ItemLocation location)

@@ -252,6 +252,41 @@ namespace Ascension.Inventory.Data
         }
 
         #endregion
+
+        #region New Factory Methods
+        
+        /// <summary>
+        /// Bag is full (world loot should stay in dungeon panel)
+        /// </summary>
+        public static InventoryResult BagFull()
+        {
+            return Fail("Bag is full", InventoryErrorCode.BagFull);
+        }
+        
+        /// <summary>
+        /// Storage is full (rare, but possible)
+        /// </summary>
+        public static InventoryResult StorageFull()
+        {
+            return Fail("Storage is full", InventoryErrorCode.StorageFull);
+        }
+        
+        #endregion
+        
+        #region New Error Checks
+        
+        /// <summary>
+        /// Check if error is BagFull specifically
+        /// </summary>
+        public bool IsBagFull() => ErrorCode == InventoryErrorCode.BagFull;
+        
+        /// <summary>
+        /// Check if error is StorageFull specifically
+        /// </summary>
+        public bool IsStorageFull() => ErrorCode == InventoryErrorCode.StorageFull;
+        
+        #endregion
+
     }
 
     /// <summary>
@@ -266,6 +301,8 @@ namespace Ascension.Inventory.Data
         InsufficientQuantity = 4,
         InvalidOperation = 5,
         AlreadyInLocation = 6,
+        BagFull = 7,                // Bag specifically is full
+        StorageFull = 8,            // Storage specifically is full
         Unknown = 99
     }
 }

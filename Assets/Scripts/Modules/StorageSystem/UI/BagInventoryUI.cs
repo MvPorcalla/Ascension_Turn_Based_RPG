@@ -5,6 +5,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using Ascension.Data.SO.Item;
 using Ascension.Inventory.Manager;
 using Ascension.Inventory.Data;
@@ -25,6 +26,9 @@ namespace Ascension.Storage.UI
         [SerializeField] private Transform inventoryContent;
         [SerializeField] private GameObject itemSlotPrefab;
 
+        [Header("Buttons")]
+        [SerializeField] private Button storeAllButton;
+
         [Header("Configuration")]
         [SerializeField] private int maxBagSlots = 12; // Should match InventoryManager
 
@@ -40,6 +44,7 @@ namespace Ascension.Storage.UI
         private void Start()
         {
             InitializeSlots();
+            SetupButtons();
             SubscribeToEvents();
             RefreshBag();
         }
@@ -47,6 +52,7 @@ namespace Ascension.Storage.UI
         private void OnDestroy()
         {
             UnsubscribeFromEvents();
+            CleanupButtons();
         }
 
         #endregion
@@ -68,6 +74,31 @@ namespace Ascension.Storage.UI
             {
                 InventoryManager.Instance.Inventory.OnInventoryChanged -= RefreshBag;
                 InventoryManager.Instance.OnInventoryLoaded -= RefreshBag;
+            }
+        }
+
+        #endregion
+
+        #region Button Setup
+
+        private void SetupButtons()
+        {
+            if (storeAllButton != null)
+            {
+                storeAllButton.onClick.AddListener(OnStoreAllClicked);
+                Debug.Log("[BagInventoryUI] Store All button connected");
+            }
+            else
+            {
+                Debug.LogWarning("[BagInventoryUI] Store All button not assigned in Inspector!");
+            }
+        }
+
+        private void CleanupButtons()
+        {
+            if (storeAllButton != null)
+            {
+                storeAllButton.onClick.RemoveListener(OnStoreAllClicked);
             }
         }
 
@@ -157,6 +188,21 @@ namespace Ascension.Storage.UI
                     slot.gameObject.SetActive(true);
                 }
             }
+
+            // Update Store All button state
+            UpdateStoreAllButtonState(bagItems.Count);
+        }
+
+        /// <summary>
+        /// Enable/disable Store All button based on bag contents
+        /// </summary>
+        private void UpdateStoreAllButtonState(int bagItemCount)
+        {
+            if (storeAllButton != null)
+            {
+                // Disable if bag is empty
+                storeAllButton.interactable = bagItemCount > 0;
+            }
         }
 
         #endregion
@@ -191,6 +237,48 @@ namespace Ascension.Storage.UI
 
         #endregion
 
+        #region Store All Handler
+
+        /// <summary>
+        /// ✅ NEW: Store All button handler - moves non-equipped items to storage
+        /// </summary>
+        private void OnStoreAllClicked()
+        {
+            Debug.Log("[BagInventoryUI] Store All button clicked");
+
+            if (InventoryManager.Instance?.Inventory == null)
+            {
+                Debug.LogError("[BagInventoryUI] InventoryManager not available!");
+                return;
+            }
+
+            // Get equipment manager to check equipped status
+            var equipmentManager = Ascension.Equipment.Manager.EquipmentManager.Instance;
+            
+            if (equipmentManager == null)
+            {
+                Debug.LogWarning("[BagInventoryUI] EquipmentManager not found - storing all items");
+            }
+
+            int bagItemCount = InventoryManager.Instance.Inventory.GetBagItemCount();
+            
+            if (bagItemCount == 0)
+            {
+                Debug.Log("[BagInventoryUI] Bag is empty, nothing to store");
+                return;
+            }
+
+            // Execute store all operation
+            InventoryManager.Instance.Inventory.StoreAllItems(
+                itemId => equipmentManager?.IsItemEquipped(itemId) ?? false,
+                InventoryManager.Instance.Database
+            );
+
+            Debug.Log("[BagInventoryUI] Store All completed");
+        }
+
+        #endregion
+
         #region Public Methods
 
         /// <summary>
@@ -206,14 +294,11 @@ namespace Ascension.Storage.UI
         /// </summary>
         public int GetSlotCount() => slotCache.Count;
 
-        #endregion
-
         /// <summary>
-        /// ✅ NEW: Alias for ForceRefresh() - called by StorageRoomController
+        /// ✅ Alias for initialization - called by StorageRoomController
         /// </summary>
         public void Initialize()
         {
-            // Already handled by Start(), but provide for external callers
             if (!isInitialized)
             {
                 InitializeSlots();
@@ -221,11 +306,13 @@ namespace Ascension.Storage.UI
         }
 
         /// <summary>
-        /// ✅ NEW: Alias for RefreshBag() - called by StorageRoomController
+        /// ✅ Alias for refresh - called by StorageRoomController
         /// </summary>
         public void RefreshDisplay()
         {
             RefreshBag();
         }
+
+        #endregion
     }
 }
