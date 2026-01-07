@@ -305,3 +305,5 @@ TODO:
 
 When item Gear is equipped make it remove from the storage
 
+---
+

@@ -1,6 +1,7 @@
 // ──────────────────────────────────────────────────
 // Assets\Scripts\Modules\InventorySystem\UI\ItemSlotUI.cs
-// UI component for displaying an item slot in inventory/storage/Equipment
+// UI component for displaying an item slot in inventory/storage/equipment
+// Uses dirty-flag pattern for optimized UI updates
 // ──────────────────────────────────────────────────
 
 using UnityEngine;
@@ -18,18 +19,18 @@ namespace Ascension.Inventory.UI
         [SerializeField] private Button button;
         [SerializeField] private Image rarityBackground;
         [SerializeField] private Image itemIcon;
-        [SerializeField] private GameObject equippedIndicator; 
+        [SerializeField] private GameObject equippedIndicator;
         [SerializeField] private TMP_Text quantityText;
 
         [Header("Rarity Colors")]
-        [SerializeField] private Color commonColor = new Color(0.7f, 0.7f, 0.7f, 1f);
-        [SerializeField] private Color rareColor = new Color(0.2f, 0.5f, 1f, 1f);
-        [SerializeField] private Color epicColor = new Color(0.6f, 0.2f, 1f, 1f);
-        [SerializeField] private Color legendaryColor = new Color(1f, 0.75f, 0.1f, 1f);
-        [SerializeField] private Color mythicColor = new Color(1f, 0.2f, 0.2f, 1f);
+        [SerializeField] private Color commonColor = new(0.7f, 0.7f, 0.7f, 1f);
+        [SerializeField] private Color rareColor = new(0.2f, 0.5f, 1f, 1f);
+        [SerializeField] private Color epicColor = new(0.6f, 0.2f, 1f, 1f);
+        [SerializeField] private Color legendaryColor = new(1f, 0.75f, 0.1f, 1f);
+        [SerializeField] private Color mythicColor = new(1f, 0.2f, 0.2f, 1f);
 
         [Header("Empty Slot")]
-        [SerializeField] private Color emptySlotColor = new Color(0.3f, 0.3f, 0.3f, 0.5f);
+        [SerializeField] private Color emptySlotColor = new(0.3f, 0.3f, 0.3f, 0.5f);
 
         [Header("Optional Effects")]
         [SerializeField] private bool useGlowEffect = true;
@@ -39,8 +40,13 @@ namespace Ascension.Inventory.UI
         private ItemBaseSO itemData;
         private Action currentOnClick;
 
+        // ───────── Dirty Flag ─────────
+        private bool isDirty;
+
+        #region Public API
+
         /// <summary>
-        /// Setup slot with item data (used for initial creation)
+        /// Initial setup (called once when slot is assigned)
         /// </summary>
         public void Setup(ItemBaseSO data, ItemInstance instance, Action onClick)
         {
@@ -48,16 +54,14 @@ namespace Ascension.Inventory.UI
             itemInstance = instance;
             currentOnClick = onClick;
 
-            UpdateVisuals();
-            UpdateButton();
+            MarkDirty();
         }
 
         /// <summary>
-        /// Update existing slot without recreating (fast refresh)
+        /// Fast update without recreation
         /// </summary>
         public void UpdateItem(ItemBaseSO data, ItemInstance instance, Action onClick)
         {
-            // Only update if data actually changed
             if (itemData == data && itemInstance == instance && currentOnClick == onClick)
                 return;
 
@@ -65,45 +69,40 @@ namespace Ascension.Inventory.UI
             itemInstance = instance;
             currentOnClick = onClick;
 
-            UpdateVisuals();
-            UpdateButton();
+            MarkDirty();
         }
 
         /// <summary>
-        /// Show as empty slot (no item)
+        /// Force slot to empty state immediately
         /// </summary>
         public void ShowEmpty()
         {
             itemData = null;
             itemInstance = null;
             currentOnClick = null;
+            isDirty = false;
 
-            // Clear icon
             if (itemIcon != null)
             {
                 itemIcon.sprite = null;
                 itemIcon.enabled = false;
             }
 
-            // Set empty background color
             if (rarityBackground != null)
             {
                 rarityBackground.color = emptySlotColor;
             }
 
-            // Hide quantity
             if (quantityText != null)
             {
                 quantityText.gameObject.SetActive(false);
             }
 
-            // Hide equipped indicator
             if (equippedIndicator != null)
             {
                 equippedIndicator.SetActive(false);
             }
 
-            // Disable button interaction
             if (button != null)
             {
                 button.interactable = false;
@@ -111,12 +110,29 @@ namespace Ascension.Inventory.UI
             }
         }
 
-        /// <summary>
-        /// Check if slot is currently empty
-        /// </summary>
         public bool IsEmpty() => itemData == null;
 
-        #region Private Helper Methods
+        #endregion
+
+        #region Dirty Flag Logic
+
+        public void MarkDirty()
+        {
+            isDirty = true;
+        }
+
+        private void LateUpdate()
+        {
+            if (!isDirty) return;
+
+            UpdateVisuals();
+            UpdateButton();
+            isDirty = false;
+        }
+
+        #endregion
+
+        #region Visual Updates
 
         private void UpdateVisuals()
         {
@@ -155,12 +171,12 @@ namespace Ascension.Inventory.UI
 
             Color rarityColor = GetRarityColor(itemData.Rarity);
 
-            // Optional: Add glow effect for higher rarities
-            if (useGlowEffect && (itemData.Rarity == Rarity.Epic || 
-                                itemData.Rarity == Rarity.Legendary || 
-                                itemData.Rarity == Rarity.Mythic))
+            if (useGlowEffect &&
+                (itemData.Rarity == Rarity.Epic ||
+                 itemData.Rarity == Rarity.Legendary ||
+                 itemData.Rarity == Rarity.Mythic))
             {
-                rarityColor = rarityColor * glowIntensity;
+                rarityColor *= glowIntensity;
             }
 
             rarityBackground.color = rarityColor;
@@ -184,13 +200,15 @@ namespace Ascension.Inventory.UI
         private void UpdateEquippedIndicator()
         {
             if (equippedIndicator == null) return;
-            
+
             bool isEquipped = false;
-            if (itemInstance != null && Equipment.Manager.EquipmentManager.Instance != null)
+            var equipMgr = Equipment.Manager.EquipmentManager.Instance;
+
+            if (itemInstance != null && equipMgr != null)
             {
-                isEquipped = Equipment.Manager.EquipmentManager.Instance.IsItemEquipped(itemInstance.itemID);
+                isEquipped = equipMgr.IsItemEquipped(itemInstance.itemID);
             }
-            
+
             equippedIndicator.SetActive(isEquipped);
         }
 
@@ -203,7 +221,7 @@ namespace Ascension.Inventory.UI
 
             if (currentOnClick != null)
             {
-                button.onClick.AddListener(() => currentOnClick?.Invoke());
+                button.onClick.AddListener(() => currentOnClick.Invoke());
             }
         }
 
@@ -222,15 +240,12 @@ namespace Ascension.Inventory.UI
 
         #endregion
 
-        #region Debug / Tooltip
-        
-        /// <summary>
-        /// Show item info tooltip (placeholder for now)
-        /// </summary>
+        #region Debug
+
         public void ShowTooltip()
         {
             if (itemData == null) return;
-            Debug.Log($"[ItemSlot] Tooltip: {itemData.GetInfoText()}");
+            Debug.Log($"[ItemSlotUI] Tooltip: {itemData.GetInfoText()}");
         }
 
         #endregion
