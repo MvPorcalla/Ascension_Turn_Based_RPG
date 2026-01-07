@@ -1,6 +1,7 @@
 // ════════════════════════════════════════════
 // UIManager.cs
-// Handles UI panel navigation and room interactions
+// Handles base navigation, full-screen panels,
+// and generic room panels (no hard-coded rooms)
 // ════════════════════════════════════════════
 
 using UnityEngine;
@@ -15,23 +16,27 @@ namespace Ascension.UI
         public static UIManager Instance { get; private set; }
         #endregion
 
+        #region Room Definition
+
+        [System.Serializable]
+        public class RoomUI
+        {
+            public string roomId;
+            public Button openButton;
+            public GameObject panel;
+            public Button backButton;
+        }
+
+        #endregion
+
         #region Serialized Fields
 
         [Header("Base Panels")]
         [SerializeField] private GameObject mainBasePanel;
         [SerializeField] private GameObject worldMapPanel;
 
-        [Header("Room Buttons (Main Base)")]
-        [SerializeField] private Button equipmentRoomButton;
-        [SerializeField] private Button storageRoomButton;
-
-        [Header("Room Panels")]
-        [SerializeField] private GameObject equipmentRoomPanel;
-        [SerializeField] private GameObject storageRoomPanel;
-
-        [Header("Room Back Buttons")]
-        [SerializeField] private Button equipmentRoomBackButton;
-        [SerializeField] private Button storageRoomBackButton;
+        [Header("Rooms")]
+        [SerializeField] private RoomUI[] rooms;
 
         [Header("Game Menu Buttons")]
         [SerializeField] private Button worldMapButton;
@@ -77,6 +82,7 @@ namespace Ascension.UI
                 Destroy(gameObject);
                 return;
             }
+
             Instance = this;
         }
 
@@ -110,8 +116,7 @@ namespace Ascension.UI
 
             CloseAllFullScreenPanels();
 
-            if (currentBasePanel != null)
-                currentBasePanel.SetActive(false);
+            currentBasePanel?.SetActive(false);
 
             panel.SetActive(true);
             currentFullScreenPanel = panel;
@@ -124,8 +129,7 @@ namespace Ascension.UI
             currentFullScreenPanel.SetActive(false);
             currentFullScreenPanel = null;
 
-            if (currentBasePanel != null)
-                currentBasePanel.SetActive(true);
+            currentBasePanel?.SetActive(true);
         }
 
         public void OpenRoomPanel(GameObject roomPanel)
@@ -133,11 +137,11 @@ namespace Ascension.UI
             if (roomPanel == null) return;
 
             CloseAllRoomPanels();
+
             roomPanel.SetActive(true);
             currentRoomPanel = roomPanel;
 
-            if (currentBasePanel != null)
-                currentBasePanel.SetActive(false);
+            currentBasePanel?.SetActive(false);
         }
 
         public void CloseCurrentRoomPanel()
@@ -148,8 +152,7 @@ namespace Ascension.UI
                 currentRoomPanel = null;
             }
 
-            if (currentBasePanel != null)
-                currentBasePanel.SetActive(true);
+            currentBasePanel?.SetActive(true);
         }
 
         #endregion
@@ -170,12 +173,18 @@ namespace Ascension.UI
             questBackButton?.onClick.AddListener(CloseCurrentFullScreenPanel);
             codexBackButton?.onClick.AddListener(CloseCurrentFullScreenPanel);
 
-            // Room buttons
-            equipmentRoomButton?.onClick.AddListener(() => OpenRoomPanel(equipmentRoomPanel));
-            storageRoomButton?.onClick.AddListener(() => OpenRoomPanel(storageRoomPanel));
+            // Rooms (generic)
+            foreach (var room in rooms)
+            {
+                if (room.openButton != null && room.panel != null)
+                {
+                    room.openButton.onClick.AddListener(
+                        () => OpenRoomPanel(room.panel)
+                    );
+                }
 
-            equipmentRoomBackButton?.onClick.AddListener(CloseCurrentRoomPanel);
-            storageRoomBackButton?.onClick.AddListener(CloseCurrentRoomPanel);
+                room.backButton?.onClick.AddListener(CloseCurrentRoomPanel);
+            }
 
             // World map
             homeBaseButton?.onClick.AddListener(ReturnToHomeBase);
@@ -193,8 +202,10 @@ namespace Ascension.UI
 
         private void CloseAllRoomPanels()
         {
-            equipmentRoomPanel?.SetActive(false);
-            storageRoomPanel?.SetActive(false);
+            if (rooms == null) return;
+
+            foreach (var room in rooms)
+                room.panel?.SetActive(false);
 
             currentRoomPanel = null;
         }
