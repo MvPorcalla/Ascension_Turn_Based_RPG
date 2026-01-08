@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\Modules\EquipmentSystem\Manager\EquipmentManager.cs
-// Main manager for equipment system - handles gear and stats
+// ✅ REFACTORED: Uses coordinator pattern, no direct inventory mutations
 // ════════════════════════════════════════════
 
 using System;
@@ -14,6 +14,8 @@ using Ascension.Character.Manager;
 using Ascension.Equipment.Data;
 using Ascension.Equipment.Enums;
 using Ascension.Equipment.Services;
+using Ascension.Equipment.Coordinators;
+using Ascension.Inventory.Manager;
 
 namespace Ascension.Equipment.Manager
 {
@@ -33,11 +35,12 @@ namespace Ascension.Equipment.Manager
         
         // Services
         private GearSlotService _slotService;
-        private GearEquipService _equipService;
+        private GearEquipCoordinator _coordinator; // ✅ Renamed from GearEquipService
         private GearStatsService _statsService;
         
         // Dependencies
         private CharacterManager _characterManager;
+        private InventoryManager _inventoryManager;
         #endregion
 
         #region Properties
@@ -46,9 +49,9 @@ namespace Ascension.Equipment.Manager
         #endregion
 
         #region Events
-        public event Action<GearSlotType, string> OnGearEquipped;   // (slotType, itemId)
-        public event Action<GearSlotType> OnGearUnequipped;         // (slotType)
-        public event Action OnEquipmentChanged;                      // Any equipment change
+        public event Action<GearSlotType, string> OnGearEquipped;
+        public event Action<GearSlotType, string> OnGearUnequipped;
+        public event Action OnEquipmentChanged;
         #endregion
 
         #region Unity Callbacks
@@ -78,10 +81,8 @@ namespace Ascension.Equipment.Manager
         private void InitializeServices()
         {
             _slotService = new GearSlotService();
-            _equipService = new GearEquipService(_slotService);
+            _coordinator = new GearEquipCoordinator(_slotService); // ✅ Use coordinator
             _statsService = new GearStatsService();
-            
-            Debug.Log("[EquipmentManager] Services initialized");
         }
 
         private void InjectDependencies()
@@ -95,61 +96,141 @@ namespace Ascension.Equipment.Manager
             }
 
             _characterManager = container.Get<CharacterManager>();
+            _inventoryManager = container.Get<InventoryManager>();
 
             if (_characterManager == null)
                 Debug.LogError("[EquipmentManager] CharacterManager not found!");
+            
+            if (_inventoryManager == null)
+                Debug.LogError("[EquipmentManager] InventoryManager not found!");
             
             if (database == null)
                 Debug.LogError("[EquipmentManager] GameDatabaseSO not assigned!");
         }
         #endregion
 
-        #region Public Methods - Equip/Unequip
+        #region Public API - Primary Methods
+
         /// <summary>
-        /// Equip an item to a specific slot
+        /// ✅ REFACTORED: Equip item via coordinator (no direct inventory mutations)
         /// </summary>
-        public bool EquipItem(string itemId, GearSlotType slotType)
+        public bool EquipItem(string itemId)
         {
-            if (string.IsNullOrEmpty(itemId))
+            var result = _coordinator.EquipFromInventory(
+                _equippedGear,
+                itemId,
+                _inventoryManager,
+                database
+            );
+
+            if (result.Success)
             {
-                Debug.LogWarning("[EquipmentManager] Cannot equip null/empty item ID");
-                return false;
+                // Find which slot was equipped
+                var slot = _coordinator.FindEquippedSlot(_equippedGear, itemId);
+                if (slot.HasValue)
+                {
+                    UpdateCharacterStats();
+                    OnGearEquipped?.Invoke(slot.Value, itemId);
+                    
+                    if (!string.IsNullOrEmpty(result.UnequippedItemId))
+                        OnGearUnequipped?.Invoke(slot.Value, result.UnequippedItemId);
+                    
+                    OnEquipmentChanged?.Invoke();
+                }
+                
+                Debug.Log($"[EquipmentManager] {result.Message}");
+            }
+            else
+            {
+                Debug.LogWarning($"[EquipmentManager] {result.Message}");
             }
 
-            // Equip item (returns previously equipped item if any)
-            string previousItemId = _equipService.EquipItem(_equippedGear, itemId, slotType, database);
-
-            // Update character stats
-            UpdateCharacterStats();
-
-            // Fire events
-            OnGearEquipped?.Invoke(slotType, itemId);
-            OnEquipmentChanged?.Invoke();
-
-            Debug.Log($"[EquipmentManager] Equipped {itemId} to {slotType}");
-            return true;
+            return result.Success;
         }
 
         /// <summary>
-        /// Unequip item from a slot
+        /// ✅ REFACTORED: Unequip item by ID (via coordinator)
+        /// </summary>
+        public bool UnequipItem(string itemId)
+        {
+            var slot = _coordinator.FindEquippedSlot(_equippedGear, itemId);
+            if (!slot.HasValue)
+            {
+                Debug.LogWarning($"[EquipmentManager] Item {itemId} not equipped");
+                return false;
+            }
+
+            return UnequipSlot(slot.Value);
+        }
+
+        /// <summary>
+        /// ✅ REFACTORED: Unequip specific slot (via coordinator)
         /// </summary>
         public bool UnequipSlot(GearSlotType slotType)
         {
-            bool success = _equipService.UnequipSlot(_equippedGear, slotType);
+            var result = _coordinator.UnequipViaInventory(
+                _equippedGear,
+                slotType,
+                _inventoryManager,
+                database
+            );
 
-            if (success)
+            if (result.Success)
             {
-                // Update character stats
                 UpdateCharacterStats();
-
-                // Fire events
-                OnGearUnequipped?.Invoke(slotType);
+                OnGearUnequipped?.Invoke(slotType, result.Message);
                 OnEquipmentChanged?.Invoke();
-
-                Debug.Log($"[EquipmentManager] Unequipped {slotType} slot");
+                
+                Debug.Log($"[EquipmentManager] {result.Message}");
+            }
+            else
+            {
+                Debug.LogWarning($"[EquipmentManager] {result.Message}");
             }
 
-            return success;
+            return result.Success;
+        }
+
+        #endregion
+
+        #region Public API - Advanced Methods
+
+        /// <summary>
+        /// Equip to specific slot (for manual slot selection)
+        /// </summary>
+        public bool EquipItemToSlot(string itemId, GearSlotType slotType)
+        {
+            var result = _coordinator.EquipFromInventory(
+                _equippedGear,
+                itemId,
+                _inventoryManager,
+                database,
+                slotType
+            );
+
+            if (result.Success)
+            {
+                UpdateCharacterStats();
+                OnGearEquipped?.Invoke(slotType, itemId);
+                
+                if (!string.IsNullOrEmpty(result.UnequippedItemId))
+                    OnGearUnequipped?.Invoke(slotType, result.UnequippedItemId);
+                
+                OnEquipmentChanged?.Invoke();
+            }
+
+            return result.Success;
+        }
+
+        /// <summary>
+        /// Toggle equip/unequip (for button that switches state)
+        /// </summary>
+        public bool ToggleEquip(string itemId)
+        {
+            if (IsItemEquipped(itemId))
+                return UnequipItem(itemId);
+            else
+                return EquipItem(itemId);
         }
 
         /// <summary>
@@ -157,7 +238,7 @@ namespace Ascension.Equipment.Manager
         /// </summary>
         public bool SwapAccessorySlots()
         {
-            bool success = _equipService.SwapAccessorySlots(_equippedGear);
+            bool success = _coordinator.SwapAccessorySlots(_equippedGear);
 
             if (success)
             {
@@ -166,15 +247,17 @@ namespace Ascension.Equipment.Manager
 
             return success;
         }
+
         #endregion
 
-        #region Public Methods - Queries
+        #region Public API - Query Methods
+
         /// <summary>
         /// Check if an item is currently equipped
         /// </summary>
         public bool IsItemEquipped(string itemId)
         {
-            return _equipService.IsItemEquipped(_equippedGear, itemId);
+            return _coordinator.IsItemEquipped(_equippedGear, itemId);
         }
 
         /// <summary>
@@ -194,6 +277,14 @@ namespace Ascension.Equipment.Manager
         }
 
         /// <summary>
+        /// Find which slot an item is equipped in
+        /// </summary>
+        public GearSlotType? FindEquippedSlot(string itemId)
+        {
+            return _coordinator.FindEquippedSlot(_equippedGear, itemId);
+        }
+
+        /// <summary>
         /// Get total stats from all equipped gear
         /// </summary>
         public CharacterItemStats GetTotalItemStats()
@@ -208,9 +299,11 @@ namespace Ascension.Equipment.Manager
         {
             return _statsService.GetEquippedWeapon(_equippedGear, database);
         }
+
         #endregion
 
-        #region Public Methods - Load/Unload
+        #region Public API - Save/Load
+
         /// <summary>
         /// Load equipment from save data
         /// </summary>
@@ -230,11 +323,8 @@ namespace Ascension.Equipment.Manager
             _equippedGear.accessory1Id = saveData.accessory1Id ?? string.Empty;
             _equippedGear.accessory2Id = saveData.accessory2Id ?? string.Empty;
 
-            // Update character stats with loaded equipment
             UpdateCharacterStats();
-
             OnEquipmentChanged?.Invoke();
-            Debug.Log($"[EquipmentManager] Loaded equipment - {_equippedGear.GetEquippedCount()} items equipped");
         }
 
         /// <summary>
@@ -255,19 +345,21 @@ namespace Ascension.Equipment.Manager
         }
 
         /// <summary>
-        /// Unequip all gear
+        /// Unequip all gear (returns to bag/storage)
         /// </summary>
         public void UnequipAll()
         {
-            _equippedGear.ClearAll();
-            UpdateCharacterStats();
-            OnEquipmentChanged?.Invoke();
-            
-            Debug.Log("[EquipmentManager] All gear unequipped");
+            foreach (GearSlotType slot in Enum.GetValues(typeof(GearSlotType)))
+            {
+                if (!IsSlotEmpty(slot))
+                    UnequipSlot(slot);
+            }
         }
+
         #endregion
 
         #region Private Methods
+
         private void InitializeSingleton()
         {
             if (Instance != null && Instance != this)
@@ -279,9 +371,6 @@ namespace Ascension.Equipment.Manager
             Instance = this;
         }
 
-        /// <summary>
-        /// Update CharacterManager stats when equipment changes
-        /// </summary>
         private void UpdateCharacterStats()
         {
             if (_characterManager == null)
@@ -292,42 +381,7 @@ namespace Ascension.Equipment.Manager
 
             _characterManager.UpdateStatsFromEquipment();
         }
-        
-        #endregion
 
-        #region Debug Tools
-        [ContextMenu("Debug: Print Equipped Gear")]
-        private void DebugPrintEquippedGear()
-        {
-            Debug.Log("=== EQUIPPED GEAR ===");
-            Debug.Log($"Weapon: {_equippedGear.weaponId}");
-            Debug.Log($"Helmet: {_equippedGear.helmetId}");
-            Debug.Log($"Chest: {_equippedGear.chestId}");
-            Debug.Log($"Gloves: {_equippedGear.glovesId}");
-            Debug.Log($"Boots: {_equippedGear.bootsId}");
-            Debug.Log($"Accessory1: {_equippedGear.accessory1Id}");
-            Debug.Log($"Accessory2: {_equippedGear.accessory2Id}");
-            Debug.Log($"Total Equipped: {_equippedGear.GetEquippedCount()}");
-        }
-
-        [ContextMenu("Debug: Print Total Stats")]
-        private void DebugPrintTotalStats()
-        {
-            var stats = GetTotalItemStats();
-            Debug.Log("=== TOTAL EQUIPMENT STATS ===");
-            Debug.Log($"AD: {stats.AD}");
-            Debug.Log($"AP: {stats.AP}");
-            Debug.Log($"HP: {stats.HP}");
-            Debug.Log($"Defense: {stats.Defense}");
-            Debug.Log($"Crit Rate: {stats.CritRate}%");
-            Debug.Log($"Attack Speed: {stats.AttackSpeed}");
-        }
-
-        [ContextMenu("Debug: Unequip All")]
-        private void DebugUnequipAll()
-        {
-            UnequipAll();
-        }
         #endregion
     }
 }

@@ -20,10 +20,9 @@ namespace Ascension.Inventory.Services
         /// </summary>
         public List<ItemInstance> GetBagItems(List<ItemInstance> allItems)
         {
-            return allItems.Where(item =>
-                item.location == ItemLocation.Bag &&
-                !IsSkill(item.itemID)
-            ).ToList();
+            return allItems
+                .Where(item => item.location == ItemLocation.Bag && !IsSkill(item.itemID))
+                .ToList();
         }
 
         /// <summary>
@@ -31,10 +30,9 @@ namespace Ascension.Inventory.Services
         /// </summary>
         public List<ItemInstance> GetStorageItems(List<ItemInstance> allItems)
         {
-            return allItems.Where(item =>
-                item.location == ItemLocation.Storage &&
-                !IsSkill(item.itemID)
-            ).ToList();
+            return allItems
+                .Where(item => item.location == ItemLocation.Storage && !IsSkill(item.itemID))
+                .ToList();
         }
 
         /// <summary>
@@ -45,16 +43,19 @@ namespace Ascension.Inventory.Services
             ItemType? filterType,
             GameDatabaseSO database)
         {
-            var storageItems = GetStorageItems(allItems);
+            var storageItems = allItems
+                .Where(item => item.location == ItemLocation.Storage);
 
-            if (filterType == null)
-                return storageItems;
+            if (!filterType.HasValue || database == null)
+                return storageItems.ToList();
 
-            return storageItems.Where(item =>
-            {
-                ItemBaseSO itemData = database.GetItem(item.itemID);
-                return itemData != null && itemData.ItemType == filterType.Value;
-            }).ToList();
+            return storageItems
+                .Where(item =>
+                {
+                    var itemData = database.GetItem(item.itemID);
+                    return itemData != null && itemData.ItemType == filterType.Value;
+                })
+                .ToList();
         }
 
         /// <summary>

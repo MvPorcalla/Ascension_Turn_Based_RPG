@@ -16,6 +16,7 @@ namespace Ascension.Inventory.Enums
     {
         Storage = 0,    // Default storage (unlimited, slower access)
         Bag = 2,        // Player bag (12 slots, expandable with equipment)
+        Equipped = 3,   // Currently equipped items
         None = -1       // Indicates no valid location (used when all locations full)
     }
 }

@@ -21,7 +21,7 @@ namespace Ascension.UI
         [SerializeField] private TMP_Text guildRankText;
         
         [Header("Player Preview")]
-        [SerializeField] private PlayerPreviewUI playerPreview;
+        [SerializeField] private PlayerStatsPreviewUI playerPreview;
         
         [Header("Attribute Buttons")]
         [SerializeField] private Button strMinusBtn;

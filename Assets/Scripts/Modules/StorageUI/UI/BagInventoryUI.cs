@@ -1,5 +1,6 @@
 // ──────────────────────────────────────────────────
-// Assets\Scripts\Modules\InventorySystem\UI\BagInventoryUI.cs
+// Assets\Scripts\Modules\StorageSystem\UI\BagInventoryUI.cs
+// ✅ FIXED: Removed context parameter from GearPopup.Show()
 // Manages bag inventory display and interaction
 // ──────────────────────────────────────────────────
 
@@ -13,7 +14,6 @@ using Ascension.Inventory.Enums;
 using Ascension.Inventory.Popup;
 using Ascension.Inventory.UI;
 using Ascension.SharedUI.Popups;
-using Ascension.Inventory.Config;
 
 namespace Ascension.Storage.UI
 {
@@ -209,6 +209,9 @@ namespace Ascension.Storage.UI
 
         #region Item Click Handler
 
+        /// <summary>
+        /// ✅ FIXED: Removed context parameter - GearPopup now handles everything internally
+        /// </summary>
         private void OnItemClicked(ItemInstance item)
         {
             ItemBaseSO itemData = InventoryManager.Instance.Database.GetItem(item.itemID);
@@ -222,16 +225,18 @@ namespace Ascension.Storage.UI
             // Route to appropriate popup based on item type
             if (itemData is PotionSO potion)
             {
+                // Potions use their own specialized popup
                 potionPopup.ShowPotion(potion, item, ItemLocation.Bag);
             }
             else if (itemData.IsStackable)
             {
+                // Stackable items (materials, etc.) use generic item popup
                 itemPopup.ShowItem(itemData, item, ItemLocation.Bag);
             }
             else if (itemData is WeaponSO || itemData is GearSO)
             {
-                var context = new StoragePopupContext(ItemLocation.Bag);
-                GearPopup.Instance.Show(itemData, item, context);
+                // ✅ FIXED: Weapons/Gear use simplified GearPopup (no context needed)
+                GearPopup.Instance.Show(itemData, item);
             }
         }
 
@@ -240,7 +245,7 @@ namespace Ascension.Storage.UI
         #region Store All Handler
 
         /// <summary>
-        /// ✅ NEW: Store All button handler - moves non-equipped items to storage
+        /// ✅ Store All button handler - moves non-equipped items to storage
         /// </summary>
         private void OnStoreAllClicked()
         {

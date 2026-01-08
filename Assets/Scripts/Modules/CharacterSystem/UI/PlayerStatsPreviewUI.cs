@@ -12,7 +12,7 @@ using Ascension.Data.SO.Character;
 
 namespace Ascension.UI
 {
-    public class PlayerPreviewUI : MonoBehaviour
+    public class PlayerStatsPreviewUI : MonoBehaviour
     {
         #region Serialized Fields
         [Header("Offensive Stats")]

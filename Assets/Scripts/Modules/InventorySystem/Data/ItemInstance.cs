@@ -15,6 +15,9 @@ namespace Ascension.Inventory.Data
         public int quantity;
         public ItemLocation location;
 
+        // ✅ NEW: Remember where item came from before equipping
+        public ItemLocation? previousLocation;
+
         // ═══════════════════════════════════════════════════════════
         // Constructor
         // ═══════════════════════════════════════════════════════════
@@ -24,6 +27,7 @@ namespace Ascension.Inventory.Data
             this.itemID = itemID;
             this.quantity = quantity;
             this.location = location;
+            this.previousLocation = null;
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -35,7 +39,10 @@ namespace Ascension.Inventory.Data
         /// </summary>
         public ItemInstance Clone()
         {
-            return new ItemInstance(itemID, quantity, location);
+            return new ItemInstance(itemID, quantity, location)
+            {
+                previousLocation = this.previousLocation
+            };
         }
     }
 }

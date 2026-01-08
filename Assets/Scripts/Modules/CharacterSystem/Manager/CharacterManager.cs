@@ -104,6 +104,7 @@ namespace Ascension.Character.Manager
             Debug.Log($"[CharacterManager] Loaded player: {_currentPlayer.playerName}");
             
             TriggerPlayerLoadedEvents();
+            UpdateStatsFromEquipment();
         }
 
         public void UnloadPlayer()

@@ -85,7 +85,7 @@ Scripts/
 │   │   └── UI/
 │   │       └── ItemSlotUI.cs               // Reusable slot component
 │   │
-│   ├── StorageSystem/                       // ✅ STORAGE ROOM UI MODULE
+│   ├── StorageUI/                       // ✅ STORAGE ROOM UI MODULE
 │   │   ├── Ascension.Storage.asmdef        // References: Inventory, SharedUI, Data
 │   │   │
 │   │   ├── Controller/
@@ -105,43 +105,37 @@ Scripts/
 │   │       ├── StorageInventoryUI.cs       // Displays storage (60 slots)
 │   │       └── StoragePopupContext.cs      // Context provider for GearPopup
 │   │
-│   ├── EquipmentSystem/                     // ✅ EQUIPMENT ROOM UI MODULE
+│   ├── EquipmentSystem/                     // ✅ Complete Refactor to a module
 │   │   ├── Ascension.Equipment.asmdef      // References: Inventory, Character, SharedUI
 │   │   │
-│   │   ├── Manager/
-│   │   │   ├── EquipmentManager.cs         // Manages equipped gear
-│   │   │   └── SkillLoadoutManager.cs      // Manages skill hotbar
+│   │   ├──Coordinators/
+│   │   │   ├── GearEquipCoordinator.cs       // Equipment ↔ Inventory
 │   │   │
 │   │   ├── Data/
 │   │   │   ├── EquippedGear.cs             // 7 equipped slots
 │   │   │   └── SkillLoadout.cs             // 3 skill slots
 │   │   │
-│   │   ├── Services/
-│   │   │   ├── GearSlotService.cs          // Slot validation
-│   │   │   ├── GearEquipService.cs         // Equip/unequip logic
-│   │   │   └── GearStatsService.cs         // Calculate stats
+│   │   ├── Enums/                          // im not sure if this is still usable
+│   │   │   ├── EquipmentEnums.cs           // 
+│   │   │   └── GearSlotTypeExtensions.cs          // 
 │   │   │
-│   │   ├── UI/
-│   │   │   ├── EquipmentRoomController.cs  // Main equipment room scene controller
-│   │   │   ├── GearSlotUI.cs               // Individual gear slot (7 slots)
-│   │   │   ├── SkillSlotUI.cs              // Skill hotbar slot (3 slots)
-│   │   │   ├── EquipmentStorageUI.cs       // Filtered storage view
-│   │   │   └── EquipmentPopupContext.cs    // Context for equipment popups
+│   │   ├── Manager/
+│   │   │   ├── EquipmentManager.cs         // Manages equipped gear
+│   │   │   └── SkillLoadoutManager.cs      // Manages skill hotbar
 │   │   │
-│   │   └── Enums/
-│   │       └── EquipmentEnums.cs           // GearSlotType, EquipmentStorageFilter
+│   │   └── Services/
+│   │       ├── GearSlotService.cs          // Slot validation
+│   │       └── GearStatsService.cs         // Calculate stats
 │   │
 │   └── SharedUI/                            // ✅ SHARED UI COMPONENTS
 │       ├── Ascension.SharedUI.asmdef
 │       │
 │       ├── Popups/
 │       │   ├── GearPopup.cs                // Shared gear/weapon popup
-│       │   └── IGearPopupContext.cs        // Interface for context
 │       │
 │       └── Components/
 │           └── BuffLineUI.cs               // Shared buff display component
 │    
-│
 ├── UI/                                     // UI module
 │   ├── Ascension.UI.asmdef
 │   ├── Core/

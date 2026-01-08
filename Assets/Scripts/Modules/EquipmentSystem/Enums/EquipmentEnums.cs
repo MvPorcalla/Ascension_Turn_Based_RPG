@@ -1,46 +1,32 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\Modules\EquipmentSystem\Enums\EquipmentEnums.cs
-// Enums for equipment system
+// Core enums for equipment system
 // ════════════════════════════════════════════
 
 namespace Ascension.Equipment.Enums
 {
     /// <summary>
-    /// Equipment slot types
+    /// Equipment gear slot types (7 slots total)
     /// </summary>
     public enum GearSlotType
     {
-        Weapon,
-        Helmet,
-        Chest,
-        Gloves,
-        Boots,
-        Accessory1,
-        Accessory2
+        Weapon,      // Main weapon
+        Helmet,      // Head armor
+        Chest,       // Body armor
+        Gloves,      // Hand armor
+        Boots,       // Foot armor
+        Accessory1,  // First accessory slot
+        Accessory2   // Second accessory slot
     }
 
     /// <summary>
-    /// Skill loadout slot types (renamed from HotbarSlotType)
+    /// Skill loadout slot types (3 slots total)
+    /// Used for combat hotbar skills
     /// </summary>
     public enum SkillSlotType
     {
-        NormalSkill1,
-        NormalSkill2,
-        UltimateSkill
-    }
-
-    /// <summary>
-    /// Storage filter modes for equipment room
-    /// </summary>
-    public enum EquipmentStorageFilter
-    {
-        All,         // Show everything (weapons, gear)
-        Weapons,     // Show only weapons
-        Helmets,     // Show only helmets
-        Chests,      // Show only chest pieces
-        Gloves,      // Show only gloves
-        Boots,       // Show only boots
-        Accessories, // Show only accessories
-        Abilities    // Show only abilities for skill loadout
+        NormalSkill1,   // First normal skill
+        NormalSkill2,   // Second normal skill
+        UltimateSkill   // Ultimate/special skill
     }
 }

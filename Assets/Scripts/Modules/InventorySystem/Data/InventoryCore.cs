@@ -103,6 +103,17 @@ namespace Ascension.Inventory.Data
 
         #endregion
 
+        #region Public Methods
+        /// <summary>
+        /// ✅ NEW: Force a UI refresh by triggering OnInventoryChanged event
+        /// Used when external systems modify item state (e.g., equipping items)
+        /// </summary>
+        public void ForceRefresh()
+        {
+            OnInventoryChanged?.Invoke();
+        }
+        #endregion
+
         #region Query Methods (Delegate to QueryService)
         
         public List<ItemInstance> GetBagItems()

@@ -1,7 +1,6 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\AppFlow\SaveController.cs
-// Save and load game state management
-// ✅ FINAL: Migration logic removed after cleanup period
+// ✅ FIXED: Save/load previousLocation for proper unequip behavior
 // ════════════════════════════════════════════
 
 using System;
@@ -118,10 +117,11 @@ namespace Ascension.App
                 return false;
             }
             
-            LoadInventoryFromSave(saveData);
-            LoadEquipmentFromSave(saveData);
-            LoadPlayerFromSave(saveData);
-            LoadSkillLoadoutFromSave(saveData);
+            // ✅ FIXED: Load character FIRST (before equipment)
+            LoadPlayerFromSave(saveData);         // 1️⃣ Create character
+            LoadInventoryFromSave(saveData);      // 2️⃣ Load inventory items
+            LoadEquipmentFromSave(saveData);      // 3️⃣ Load equipment (now character exists)
+            LoadSkillLoadoutFromSave(saveData);   // 4️⃣ Load skills
             
             OnLoadCompleted?.Invoke();
             Debug.Log("[SaveController] Game loaded successfully");
@@ -193,8 +193,11 @@ namespace Ascension.App
         }
         #endregion
 
-        #region Private Methods - Inventory Conversion (✅ CLEANED)
+        #region Private Methods - Inventory Conversion (✅ FIXED)
         
+        /// <summary>
+        /// ✅ FIXED: Now saves previousLocation for proper unequip behavior
+        /// </summary>
         private InventorySaveData ConvertToInventorySaveData()
         {
             if (_inventoryManager == null)
@@ -230,7 +233,11 @@ namespace Ascension.App
                 {
                     itemId = item.itemID,
                     quantity = item.quantity,
-                    location = (int)item.location
+                    location = (int)item.location,
+                    // ✅ FIXED: Save previousLocation (use -1 for null)
+                    previousLocation = item.previousLocation.HasValue 
+                        ? (int)item.previousLocation.Value 
+                        : -1
                 };
             }
             
@@ -243,7 +250,7 @@ namespace Ascension.App
         }
 
         /// <summary>
-        /// ✅ CLEANED: Simple load without migration logic
+        /// ✅ FIXED: Now loads previousLocation for proper unequip behavior
         /// </summary>
         private void LoadInventoryFromSave(SaveData saveData)
         {
@@ -275,6 +282,16 @@ namespace Ascension.App
                     itemData.quantity, 
                     location
                 );
+                
+                // ✅ FIXED: Restore previousLocation
+                if (itemData.previousLocation >= 0)
+                {
+                    item.previousLocation = (ItemLocation)itemData.previousLocation;
+                }
+                else
+                {
+                    item.previousLocation = null;
+                }
                 
                 bagData.items.Add(item);
             }

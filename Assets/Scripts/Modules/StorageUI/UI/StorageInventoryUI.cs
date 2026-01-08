@@ -244,8 +244,7 @@ namespace Ascension.Storage.UI
             }
             else if (itemData is WeaponSO || itemData is GearSO)
             {
-                var context = new StoragePopupContext(ItemLocation.Storage);
-                GearPopup.Instance.Show(itemData, item, context);
+                GearPopup.Instance.Show(itemData, item);
             }
         }
 

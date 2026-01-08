@@ -1,7 +1,6 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\Data\Save\SaveData.cs
-// Save data structures for serialization
-// ✅ FINAL: Pocket completely removed
+// ✅ FIXED: Added previousLocation tracking for equipped items
 // ════════════════════════════════════════════
 
 using System;
@@ -55,15 +54,18 @@ namespace Ascension.Data.Save
     }
 
     /// <summary>
+    /// ✅ FIXED: Added previousLocation for proper unequip behavior
     /// Item instance data for serialization
-    /// Values: 0=Storage, 2=Bag
+    /// location values: 0=Storage, 2=Bag, 3=Equipped
+    /// previousLocation: -1=None/null, 0=Storage, 2=Bag
     /// </summary>
     [Serializable]
     public class ItemInstanceData
     {
         public string itemId;
         public int quantity;
-        public int location;  // 0=Storage, 2=Bag
+        public int location;          // Current location
+        public int previousLocation;  // ✅ NEW: Where item was before equipping (-1 = none)
     }
 
     [Serializable]

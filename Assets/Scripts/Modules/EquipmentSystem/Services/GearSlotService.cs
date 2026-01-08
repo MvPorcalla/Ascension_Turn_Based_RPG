@@ -1,17 +1,19 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\Modules\EquipmentSystem\Services\GearSlotService.cs
+// ✅ CLEANED: Removed UI filter logic (moved to StorageSystem)
 // Service for validating gear slot compatibility
 // ════════════════════════════════════════════
 
 using UnityEngine;
 using Ascension.Data.SO.Item;
 using Ascension.Equipment.Enums;
+using Ascension.Equipment.Data;
 
 namespace Ascension.Equipment.Services
 {
     /// <summary>
     /// Service responsible for validating gear slot compatibility
-    /// Stateless, reusable logic
+    /// Stateless, reusable logic - ZERO UI concerns
     /// </summary>
     public class GearSlotService
     {
@@ -53,8 +55,9 @@ namespace Ascension.Equipment.Services
 
         /// <summary>
         /// Get the appropriate slot type for an item
+        /// Returns null if item cannot be equipped
         /// </summary>
-        public GearSlotType? GetSlotForItem(ItemBaseSO item)
+        public GearSlotType? GetSlotForItem(ItemBaseSO item, EquippedGear equippedGear = null)
         {
             if (item == null)
                 return null;
@@ -70,7 +73,7 @@ namespace Ascension.Equipment.Services
                     GearType.ChestPlate => GearSlotType.Chest,
                     GearType.Gloves => GearSlotType.Gloves,
                     GearType.Boots => GearSlotType.Boots,
-                    GearType.Accessory => GearSlotType.Accessory1, // Default to first accessory slot
+                    GearType.Accessory => GetAvailableAccessorySlot(equippedGear),
                     _ => null
                 };
             }
@@ -79,44 +82,39 @@ namespace Ascension.Equipment.Services
         }
 
         /// <summary>
-        /// Get storage filter for a specific gear slot
+        /// ✅ NEW: Get the first available accessory slot (or Accessory1 if both full)
         /// </summary>
-        public EquipmentStorageFilter GetFilterForSlot(GearSlotType slotType)
+        private GearSlotType GetAvailableAccessorySlot(EquippedGear equippedGear)
         {
-            return slotType switch
-            {
-                GearSlotType.Weapon => EquipmentStorageFilter.Weapons,
-                GearSlotType.Helmet => EquipmentStorageFilter.Helmets,
-                GearSlotType.Chest => EquipmentStorageFilter.Chests,
-                GearSlotType.Gloves => EquipmentStorageFilter.Gloves,
-                GearSlotType.Boots => EquipmentStorageFilter.Boots,
-                GearSlotType.Accessory1 => EquipmentStorageFilter.Accessories,
-                GearSlotType.Accessory2 => EquipmentStorageFilter.Accessories,
-                _ => EquipmentStorageFilter.All
-            };
+            if (equippedGear == null)
+                return GearSlotType.Accessory1; // Default to first slot
+
+            // Check if Accessory1 is empty
+            if (equippedGear.IsSlotEmpty(GearSlotType.Accessory1))
+                return GearSlotType.Accessory1;
+
+            // Check if Accessory2 is empty
+            if (equippedGear.IsSlotEmpty(GearSlotType.Accessory2))
+                return GearSlotType.Accessory2;
+
+            // Both full - default to Accessory1 (will trigger swap)
+            return GearSlotType.Accessory1;
         }
 
         /// <summary>
-        /// ✅ FIXED: Removed Consumables filter case
-        /// Validate if item matches storage filter
+        /// Check if an item is equippable gear/weapon
         /// </summary>
-        public bool MatchesFilter(ItemBaseSO item, EquipmentStorageFilter filter)
+        public bool IsEquippable(ItemBaseSO item)
         {
-            if (item == null)
-                return false;
+            return item is WeaponSO || item is GearSO;
+        }
 
-            return filter switch
-            {
-                EquipmentStorageFilter.All => item is WeaponSO || item is GearSO || item is AbilitySO,
-                EquipmentStorageFilter.Weapons => item is WeaponSO,
-                EquipmentStorageFilter.Helmets => item is GearSO gear && gear.GearType == GearType.Helmet,
-                EquipmentStorageFilter.Chests => item is GearSO gear && gear.GearType == GearType.ChestPlate,
-                EquipmentStorageFilter.Gloves => item is GearSO gear && gear.GearType == GearType.Gloves,
-                EquipmentStorageFilter.Boots => item is GearSO gear && gear.GearType == GearType.Boots,
-                EquipmentStorageFilter.Accessories => item is GearSO gear && gear.GearType == GearType.Accessory,
-                EquipmentStorageFilter.Abilities => item is AbilitySO,
-                _ => false
-            };
+        /// <summary>
+        /// Validate slot compatibility between two items (for swapping)
+        /// </summary>
+        public bool CanSwapItems(ItemBaseSO item1, GearSlotType slot1, ItemBaseSO item2, GearSlotType slot2)
+        {
+            return CanEquipInSlot(item1, slot2) && CanEquipInSlot(item2, slot1);
         }
     }
 }
