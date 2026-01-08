@@ -4,6 +4,7 @@
 // ════════════════════════════════════════════
 
 using System;
+using System.Linq;
 using UnityEngine;
 using Ascension.Core;
 using Ascension.Data.SO.Database;
@@ -16,6 +17,8 @@ using Ascension.Equipment.Enums;
 using Ascension.Equipment.Services;
 using Ascension.Equipment.Coordinators;
 using Ascension.Inventory.Manager;
+using Ascension.Inventory.Data;
+using Ascension.Inventory.Enums;
 
 namespace Ascension.Equipment.Manager
 {
@@ -302,10 +305,150 @@ namespace Ascension.Equipment.Manager
 
         #endregion
 
+                #region Synchronization Validation
+
+        /// <summary>
+        /// ✅ NEW: Validates that equipment slots and inventory locations are synchronized
+        /// Call this after loading saves or after critical operations
+        /// </summary>
+        [ContextMenu("Validate Equipment Sync")]
+        public bool ValidateEquipmentSync()
+        {
+            if (_inventoryManager == null)
+            {
+                Debug.LogError("[EquipmentManager] Cannot validate - InventoryManager not available");
+                return false;
+            }
+
+            bool isValid = true;
+            int errorsFound = 0;
+
+            Debug.Log("[EquipmentManager] === Starting Equipment Sync Validation ===");
+
+            // Check all 7 equipment slots
+            foreach (GearSlotType slot in System.Enum.GetValues(typeof(GearSlotType)))
+            {
+                string itemId = _equippedGear.GetSlot(slot);
+                
+                if (string.IsNullOrEmpty(itemId))
+                {
+                    // Empty slot is fine
+                    continue;
+                }
+
+                // Verify item exists in inventory
+                ItemLocation? location = _inventoryManager.GetItemLocation(itemId);
+                
+                if (location == null)
+                {
+                    Debug.LogError($"❌ SYNC ERROR: {itemId} in slot {slot} but NOT FOUND in inventory!");
+                    isValid = false;
+                    errorsFound++;
+                }
+                else if (location != ItemLocation.Equipped)
+                {
+                    Debug.LogError($"❌ SYNC ERROR: {itemId} in slot {slot} but inventory location is {location}!");
+                    isValid = false;
+                    errorsFound++;
+                }
+                else
+                {
+                    Debug.Log($"✅ Slot {slot}: {itemId} synchronized correctly");
+                }
+            }
+
+            // Check for orphaned equipped items (location=Equipped but not in any slot)
+            var equippedItems = _inventoryManager.Inventory.allItems
+                .Where(i => i.location == ItemLocation.Equipped)
+                .ToList();
+
+            Debug.Log($"[EquipmentManager] Found {equippedItems.Count} items with location=Equipped");
+
+            foreach (var item in equippedItems)
+            {
+                if (!_equippedGear.IsEquipped(item.itemID))
+                {
+                    Debug.LogError($"❌ SYNC ERROR: {item.itemID} has location=Equipped but is NOT in any equipment slot!");
+                    isValid = false;
+                    errorsFound++;
+                }
+            }
+
+            Debug.Log($"[EquipmentManager] === Validation Complete: {(isValid ? "✅ ALL OK" : $"❌ {errorsFound} ERRORS FOUND")} ===");
+            
+            return isValid;
+        }
+
+        /// <summary>
+        /// ✅ NEW: Auto-repair synchronization issues
+        /// Call this if ValidateEquipmentSync() returns false
+        /// </summary>
+        public void RepairEquipmentSync()
+        {
+            if (_inventoryManager == null)
+            {
+                Debug.LogError("[EquipmentManager] Cannot repair - InventoryManager not available");
+                return;
+            }
+
+            Debug.LogWarning("[EquipmentManager] === Starting Auto-Repair ===");
+            int repairsApplied = 0;
+
+            // Step 1: Fix all items in equipment slots (set their location to Equipped)
+            foreach (GearSlotType slot in System.Enum.GetValues(typeof(GearSlotType)))
+            {
+                string itemId = _equippedGear.GetSlot(slot);
+                
+                if (string.IsNullOrEmpty(itemId))
+                    continue;
+
+                var item = _inventoryManager.Inventory.allItems
+                    .FirstOrDefault(i => i.itemID == itemId);
+                
+                if (item != null && item.location != ItemLocation.Equipped)
+                {
+                    Debug.Log($"🔧 Repairing: Setting {itemId} location to Equipped (was {item.location})");
+                    item.location = ItemLocation.Equipped;
+                    repairsApplied++;
+                }
+                else if (item == null)
+                {
+                    // Item doesn't exist - clear the slot
+                    Debug.LogWarning($"🔧 Repairing: Clearing slot {slot} (item {itemId} not found in inventory)");
+                    _equippedGear.ClearSlot(slot);
+                    repairsApplied++;
+                }
+            }
+
+            // Step 2: Fix orphaned equipped items (location=Equipped but not in slots)
+            var orphanedItems = _inventoryManager.Inventory.allItems
+                .Where(i => i.location == ItemLocation.Equipped && !_equippedGear.IsEquipped(i.itemID))
+                .ToList();
+
+            foreach (var item in orphanedItems)
+            {
+                // Move back to previous location (or Bag if unknown)
+                ItemLocation targetLocation = item.previousLocation ?? ItemLocation.Bag;
+                
+                Debug.LogWarning($"🔧 Repairing: Moving orphaned item {item.itemID} from Equipped to {targetLocation}");
+                item.location = targetLocation;
+                item.previousLocation = null;
+                repairsApplied++;
+            }
+
+            Debug.Log($"[EquipmentManager] === Auto-Repair Complete: {repairsApplied} fixes applied ===");
+
+            // Trigger UI refresh
+            UpdateCharacterStats();
+            OnEquipmentChanged?.Invoke();
+        }
+
+        #endregion
+
         #region Public API - Save/Load
 
         /// <summary>
-        /// Load equipment from save data
+        /// Load equipment from save data and validate sync
         /// </summary>
         public void LoadEquipment(EquipmentSaveData saveData)
         {
@@ -315,16 +458,71 @@ namespace Ascension.Equipment.Manager
                 return;
             }
 
-            _equippedGear.weaponId = saveData.weaponId ?? string.Empty;
-            _equippedGear.helmetId = saveData.helmetId ?? string.Empty;
-            _equippedGear.chestId = saveData.chestId ?? string.Empty;
-            _equippedGear.glovesId = saveData.glovesId ?? string.Empty;
-            _equippedGear.bootsId = saveData.bootsId ?? string.Empty;
-            _equippedGear.accessory1Id = saveData.accessory1Id ?? string.Empty;
-            _equippedGear.accessory2Id = saveData.accessory2Id ?? string.Empty;
+            Debug.Log("[EquipmentManager] Loading equipment from save...");
 
+            // Load all slots using the new helper method
+            LoadAndEquipSlot(GearSlotType.Weapon, saveData.weaponId);
+            LoadAndEquipSlot(GearSlotType.Helmet, saveData.helmetId);
+            LoadAndEquipSlot(GearSlotType.Chest, saveData.chestId);
+            LoadAndEquipSlot(GearSlotType.Gloves, saveData.glovesId);
+            LoadAndEquipSlot(GearSlotType.Boots, saveData.bootsId);
+            LoadAndEquipSlot(GearSlotType.Accessory1, saveData.accessory1Id);
+            LoadAndEquipSlot(GearSlotType.Accessory2, saveData.accessory2Id);
+
+            // Validate synchronization after load
+            bool isValid = ValidateEquipmentSync();
+            
+            if (!isValid)
+            {
+                Debug.LogError("[EquipmentManager] Equipment load resulted in desync! Attempting auto-repair...");
+                RepairEquipmentSync();
+                
+                // Validate again after repair
+                if (ValidateEquipmentSync())
+                {
+                    Debug.Log("[EquipmentManager] ✅ Auto-repair successful!");
+                }
+                else
+                {
+                    Debug.LogError("[EquipmentManager] ❌ Auto-repair failed - manual intervention needed!");
+                }
+            }
+
+            // Update stats and notify UI
             UpdateCharacterStats();
             OnEquipmentChanged?.Invoke();
+            
+            Debug.Log("[EquipmentManager] Equipment loaded successfully");
+        }
+
+        /// <summary>
+        /// Helper method to load and sync a single equipment slot
+        /// </summary>
+        private void LoadAndEquipSlot(GearSlotType slot, string itemId)
+        {
+            if (string.IsNullOrEmpty(itemId))
+            {
+                _equippedGear.ClearSlot(slot);
+                return;
+            }
+            
+            // Set the slot ID in EquippedGear
+            _equippedGear.SetSlot(slot, itemId);
+            
+            // ✅ CRITICAL: Update the ItemInstance location to match
+            var item = _inventoryManager.Inventory.allItems
+                .FirstOrDefault(i => i.itemID == itemId);
+            
+            if (item != null)
+            {
+                item.location = ItemLocation.Equipped;
+                Debug.Log($"[EquipmentManager] Loaded {itemId} into slot {slot}");
+            }
+            else
+            {
+                Debug.LogError($"[EquipmentManager] Item {itemId} not found in inventory during load!");
+                _equippedGear.ClearSlot(slot);  // Clear invalid slot
+            }
         }
 
         /// <summary>

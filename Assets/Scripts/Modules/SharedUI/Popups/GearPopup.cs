@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\Modules\SharedUI\Popups\GearPopup.cs
-// ✅ THREE-BUTTON VERSION: [Close] [Equip/Unequip] [Move Storage/Bag]
+// Gear item popup UI logic
 // ════════════════════════════════════════════
 
 using System.Linq;
@@ -22,6 +22,9 @@ namespace Ascension.SharedUI.Popups
         #endregion
 
         #region Serialized Fields
+        [Header("Configuration")]
+        [SerializeField] private GearPopupConfig config;
+
         [Header("Popup Container")]
         [SerializeField] private GameObject popupContainer;
 
@@ -44,21 +47,35 @@ namespace Ascension.SharedUI.Popups
 
         [Header("Action Buttons")]
         [SerializeField] private Button closeButton;
-        [SerializeField] private Button equipToggleButton; // ✅ Single toggle button
-        [SerializeField] private TMP_Text equipToggleButtonText; // ✅ Text changes: "Equip" / "Unequip"
+        [SerializeField] private Button equipToggleButton;
+        [SerializeField] private TMP_Text equipToggleButtonText;
         [SerializeField] private Button moveButton;
         [SerializeField] private TMP_Text moveButtonText;
+
+        [Header("Error Display")]
+        [SerializeField] private TMP_Text errorText;
         #endregion
 
-        #region Private Fields
+        #region Private Fields - Error Messages (Hardcoded)
+        
+        // User-facing error messages (hardcoded for simplicity)
+        private const string ERROR_INVENTORY_FULL = "Cannot unequip: Inventory full!";
+        private const string ERROR_ALREADY_EQUIPPED = "Item is already equipped!";
+        private const string ERROR_CANNOT_EQUIP = "Cannot equip this item right now.";
+        private const string ERROR_NO_ITEM = "No item selected";
+        private const string ERROR_SYSTEM_UNAVAILABLE = "Equipment system unavailable";
+        private const string ERROR_CANNOT_MOVE_EQUIPPED = "Cannot move equipped item";
+
         private ItemBaseSO _currentItem;
         private ItemInstance _currentItemInstance;
+        private Coroutine _errorCoroutine;
         #endregion
 
         #region Unity Callbacks
         private void Awake()
         {
             InitializeSingleton();
+            ValidateConfig();
             SetupButtons();
             Hide();
         }
@@ -73,6 +90,14 @@ namespace Ascension.SharedUI.Popups
             Instance = this;
         }
 
+        private void ValidateConfig()
+        {
+            if (config == null)
+            {
+                Debug.LogError("[GearPopup] GearPopupConfig not assigned! Please assign in Inspector.");
+            }
+        }
+
         private void SetupButtons()
         {
             closeButton?.onClick.AddListener(Hide);
@@ -83,9 +108,6 @@ namespace Ascension.SharedUI.Popups
 
         #region Public Methods
 
-        /// <summary>
-        /// Show popup for item (from bag or storage)
-        /// </summary>
         public void Show(ItemBaseSO itemData, ItemInstance itemInstance)
         {
             if (itemData == null)
@@ -101,9 +123,6 @@ namespace Ascension.SharedUI.Popups
             popupContainer?.SetActive(true);
         }
 
-        /// <summary>
-        /// Show popup for equipped item (click from equipment slot)
-        /// </summary>
         public void ShowEquipped(ItemBaseSO itemData, string itemId)
         {
             if (itemData == null)
@@ -114,7 +133,6 @@ namespace Ascension.SharedUI.Popups
 
             _currentItem = itemData;
 
-            // Find equipped item instance
             var inventory = InventoryManager.Instance?.Inventory;
             if (inventory != null)
             {
@@ -126,12 +144,21 @@ namespace Ascension.SharedUI.Popups
             popupContainer?.SetActive(true);
         }
 
-        /// <summary>
-        /// Hide popup and clear state
-        /// </summary>
         public void Hide()
         {
             popupContainer?.SetActive(false);
+            
+            if (errorText != null)
+            {
+                errorText.gameObject.SetActive(false);
+            }
+            
+            if (_errorCoroutine != null)
+            {
+                StopCoroutine(_errorCoroutine);
+                _errorCoroutine = null;
+            }
+            
             _currentItem = null;
             _currentItemInstance = null;
         }
@@ -196,37 +223,40 @@ namespace Ascension.SharedUI.Popups
             }
         }
 
+        // ✅ Uses config for button labels only
         private void UpdateButtons()
         {
+            if (config == null) return;
+
             bool isEquipped = IsCurrentItemEquipped();
             ItemLocation? currentLocation = _currentItemInstance?.location;
 
-            // ✅ SINGLE TOGGLE BUTTON: Shows "Equip" or "Unequip" based on state
+            // Update equip/unequip button (uses config)
             if (equipToggleButton != null)
             {
-                equipToggleButton.gameObject.SetActive(true); // Always visible
+                equipToggleButton.gameObject.SetActive(true);
 
-                // Update button text
                 if (equipToggleButtonText != null)
                 {
-                    equipToggleButtonText.text = isEquipped ? "Unequip" : "Equip";
+                    equipToggleButtonText.text = isEquipped 
+                        ? config.buttonUnequip 
+                        : config.buttonEquip;
                 }
             }
 
-            // MOVE button (show only if NOT equipped)
+            // Update move button (uses config)
             if (moveButton != null)
             {
                 moveButton.gameObject.SetActive(!isEquipped);
 
-                // Update button text based on current location
                 if (moveButtonText != null)
                 {
                     if (currentLocation == ItemLocation.Bag)
-                        moveButtonText.text = "Store";
+                        moveButtonText.text = config.buttonStore;
                     else if (currentLocation == ItemLocation.Storage)
-                        moveButtonText.text = "Take";
+                        moveButtonText.text = config.buttonTake;
                     else
-                        moveButtonText.text = "Move";
+                        moveButtonText.text = config.buttonMove;
                 }
             }
         }
@@ -330,21 +360,21 @@ namespace Ascension.SharedUI.Popups
 
         #region Event Handlers
 
-        /// <summary>
-        /// ✅ TOGGLE BUTTON: Equip if not equipped, Unequip if equipped
-        /// </summary>
+        // ✅ Uses hardcoded error messages
         private void OnEquipToggleClicked()
         {
+            if (config == null) return;
+
             if (_currentItem == null)
             {
-                Debug.LogError("[GearPopup] Cannot toggle equip - no item selected");
+                ShowError(ERROR_NO_ITEM);
                 return;
             }
 
             var equipMgr = EquipmentManager.Instance;
             if (equipMgr == null)
             {
-                Debug.LogError("[GearPopup] EquipmentManager not available");
+                ShowError(ERROR_SYSTEM_UNAVAILABLE);
                 return;
             }
 
@@ -358,31 +388,44 @@ namespace Ascension.SharedUI.Popups
 
                 if (success)
                 {
+                    Debug.Log($"[GearPopup] Unequipped {_currentItem.ItemName}");
                     RefreshCurrentItemInstance();
+                    Hide();
                 }
-
-                Debug.Log(success 
-                    ? $"[GearPopup] Unequipped {_currentItem.ItemName}" 
-                    : $"[GearPopup] Failed to unequip {_currentItem.ItemName}");
+                else
+                {
+                    ShowError(ERROR_INVENTORY_FULL);
+                    Debug.LogWarning($"[GearPopup] Failed to unequip {_currentItem.ItemName}");
+                }
             }
             else
             {
                 // EQUIP
                 success = equipMgr.EquipItem(_currentItem.ItemID);
-                Debug.Log(success 
-                    ? $"[GearPopup] Equipped {_currentItem.ItemName}" 
-                    : $"[GearPopup] Failed to equip {_currentItem.ItemName}");
-            }
 
-            if (success)
-            {
-                Hide();
+                if (success)
+                {
+                    Debug.Log($"[GearPopup] Equipped {_currentItem.ItemName}");
+                    Hide();
+                }
+                else
+                {
+                    var location = _currentItemInstance?.location;
+                    
+                    if (location == ItemLocation.Equipped)
+                    {
+                        ShowError(ERROR_ALREADY_EQUIPPED);
+                    }
+                    else
+                    {
+                        ShowError(ERROR_CANNOT_EQUIP);
+                    }
+                    
+                    Debug.LogWarning($"[GearPopup] Failed to equip {_currentItem.ItemName}");
+                }
             }
         }
 
-        /// <summary>
-        /// ✅ NEW: Refresh the current item instance after location changes
-        /// </summary>
         private void RefreshCurrentItemInstance()
         {
             if (_currentItem == null) return;
@@ -390,22 +433,19 @@ namespace Ascension.SharedUI.Popups
             var inventory = InventoryManager.Instance?.Inventory;
             if (inventory == null) return;
 
-            // Find the item in its new location
             _currentItemInstance = inventory.allItems
                 .FirstOrDefault(i => i.itemID == _currentItem.ItemID && 
                     (i.location == ItemLocation.Bag || 
                     i.location == ItemLocation.Storage ||
                     i.location == ItemLocation.Equipped));
 
-            // Update button display
             UpdateButtons();
         }
 
-        /// <summary>
-        /// ✅ MOVE button: Move between Bag ↔ Storage
-        /// </summary>
         private void OnMoveButtonClicked()
         {
+            if (config == null) return;
+
             if (_currentItemInstance == null || _currentItem == null)
             {
                 Debug.LogError("[GearPopup] Cannot move - no item instance");
@@ -417,7 +457,7 @@ namespace Ascension.SharedUI.Popups
 
             if (inventory == null || database == null)
             {
-                Debug.LogError("[GearPopup] Inventory system not available");
+                ShowError(ERROR_SYSTEM_UNAVAILABLE);
                 return;
             }
 
@@ -425,17 +465,15 @@ namespace Ascension.SharedUI.Popups
 
             if (_currentItemInstance.location == ItemLocation.Bag)
             {
-                // Move to Storage
                 result = inventory.MoveToStorage(_currentItemInstance, _currentItemInstance.quantity, database);
             }
             else if (_currentItemInstance.location == ItemLocation.Storage)
             {
-                // Move to Bag
                 result = inventory.MoveToBag(_currentItemInstance, _currentItemInstance.quantity, database);
             }
             else
             {
-                Debug.LogWarning("[GearPopup] Cannot move equipped item");
+                ShowError(ERROR_CANNOT_MOVE_EQUIPPED);
                 return;
             }
 
@@ -446,8 +484,42 @@ namespace Ascension.SharedUI.Popups
             }
             else
             {
-                Debug.LogError($"[GearPopup] Failed to move: {result.Message}");
+                // Use error from inventory system
+                ShowError(result.Message);
             }
+        }
+
+        // ✅ Uses config for duration/color only
+        private void ShowError(string message)
+        {
+            if (config == null || errorText == null) return;
+
+            Debug.LogWarning($"[GearPopup] Error: {message}");
+
+            if (_errorCoroutine != null)
+            {
+                StopCoroutine(_errorCoroutine);
+            }
+
+            errorText.text = message;
+            errorText.color = config.errorTextColor;
+            errorText.gameObject.SetActive(true);
+
+            _errorCoroutine = StartCoroutine(HideErrorAfterDelay());
+        }
+
+        private System.Collections.IEnumerator HideErrorAfterDelay()
+        {
+            if (config == null) yield break;
+
+            yield return new WaitForSeconds(config.errorDisplayDuration);
+            
+            if (errorText != null)
+            {
+                errorText.gameObject.SetActive(false);
+            }
+            
+            _errorCoroutine = null;
         }
 
         #endregion

@@ -47,10 +47,11 @@ namespace Ascension.Equipment.Coordinators
         #region Public API - Equipment Coordination
 
         /// <summary>
-        /// ✅ REFACTORED: Equip item via InventoryManager API
+        /// Equip item via InventoryManager API with transaction rollback
         /// - Validates item and slot
         /// - Uses InventoryManager.MoveToEquipped() (no direct mutations)
         /// - Handles slot swapping automatically
+        /// - Rolls back on failure to prevent data loss
         /// </summary>
         public EquipResult EquipFromInventory(
             EquippedGear equippedGear,
@@ -59,6 +60,9 @@ namespace Ascension.Equipment.Coordinators
             GameDatabaseSO database,
             GearSlotType? targetSlot = null)
         {
+            // Start transaction for atomic operation
+            using var transaction = new EquipmentTransaction($"Equip {itemId}");
+
             // 1. Validate managers
             if (inventory == null)
                 return EquipResult.Fail("Inventory system not available");
@@ -94,11 +98,15 @@ namespace Ascension.Equipment.Coordinators
             if (!_slotService.CanEquipInSlot(itemData, slotToUse))
                 return EquipResult.Fail($"Cannot equip {itemData.ItemName} in {slotToUse} slot");
 
-            // 6. Handle currently equipped item (if any)
+            // 6. ✅ TRANSACTION STEP 1: Handle currently equipped item (if any)
             string previousItemId = equippedGear.GetSlot(slotToUse);
             if (!string.IsNullOrEmpty(previousItemId))
             {
-                // Unequip old item first
+                // Remember original state for rollback
+                string capturedPreviousItemId = previousItemId; // Capture for closure
+                GearSlotType capturedSlot = slotToUse;
+
+                // Unequip old item
                 var unequipResult = UnequipViaInventory(
                     equippedGear,
                     slotToUse,
@@ -108,17 +116,47 @@ namespace Ascension.Equipment.Coordinators
 
                 if (!unequipResult.Success)
                     return EquipResult.Fail($"Cannot unequip current item: {unequipResult.Message}");
+
+                // Register rollback: Re-equip the old item
+                transaction.AddRollback(() =>
+                {
+                    Debug.Log($"[Rollback] Re-equipping {capturedPreviousItemId} to {capturedSlot}");
+                    equippedGear.SetSlot(capturedSlot, capturedPreviousItemId);
+                    inventory.MoveToEquipped(capturedPreviousItemId);
+                });
             }
 
-            // 7. ✅ Move item to Equipped via InventoryManager API (no direct mutation)
+            // 7. ✅ TRANSACTION STEP 2: Move new item to Equipped
             var moveResult = inventory.MoveToEquipped(itemId);
             if (!moveResult.Success)
+            {
+                // Transaction auto-rollback via Dispose (using statement)
                 return EquipResult.Fail($"Failed to equip: {moveResult.Message}");
+            }
 
-            // 8. Update equipment slot
+            // Register rollback: Unequip the new item
+            string capturedItemId = itemId; // Capture for closure
+            transaction.AddRollback(() =>
+            {
+                Debug.Log($"[Rollback] Unequipping {capturedItemId}");
+                inventory.MoveFromEquipped(capturedItemId);
+            });
+
+            // 8. ✅ TRANSACTION STEP 3: Update equipment slot
             equippedGear.SetSlot(slotToUse, itemId);
 
-            Debug.Log($"[GearEquipCoordinator] Equipped {itemData.ItemName} to {slotToUse}");
+            // Register rollback: Clear the slot
+            GearSlotType capturedSlotForClear = slotToUse;
+            transaction.AddRollback(() =>
+            {
+                Debug.Log($"[Rollback] Clearing slot {capturedSlotForClear}");
+                equippedGear.ClearSlot(capturedSlotForClear);
+            });
+
+            // ✅ SUCCESS - Commit transaction (prevents rollback)
+            transaction.Commit();
+
+            Debug.Log($"[GearEquipCoordinator] ✅ Equipped {itemData.ItemName} to {slotToUse}");
             return EquipResult.Ok(
                 $"Equipped {itemData.ItemName}", 
                 previousItemId

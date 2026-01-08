@@ -112,6 +112,7 @@ Scripts/
 │   │   │   ├── GearEquipCoordinator.cs       // Equipment ↔ Inventory
 │   │   │
 │   │   ├── Data/
+│   │   │   ├── EquipmentTransaction.cs
 │   │   │   ├── EquippedGear.cs             // 7 equipped slots
 │   │   │   └── SkillLoadout.cs             // 3 skill slots
 │   │   │
