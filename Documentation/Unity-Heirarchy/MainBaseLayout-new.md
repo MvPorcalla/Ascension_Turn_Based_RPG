@@ -194,6 +194,13 @@ Canvas
 │     │         │    ├── ButtonLabel (TMP)
 │     │         ├── EquipButton
 │     │              ├── ButtonLabel (TMP)
+│     
+├── ToastManager (GameObject) [ToastManager.cs (Component)]
+│   └── ToastContainer (Empty GameObject)
+│        ├── ToastPrefab (ToastNotification.cs + CanvasGroup)
+│             └── Panel (Image - Background)
+│                 ├── Icon (Image - Optional)
+│                 └── MessageText (TMP_Text)
 │
 └── OverlayLayer (empty GameObject)
       ├── FadeScreen

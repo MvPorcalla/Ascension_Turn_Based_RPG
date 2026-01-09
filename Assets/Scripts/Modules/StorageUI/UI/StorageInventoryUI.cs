@@ -1,6 +1,6 @@
 // ──────────────────────────────────────────────────
 // Assets\Scripts\Modules\InventorySystem\UI\StorageInventoryUI.cs
-// Manages storage inventory display with filtering
+// UI component for displaying storage inventory with filtering
 // ──────────────────────────────────────────────────
 
 using System.Collections.Generic;
@@ -10,16 +10,11 @@ using Ascension.Data.SO.Item;
 using Ascension.Inventory.Manager;
 using Ascension.Inventory.Data;
 using Ascension.Inventory.Enums;
-using Ascension.Inventory.Popup;
 using Ascension.Inventory.UI;
 using Ascension.SharedUI.Popups;
-using Ascension.Inventory.Config;
 
 namespace Ascension.Storage.UI
 {
-    /// <summary>
-    /// Displays and manages the storage inventory section with filtering
-    /// </summary>
     public class StorageInventoryUI : MonoBehaviour
     {
         [Header("UI References")]
@@ -27,8 +22,8 @@ namespace Ascension.Storage.UI
         [SerializeField] private GameObject itemSlotPrefab;
 
         [Header("Configuration")]
-        [SerializeField] private int maxStorageSlots = 60; // ✅ NEW: Hard limit for performance
-        [SerializeField] private bool showEmptySlots = true; // ✅ NEW: Toggle empty slot display
+        [SerializeField] private int maxStorageSlots = 60;
+        [SerializeField] private bool showEmptySlots = true;
 
         [Header("Filter Buttons")]
         [SerializeField] private Button allItemsButton;
@@ -38,9 +33,10 @@ namespace Ascension.Storage.UI
         [SerializeField] private Button materialsButton;
         [SerializeField] private Button miscButton;
 
-        [Header("Popups")]
-        [SerializeField] private InventoryItemPopup itemPopup;
-        [SerializeField] private InventoryPotionPopup potionPopup;
+        // ✅ REMOVED: No more direct popup references
+        // [Header("Popups")]
+        // [SerializeField] private ItemPopup itemPopup;
+        // [SerializeField] private PotionPopup potionPopup;
 
         private ItemType? currentFilter = null;
         private List<ItemSlotUI> slotCache = new List<ItemSlotUI>();
@@ -87,15 +83,10 @@ namespace Ascension.Storage.UI
 
         #region Initialization
 
-        /// <summary>
-        /// ✅ ONE-TIME: Create all slots upfront (runs once on scene load)
-        /// Performance: ~20-30ms on low-end devices (one-time cost)
-        /// </summary>
         private void InitializeSlots()
         {
             if (isInitialized) return;
 
-            // Pre-allocate all slots
             for (int i = 0; i < maxStorageSlots; i++)
             {
                 GameObject slotObj = Instantiate(itemSlotPrefab, storageContent);
@@ -103,17 +94,16 @@ namespace Ascension.Storage.UI
 
                 if (slotUI == null)
                 {
-                    Debug.LogError("[StorageInventoryUI] ItemSlotUI component missing on prefab!");
+                    Debug.LogError("[StorageInventoryUI] ItemSlotUI component missing!");
                     Destroy(slotObj);
                     continue;
                 }
 
-                slotUI.gameObject.SetActive(false); // Start hidden
+                slotUI.gameObject.SetActive(false);
                 slotCache.Add(slotUI);
             }
 
             isInitialized = true;
-            Debug.Log($"[StorageInventoryUI] Pre-allocated {maxStorageSlots} storage slots");
         }
 
         private void SetupFilterButtons()
@@ -151,17 +141,12 @@ namespace Ascension.Storage.UI
         private void UpdateFilterButtonStates()
         {
             // TODO: Add visual feedback for active filter button
-            // Example: Change button color, add checkmark, etc.
         }
 
         #endregion
 
         #region Refresh Logic
 
-        /// <summary>
-        /// ✅ OPTIMIZED: Only updates existing slots, NO instantiation
-        /// Performance: ~1-2ms per refresh (vs 40-60ms with old approach at 60 items)
-        /// </summary>
         private void RefreshStorage()
         {
             if (!isInitialized)
@@ -174,20 +159,17 @@ namespace Ascension.Storage.UI
                 InventoryManager.Instance.Database
             );
 
-            // ✅ WARNING: If storage items exceed maxStorageSlots, show warning
             if (storageItems.Count > maxStorageSlots)
             {
-                Debug.LogWarning($"[StorageInventoryUI] Storage has {storageItems.Count} items but only {maxStorageSlots} slots available! Consider upgrading storage.");
+                Debug.LogWarning($"[StorageInventoryUI] Storage has {storageItems.Count} items but only {maxStorageSlots} slots!");
             }
 
-            // Update each slot (item or empty)
             for (int i = 0; i < maxStorageSlots; i++)
             {
                 ItemSlotUI slot = slotCache[i];
 
                 if (i < storageItems.Count)
                 {
-                    // Show item
                     ItemInstance item = storageItems[i];
                     ItemBaseSO itemData = InventoryManager.Instance.Database.GetItem(item.itemID);
 
@@ -198,14 +180,12 @@ namespace Ascension.Storage.UI
                     }
                     else
                     {
-                        Debug.LogWarning($"[StorageInventoryUI] Item data not found: {item.itemID}");
                         slot.ShowEmpty();
                         slot.gameObject.SetActive(true);
                     }
                 }
                 else
                 {
-                    // Show empty slot or hide
                     if (showEmptySlots)
                     {
                         slot.ShowEmpty();
@@ -223,6 +203,9 @@ namespace Ascension.Storage.UI
 
         #region Item Click Handler
 
+        /// <summary>
+        /// ✅ REFACTORED: Uses PopupManager.ShowItemPopup() with context
+        /// </summary>
         private void OnItemClicked(ItemInstance item)
         {
             ItemBaseSO itemData = InventoryManager.Instance.Database.GetItem(item.itemID);
@@ -233,41 +216,21 @@ namespace Ascension.Storage.UI
                 return;
             }
 
-            // Route to appropriate popup based on item type
-            if (itemData is PotionSO potion)
-            {
-                potionPopup.ShowPotion(potion, item, ItemLocation.Storage);
-            }
-            else if (itemData.IsStackable)
-            {
-                itemPopup.ShowItem(itemData, item, ItemLocation.Storage);
-            }
-            else if (itemData is WeaponSO || itemData is GearSO)
-            {
-                GearPopup.Instance.Show(itemData, item);
-            }
+            // ✅ One line - PopupManager handles everything
+            PopupManager.Instance.ShowItemPopup(
+                itemData, 
+                item, 
+                PopupContext.FromStorage() // Context tells popup "this is from storage"
+            );
         }
 
         #endregion
 
         #region Public Methods
 
-        /// <summary>
-        /// Force a complete refresh (useful after loading save data)
-        /// </summary>
-        public void ForceRefresh()
-        {
-            RefreshStorage();
-        }
-
-        /// <summary>
-        /// Get current slot count for debugging
-        /// </summary>
+        public void ForceRefresh() => RefreshStorage();
         public int GetSlotCount() => slotCache.Count;
 
-        /// <summary>
-        /// Get current visible item count
-        /// </summary>
         public int GetVisibleItemCount()
         {
             int count = 0;
@@ -279,18 +242,14 @@ namespace Ascension.Storage.UI
             return count;
         }
 
-        /// <summary>
-        /// Set maximum storage slots (useful for upgrades)
-        /// </summary>
         public void SetMaxStorageSlots(int newMax)
         {
             if (newMax < maxStorageSlots)
             {
-                Debug.LogWarning($"[StorageInventoryUI] Cannot reduce storage slots from {maxStorageSlots} to {newMax}");
+                Debug.LogWarning($"[StorageInventoryUI] Cannot reduce storage slots");
                 return;
             }
 
-            // Add new slots
             int slotsToAdd = newMax - maxStorageSlots;
             for (int i = 0; i < slotsToAdd; i++)
             {
@@ -305,15 +264,9 @@ namespace Ascension.Storage.UI
             }
 
             maxStorageSlots = newMax;
-            Debug.Log($"[StorageInventoryUI] Storage upgraded to {maxStorageSlots} slots");
             RefreshStorage();
         }
 
-        #endregion
-
-        /// <summary>
-        /// ✅ NEW: Alias for InitializeSlots() - called by StorageRoomController
-        /// </summary>
         public void Initialize()
         {
             if (!isInitialized)
@@ -323,12 +276,8 @@ namespace Ascension.Storage.UI
             }
         }
 
-        /// <summary>
-        /// ✅ NEW: Alias for RefreshStorage() - called by StorageRoomController
-        /// </summary>
-        public void RefreshDisplay()
-        {
-            RefreshStorage();
-        }
+        public void RefreshDisplay() => RefreshStorage();
+
+        #endregion
     }
 }

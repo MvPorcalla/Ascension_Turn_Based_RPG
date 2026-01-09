@@ -10,158 +10,130 @@ are fully respeccable. Gear has rarity tiers.
 
 Theme is fantasy isekai. UI is tap-based (no drag-and-drop).
 
+---
+
+Important: Before refactoring, reviewing, or giving suggestions about any code, always ask me first if you want to see the full script or relevant code context. Do not assume or guess the code—always request it before making changes.
+
+---
+
 ## Folder Structure
 
 ```
 Scripts/
 ├── AppFlow/                                // High-level orchestration
-│   ├── Ascension.Appflow.asmdef            // Future once all are solidified
 │   ├── GameManager.cs
 │   ├── PlayerStateController.cs
 │   ├── SaveController.cs
 │   └── SceneController.cs
 │
 ├── Core/                                   // Core engine / bootstrap
-│   ├── Ascension.Core.asmdef               // Future once all are solidified
 │   ├── Bootstrap.cs
 │   ├── SaveManager.cs
 │   └── ServiceContainer.cs
 │
+├── Data/                                   // Pure data / scriptable objects
+│   ├── Enums/
+│   │   └── WeaponEnums.cs
+│   ├── Save/
+│   │   └── SaveData.cs
+│   └── ScriptableObject/
+│       ├── Item/
+│       │   ├── ItemBaseSO.cs
+│       │   ├── WeaponSO.cs
+│       │   ├── WeaponRaritySO.cs
+│       │   ├── GearSO.cs
+│       │   ├── PotionSO.cs
+│       │   ├── MaterialSO.cs
+│       │   └── AbilitySO.cs
+│       ├── Character/
+│       │   └── CharacterBaseStatsSO.cs
+│       └── Database/
+│           └── GameDatabaseSO.cs
+│
 ├── Modules/
 │   │
 │   ├── CharacterSystem/
-│   │   ├── Ascension.Character.asmdef      // Future once all are solidified
 │   │   ├── Manager/
 │   │   │   └── CharacterManager.cs
+│   │   ├── Model/
+│   │   │   └── CharacterData.cs
+│   │   ├── Runtime/
+│   │   │   ├── CharacterCombatRuntime.cs
+│   │   │   └── CharacterLevelSystem.cs
 │   │   ├── Stats/
 │   │   │   ├── CharacterStats.cs
 │   │   │   ├── CharacterAttributes.cs
 │   │   │   ├── CharacterItemStats.cs
 │   │   │   └── CharacterDerivedStats.cs
-│   │   ├── Runtime/
-│   │   │   ├── CharacterCombatRuntime.cs
-│   │   │   └── CharacterLevelSystem.cs
-│   │   ├── Model/
-│   │   │   └── CharacterData.cs
-│   │   ├── Services/
-│   │   │   ├── ItemQueryService.cs
-│   │   │   ├── ItemStackingService.cs
-│   │   │   └── ItemLocationService.cs
 │   │   └── UI/
-│   │       ├── PlayerHUD.cs
-│   │       ├── PlayerPreviewUI.cs
-│   │       ├── ProfilePanelManager.cs
+│   │       ├── CharacterCreationManager.cs
 │   │       ├── LevelUpManager.cs
-│   │       └── CharacterCreationManager.cs
+│   │       ├── PlayerHUD.cs
+│   │       └── PlayerPreviewUI.cs 
+│   │
+│   ├── EquipmentSystem/                     // ✅ Complete Refactor to a module
+│   │   ├──Coordinators/
+│   │   │   └── GearEquipCoordinator.cs       // Equipment ↔ Inventory
+│   │   ├── Data/
+│   │   │   ├── EquipmentTransaction.cs
+│   │   │   ├── EquippedGear.cs             // 7 equipped slots
+│   │   │   └── SkillLoadout.cs             // 3 skill slots
+│   │   ├── Enums/                          // im not sure if this is still usable
+│   │   │   ├── EquipmentEnums.cs           // 
+│   │   │   └── GearSlotTypeExtensions.cs   // 
+│   │   ├── Manager/
+│   │   │   ├── EquipmentManager.cs         // Manages equipped gear
+│   │   │   └── SkillLoadoutManager.cs      // Manages skill hotbar
+│   │   └── Services/
+│   │       ├── GearSlotService.cs          // Slot validation
+│   │       └── GearStatsService.cs         // Calculate stats
 │   │
 │   ├── InventorySystem/                    // ✅ PURE DATA MODULE (no UI, no scenes)
-│   │   ├── Ascension.Inventory.asmdef      // Not implemented yet
-│   │   │
 │   │   ├── Config/
 │   │   │   └── InventoryConfig.cs          // 
-│   │   │
 │   │   ├── Constant/
 │   │   │   └── InventoryConstants.cs       // 
-│   │   │
 │   │   ├── Data/
 │   │   │   ├── InventoryCore.cs            // The actual data container
 │   │   │   ├── InventoryCoreData.cs        // For save/load
 │   │   │   ├── InventoryResult.cs          // 
 │   │   │   └── ItemInstance.cs             // Individual item
-│   │   │
 │   │   ├── Enums/
 │   │   │   ├── InventoryEnums.cs           // ItemLocation enum
 │   │   │   └── ItemLocationExtensions
-│   │   │
 │   │   ├── Manager/
 │   │   │   ├── InventoryManager.cs         // Singleton, IGameService
 │   │   │   └── SlotCapacityManager.cs      // Manages slot limits
-│   │   │
 │   │   ├── Services/
 │   │   │   ├── ItemQueryService.cs         // Get items by location
 │   │   │   ├── ItemStackingService.cs      // Stack merge/split
 │   │   │   └── ItemLocationService.cs      // Move items between locations
-│   │   │
 │   │   └── UI/
 │   │       └── ItemSlotUI.cs               // Reusable slot component
 │   │
-│   ├── StorageUI/                       // ✅ STORAGE ROOM UI MODULE
-│   │   ├── Ascension.Storage.asmdef        // References: Inventory, SharedUI, Data
-│   │   │
-│   │   ├── Controller/
-│   │   │   └── StorageRoomController.cs    // Main storage room scene controller
-│   │   │
-│   │   ├── Enums/
-│   │   │   └── StorageEnums.cs             // StorageFilterType (if needed)
-│   │   │
-│   │   ├── Popup/
-│   │   │   ├── InventoryItemPopup.cs       // For stackable items (materials, misc)
-│   │   │   └── InventoryPotionPopup.cs     // For potions
-│   │   │
-│   │   └── UI/
-│   │       ├── BagInventoryUI.cs           // Displays bag (12 slots)
-│   │       ├── EquippedGearPreviewUI.cs       // 
-│   │       ├── EquippedGearSlotUI.cs       // Reusable slot component
-│   │       ├── StorageInventoryUI.cs       // Displays storage (60 slots)
-│   │       └── StoragePopupContext.cs      // Context provider for GearPopup
+│   ├── SharedUI/                           // ✅ SHARED UI COMPONENTS
+│   │   ├── Popups/
+│   │   │   ├── Config                      // 
+│   │   │   │   └── PopupConfig.cs           // 
+│   │   │   ├── GearPopup.cs                // Shared gear/weapon popup
+│   │   │   ├── ItemPopup.cs                // For stackable items (materials, misc)
+│   │   │   └── PotionPopup.cs              // For potions
+│   │   └── Components/
+│   │       └── BuffLineUI.cs               // Shared buff display component
 │   │
-│   ├── EquipmentSystem/                     // ✅ Complete Refactor to a module
-│   │   ├── Ascension.Equipment.asmdef      // References: Inventory, Character, SharedUI
-│   │   │
-│   │   ├──Coordinators/
-│   │   │   ├── GearEquipCoordinator.cs       // Equipment ↔ Inventory
-│   │   │
-│   │   ├── Data/
-│   │   │   ├── EquipmentTransaction.cs
-│   │   │   ├── EquippedGear.cs             // 7 equipped slots
-│   │   │   └── SkillLoadout.cs             // 3 skill slots
-│   │   │
-│   │   ├── Enums/                          // im not sure if this is still usable
-│   │   │   ├── EquipmentEnums.cs           // 
-│   │   │   └── GearSlotTypeExtensions.cs          // 
-│   │   │
-│   │   ├── Manager/
-│   │   │   ├── EquipmentManager.cs         // Manages equipped gear
-│   │   │   └── SkillLoadoutManager.cs      // Manages skill hotbar
-│   │   │
-│   │   └── Services/
-│   │       ├── GearSlotService.cs          // Slot validation
-│   │       └── GearStatsService.cs         // Calculate stats
-│   │
-│   └── SharedUI/                            // ✅ SHARED UI COMPONENTS
-│       ├── Ascension.SharedUI.asmdef
-│       │
-│       ├── Popups/
-│       │   ├── GearPopup.cs                // Shared gear/weapon popup
-│       │
-│       └── Components/
-│           └── BuffLineUI.cs               // Shared buff display component
-│    
-├── UI/                                     // UI module
-│   ├── Ascension.UI.asmdef
-│   ├── Core/
-│   │   └── UIManager.cs
-│   └── Panel/
-│       └── DisclaimerController.cs
+│   └── StorageUI/                          // ✅ STORAGE ROOM UI MODULE (Purely UI)
+│       ├── Controller/
+│       │   └── StorageRoomController.cs    // Main storage room scene controller
+│       ├── Enums/
+│       │   └── StorageEnums.cs             // StorageFilterType (if needed)
+│       └── UI/
+│           ├── BagInventoryUI.cs           // Displays bag (12 slots)
+│           ├── EquippedGearPreviewUI.cs    // 
+│           ├── EquippedGearSlotUI.cs       // Reusable slot component
+│           └── StorageInventoryUI.cs       // Displays storage (60 slots)
 │
-├── Data/                                   // Pure data / scriptable objects
-    ├── Ascension.Data.asmdef
-    ├── Enums/
-    │   └── WeaponEnums.cs
-    ├── Save/
-    │   └── SaveData.cs
-    └── ScriptableObject/
-        ├── Item/
-        │   ├── ItemBaseSO.cs
-        │   ├── WeaponSO.cs
-        │   ├── WeaponRaritySO.cs
-        │   ├── GearSO.cs
-        │   ├── PotionSO.cs
-        │   ├── MaterialSO.cs
-        │   └── AbilitySO.cs
-        ├── Character/
-        │   └── CharacterBaseStatsSO.cs
-        └── Database/
-            └── GameDatabaseSO.cs
-
+│ 
+├── DisclaimerController.cs                 // undecided where to put
+├── ProfilePanelManager.cs                  // undecided where to put
+└── UIManager.cs                            // undecided where to put
 ---

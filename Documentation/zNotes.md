@@ -135,168 +135,6 @@ TODO: Move the following UI scripts to their own folder for better separation:
 
 New folder: Assets\Scripts\Modules\UI\
 
----
-
-TODO: 
-
-i removed IGameService at potionManager for now 
-
-
-App Launch
- └─ 00_Consent
-     └─ (if accepted)
-         ↓
- └─ 01_Bootstrap
-     ├─ Create ServiceContainer
-     ├─ Register all core services
-     ├─ Initialize all services (in order)
-     ├─ Mark container READY
-         ↓
- └─ 02_CharacterCreation
-     ├─ GameManager already alive
-     ├─ PlayerStateController ready
-     └─ Create character
-         ↓
- └─ 03_MainBase
-     └─ Normal gameplay
-
----
-
-Final Folder Structure
-
-Scripts/Modules/EquipmentSystem/
-├── Manager/
-│   └── EquipmentManager.cs ✅
-│
-├── Data/
-│   └── EquippedGear.cs ✅
-│
-├── Services/
-│   ├── GearSlotService.cs ✅
-│   ├── GearEquipService.cs ✅
-│   └── GearStatsService.cs ✅
-│
-├── UI/
-│   ├── EquipmentRoomUI.cs ✅
-│   ├── GearSlotUI.cs ✅
-│   └── EquipmentStorageUI.cs ✅
-│
-└── Enums/
-    └── EquipmentEnums.cs ✅
-
-
-## ✅ **Current Status: Almost Complete!**
-
-Based on the refactoring we just did, here's your **actual** status:
-
-### **Phase 1: Core Equipment (Gear Only)** ✅ COMPLETE
-
-| File | Status | Notes |
-|------|--------|-------|
-| `EquipmentEnums.cs` | ✅ Done | Updated - removed consumable slots |
-| `EquippedGear.cs` | ✅ Done | No changes needed |
-| `GearSlotService.cs` | ✅ Done | Fixed - removed consumable filter |
-| `GearEquipService.cs` | ✅ Done | No changes needed |
-| `GearStatsService.cs` | ✅ Done | No changes needed |
-| `EquipmentManager.cs` | ✅ Done | No changes needed |
-| `EquipmentRoomUI.cs` | ✅ Done | Updated - removed consumable slots |
-| `GearSlotUI.cs` | ✅ Done | No changes needed |
-| `EquipmentStorageUI.cs` | ✅ Done | Fixed - removed potion popup |
-
----
-
-### **Phase 1.2: Popup System** ✅ COMPLETE
-
-| File | Status | Notes |
-|------|--------|-------|
-| `EquipmentGearPopup.cs` | ✅ Done | For weapons/gear |
-| `EquipmentPotionPopup.cs` | ❌ Deleted | Removed (use inventory pocket instead) |
-
----
-
-### **Phase 2: Skill Loadout System** ✅ COMPLETE (Renamed from Hotbar)
-
-| File | Status | Notes |
-|------|--------|-------|
-| `SkillLoadout.cs` | ✅ Done | Renamed from `HotbarLoadout.cs` |
-| `SkillLoadoutManager.cs` | ✅ Done | Renamed from `HotbarManager.cs` |
-| `SkillSlotUI.cs` | ✅ Done | Renamed from `HotbarSlotUI.cs` |
-| `SkillLoadoutSaveData.cs` | ✅ Done | Renamed from `HotbarSaveData.cs` |
-
-**Save System Integration:** ✅ Done
-- `SaveData.cs` - Updated
-- `SaveManager.cs` - Updated
-- `SaveController.cs` - Updated
-- `ServiceContainer.cs` - Updated
-
----
-
-### **Phase 3: Skills System (Future/Separate)** ⏳ TODO
-
-| Component | Status | Notes |
-|-----------|--------|-------|
-| `SkillManager.cs` | ⏳ TODO | Not started yet |
-| `SkillSaveData.cs` | ⏳ TODO | Not started yet |
-| Weapon-type validation | ⏳ TODO | Not implemented yet |
-| Skill assignment popup | ⏳ TODO | Placeholder in `EquipmentStorageUI` |
-
----
-
-## 🎯 **What You Have NOW:**
-
-✅ **Equipment System** - Players can equip weapons and gear
-✅ **Skill Loadout System** - Players can assign 3 skills (2 normal + 1 ultimate)
-✅ **Save/Load System** - Everything persists correctly
-✅ **UI System** - Clean, mobile-friendly interface
-✅ **No Redundancy** - Consumables managed via Inventory Pocket (not hotbar)
-
----
-
-## 🚧 **What's LEFT (Phase 3):**
-
-### **1. Skill Assignment Popup**
-Currently when you click an ability in storage, it just logs a warning:
-```csharp
-Debug.LogWarning("[EquipmentStorageUI] Skill assignment popup not yet implemented");
-```
-
-**You need:** A popup similar to `EquipmentGearPopup` but for skills.
-
-### **2. Weapon-Type Skill Validation**
-Currently in `SkillLoadoutManager.cs`, there's a TODO:
-```csharp
-// TODO Phase 3: Validate weapon compatibility
-// For now, allow any skill
-```
-
-**You need:** Logic to check if a skill matches the equipped weapon type.
-
-Example:
-- Sword equipped → Can only assign sword skills
-- Staff equipped → Can only assign staff skills
-
-### **3. Skill Data Management (Optional)**
-Right now skills are just stored as IDs. You might want:
-- Default skills for each weapon
-- Skill unlock system
-- Skill progression/leveling
-
----
-
-## 📋 **My Recommendation:**
-
-Your **core system is complete**! You can now:
-1. ✅ Equip weapons and gear
-2. ✅ Assign skills to loadout slots
-3. ✅ Save and load everything
-4. ✅ View stats and equipment
-
-**For Phase 3, you should implement:**
-1. **SkillAssignmentPopup** (similar to `EquipmentGearPopup`)
-2. **Weapon-Type Validation** (add to `SkillLoadoutManager`)
-
----
-
 
 ===========================================================================================================
 
@@ -305,16 +143,6 @@ Your **core system is complete**! You can now:
 ----
 
 CRITICAL: ========================================================================================
-
-
-Also, in the Equipment Room, the accessory gear slots should allow equipping two accessories. They can be the same item or different items—it doesn’t matter, since there are two accessory slots.
-
----
-
-Here’s the **corrected version** that **only separates abilities** and **does NOT restructure inventory items**.
-Inventory stays flat and clean. Abilities move to their own section.
-
-This is the right call.
 
 ---
 
@@ -332,81 +160,34 @@ This is the right call.
 
 ---
 
-### Full JSON (ready to use)
+POPUP LOGIC ============================================================
 
-```json
+## **Future Shop Context (When You Build It)**
+
+```csharp
+// In PopupManager.cs (already in your code):
+public static PopupContext FromShop()
 {
-  "metaData": {
-    "saveVersion": "1.1",
-    "createdTime": "2025-12-15 00:26:50",
-    "lastSaveTime": "2025-12-23 14:10:00",
-    "totalPlayTimeSeconds": 3720.25,
-    "saveCount": 86
-  },
-
-  "characterData": {
-    "playerName": "Medarru",
-    "level": 2,
-    "currentExperience": 120,
-    "currentHealth": 220.0,
-    "currentMana": 50.0,
-    "attributePoints": 5,
-    "strength": 30,
-    "agility": 6,
-    "intelligence": 2,
-    "endurance": 11,
-    "wisdom": 10
-  },
-
-  "inventoryData": {
-    "items": [
-      { "itemId": "weapon_iron_sword", "quantity": 1, "location": 0 },
-      { "itemId": "gear_leather_helmet", "quantity": 1, "location": 0 },
-      { "itemId": "gear_leather_chestplate", "quantity": 1, "location": 0 },
-      { "itemId": "gear_leather_gloves", "quantity": 1, "location": 0 },
-      { "itemId": "gear_leather_boots", "quantity": 1, "location": 0 },
-
-      { "itemId": "gear_accessory_iron_ring", "quantity": 1, "location": 0 },
-      { "itemId": "gear_accessory_iron_bracelet", "quantity": 1, "location": 0 },
-
-      { "itemId": "potion_minor_health_potion", "quantity": 5, "location": 0 },
-      { "itemId": "potion_minor_health_potion", "quantity": 7, "location": 1 },
-      { "itemId": "potion_minor_health_potion", "quantity": 6, "location": 2 },
-
-      { "itemId": "material_iron_ore", "quantity": 12, "location": 0 },
-      { "itemId": "material_wood", "quantity": 25, "location": 0 }
-    ],
-    "maxBagSlots": 12,
-    "maxPocketSlots": 6,
-    "maxStorageSlots": 60
-  },
-
-  "abilitiesData": {
-    "unlocked": [
-      "ability_fireball",
-      "ability_heal"
-    ],
-    "equipped": [
-      "ability_fireball"
-    ]
-  },
-
-  "equipmentData": {
-    "weaponId": "weapon_iron_sword",
-    "helmetId": "gear_leather_helmet",
-    "chestId": "gear_leather_chestplate",
-    "glovesId": "gear_leather_gloves",
-    "bootsId": "gear_leather_boots",
-    "accessory1Id": "gear_accessory_iron_ring",
-    "accessory2Id": "gear_accessory_iron_bracelet"
-  },
-
-  "skillLoadoutData": {
-    "normalSkill1Id": "ability_fireball",
-    "normalSkill2Id": "",
-    "ultimateSkillId": ""
-  }
+    return new PopupContext
+    {
+        SourceLocation = ItemLocation.None,
+        Source = PopupSource.Shop,
+        CanEquip = false,  // Can't equip from shop
+        CanMove = false,   // Can't move to bag directly
+        CanUse = false,    // Can't use from shop
+        CanSell = false    // Shop items show "Buy" button
+    };
 }
 ```
+---
+
+## **Visual Summary**
+
+| **Location** | **Equip Button** | **Move Button** | **Use Button** (Potions) |
+|-------------|------------------|-----------------|--------------------------|
+| Storage     | ✅ "Equip"       | ✅ "Add to Bag" | ❌ Hidden                |
+| Bag         | ✅ "Equip"       | ✅ "Store"      | ✅ "Use"                 |
+| Equipped    | ✅ "Unequip"     | ❌ Hidden       | ❌ Hidden                |
+| Shop (future) | ❌ Hidden      | ❌ Hidden       | ❌ Hidden                |
 
 ---

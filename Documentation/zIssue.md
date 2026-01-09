@@ -301,9 +301,19 @@ private void Start()
         currentFilter = (ItemType)savedFilter;
 }
 
-TODO: 
+---
+TODO: CritikaL
 
-When item Gear is equipped make it remove from the storage
+GearPopup
+- The Button for Unequip for the Popup of the EquippedGearSlotUI.cs Dont showup why is that? did it got remove?
+
+PotionPopup
+- the button for [ Use Item ] disappaer also the Searializ Field button for add pocket is alread obsolete should be remove
+
+ItemPopup
+
+- the Searializ Field button for add pocket is alread obsolete should be remove
 
 ---
 
+lastly where do i put the PopupManager and PopupActionHandler script should i put it along the other singleton in the 01_Bootsrap or in the 03_MainBase scene EmptyGO where the UI is??

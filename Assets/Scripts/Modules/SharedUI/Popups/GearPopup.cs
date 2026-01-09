@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\Modules\SharedUI\Popups\GearPopup.cs
-// Gear item popup UI logic
+// ✅ REFACTORED: Uses PopupContext + PopupActionHandler
 // ════════════════════════════════════════════
 
 using System.Linq;
@@ -17,13 +17,9 @@ namespace Ascension.SharedUI.Popups
 {
     public class GearPopup : MonoBehaviour
     {
-        #region Singleton
-        public static GearPopup Instance { get; private set; }
-        #endregion
-
         #region Serialized Fields
         [Header("Configuration")]
-        [SerializeField] private GearPopupConfig config;
+        [SerializeField] private PopupConfig config;
 
         [Header("Popup Container")]
         [SerializeField] private GameObject popupContainer;
@@ -52,49 +48,34 @@ namespace Ascension.SharedUI.Popups
         [SerializeField] private Button moveButton;
         [SerializeField] private TMP_Text moveButtonText;
 
-        [Header("Error Display")]
-        [SerializeField] private TMP_Text errorText;
+        // [Header("Error Display")]
+        // [SerializeField] private TMP_Text errorText;
         #endregion
 
-        #region Private Fields - Error Messages (Hardcoded)
-        
-        // User-facing error messages (hardcoded for simplicity)
-        private const string ERROR_INVENTORY_FULL = "Cannot unequip: Inventory full!";
-        private const string ERROR_ALREADY_EQUIPPED = "Item is already equipped!";
-        private const string ERROR_CANNOT_EQUIP = "Cannot equip this item right now.";
+        #region Private Fields
         private const string ERROR_NO_ITEM = "No item selected";
-        private const string ERROR_SYSTEM_UNAVAILABLE = "Equipment system unavailable";
         private const string ERROR_CANNOT_MOVE_EQUIPPED = "Cannot move equipped item";
 
         private ItemBaseSO _currentItem;
         private ItemInstance _currentItemInstance;
-        private Coroutine _errorCoroutine;
+        private PopupContext _currentContext; // ✅ NEW: Store context
+
+        // private Coroutine _errorCoroutine;
         #endregion
 
         #region Unity Callbacks
         private void Awake()
         {
-            InitializeSingleton();
             ValidateConfig();
             SetupButtons();
             Hide();
-        }
-
-        private void InitializeSingleton()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
         }
 
         private void ValidateConfig()
         {
             if (config == null)
             {
-                Debug.LogError("[GearPopup] GearPopupConfig not assigned! Please assign in Inspector.");
+                Debug.LogError("[GearPopup] PopupConfig not assigned!");
             }
         }
 
@@ -108,7 +89,10 @@ namespace Ascension.SharedUI.Popups
 
         #region Public Methods
 
-        public void Show(ItemBaseSO itemData, ItemInstance itemInstance)
+        /// <summary>
+        /// ✅ NEW: Show with context
+        /// </summary>
+        public void Show(ItemBaseSO itemData, ItemInstance itemInstance, PopupContext context)
         {
             if (itemData == null)
             {
@@ -118,27 +102,7 @@ namespace Ascension.SharedUI.Popups
 
             _currentItem = itemData;
             _currentItemInstance = itemInstance;
-
-            UpdateDisplay();
-            popupContainer?.SetActive(true);
-        }
-
-        public void ShowEquipped(ItemBaseSO itemData, string itemId)
-        {
-            if (itemData == null)
-            {
-                Debug.LogError("[GearPopup] Cannot show popup - itemData is null");
-                return;
-            }
-
-            _currentItem = itemData;
-
-            var inventory = InventoryManager.Instance?.Inventory;
-            if (inventory != null)
-            {
-                _currentItemInstance = inventory.allItems
-                    .FirstOrDefault(i => i.itemID == itemId && i.location == ItemLocation.Equipped);
-            }
+            _currentContext = context; // ✅ Store context
 
             UpdateDisplay();
             popupContainer?.SetActive(true);
@@ -148,19 +112,20 @@ namespace Ascension.SharedUI.Popups
         {
             popupContainer?.SetActive(false);
             
-            if (errorText != null)
-            {
-                errorText.gameObject.SetActive(false);
-            }
+            // if (errorText != null)
+            // {
+            //     errorText.gameObject.SetActive(false);
+            // }
             
-            if (_errorCoroutine != null)
-            {
-                StopCoroutine(_errorCoroutine);
-                _errorCoroutine = null;
-            }
+            // if (_errorCoroutine != null)
+            // {
+            //     StopCoroutine(_errorCoroutine);
+            //     _errorCoroutine = null;
+            // }
             
             _currentItem = null;
             _currentItemInstance = null;
+            _currentContext = null; // ✅ Clear context
         }
 
         #endregion
@@ -223,18 +188,19 @@ namespace Ascension.SharedUI.Popups
             }
         }
 
-        // ✅ Uses config for button labels only
+        /// <summary>
+        /// Uses context to determine button visibility and text
+        /// </summary>
         private void UpdateButtons()
         {
-            if (config == null) return;
+            if (config == null || _currentContext == null) return;
 
-            bool isEquipped = IsCurrentItemEquipped();
-            ItemLocation? currentLocation = _currentItemInstance?.location;
-
-            // Update equip/unequip button (uses config)
+            // Equip/Unequip button
             if (equipToggleButton != null)
             {
-                equipToggleButton.gameObject.SetActive(true);
+                // ✅ FIX: Show button for equipped items OR when CanEquip is true
+                bool isEquipped = _currentContext.SourceLocation == ItemLocation.Equipped;
+                equipToggleButton.gameObject.SetActive(isEquipped || _currentContext.CanEquip);
 
                 if (equipToggleButtonText != null)
                 {
@@ -244,29 +210,16 @@ namespace Ascension.SharedUI.Popups
                 }
             }
 
-            // Update move button (uses config)
+            // Move button
             if (moveButton != null)
             {
-                moveButton.gameObject.SetActive(!isEquipped);
+                moveButton.gameObject.SetActive(_currentContext.CanMove);
 
                 if (moveButtonText != null)
                 {
-                    if (currentLocation == ItemLocation.Bag)
-                        moveButtonText.text = config.buttonStore;
-                    else if (currentLocation == ItemLocation.Storage)
-                        moveButtonText.text = config.buttonTake;
-                    else
-                        moveButtonText.text = config.buttonMove;
+                    moveButtonText.text = config.GetMoveButtonText(_currentContext.SourceLocation);
                 }
             }
-        }
-
-        private bool IsCurrentItemEquipped()
-        {
-            if (_currentItem == null) return false;
-            
-            var equipMgr = EquipmentManager.Instance;
-            return equipMgr != null && equipMgr.IsItemEquipped(_currentItem.ItemID);
         }
 
         private void DisplayWeaponStats(WeaponSO weapon)
@@ -360,167 +313,92 @@ namespace Ascension.SharedUI.Popups
 
         #region Event Handlers
 
-        // ✅ Uses hardcoded error messages
+        /// <summary>
+        /// ✅ REFACTORED: Uses PopupActionHandler instead of calling EquipmentManager directly
+        /// </summary>
         private void OnEquipToggleClicked()
         {
-            if (config == null) return;
-
-            if (_currentItem == null)
+            if (_currentItem == null || _currentItemInstance == null)
             {
                 ShowError(ERROR_NO_ITEM);
                 return;
             }
 
-            var equipMgr = EquipmentManager.Instance;
-            if (equipMgr == null)
-            {
-                ShowError(ERROR_SYSTEM_UNAVAILABLE);
-                return;
-            }
-
-            bool isEquipped = IsCurrentItemEquipped();
-            bool success;
+            bool isEquipped = _currentContext.SourceLocation == ItemLocation.Equipped;
 
             if (isEquipped)
             {
-                // UNEQUIP
-                success = equipMgr.UnequipItem(_currentItem.ItemID);
-
-                if (success)
-                {
-                    Debug.Log($"[GearPopup] Unequipped {_currentItem.ItemName}");
-                    RefreshCurrentItemInstance();
-                    Hide();
-                }
-                else
-                {
-                    ShowError(ERROR_INVENTORY_FULL);
-                    Debug.LogWarning($"[GearPopup] Failed to unequip {_currentItem.ItemName}");
-                }
+                // ✅ Delegate to PopupActionHandler
+                PopupActionHandler.Instance.UnequipItem(_currentItem, _currentItemInstance);
             }
             else
             {
-                // EQUIP
-                success = equipMgr.EquipItem(_currentItem.ItemID);
-
-                if (success)
-                {
-                    Debug.Log($"[GearPopup] Equipped {_currentItem.ItemName}");
-                    Hide();
-                }
-                else
-                {
-                    var location = _currentItemInstance?.location;
-                    
-                    if (location == ItemLocation.Equipped)
-                    {
-                        ShowError(ERROR_ALREADY_EQUIPPED);
-                    }
-                    else
-                    {
-                        ShowError(ERROR_CANNOT_EQUIP);
-                    }
-                    
-                    Debug.LogWarning($"[GearPopup] Failed to equip {_currentItem.ItemName}");
-                }
+                // ✅ Delegate to PopupActionHandler
+                PopupActionHandler.Instance.EquipItem(_currentItem, _currentItemInstance);
             }
         }
 
-        private void RefreshCurrentItemInstance()
-        {
-            if (_currentItem == null) return;
-
-            var inventory = InventoryManager.Instance?.Inventory;
-            if (inventory == null) return;
-
-            _currentItemInstance = inventory.allItems
-                .FirstOrDefault(i => i.itemID == _currentItem.ItemID && 
-                    (i.location == ItemLocation.Bag || 
-                    i.location == ItemLocation.Storage ||
-                    i.location == ItemLocation.Equipped));
-
-            UpdateButtons();
-        }
-
+        /// <summary>
+        /// ✅ REFACTORED: Uses PopupActionHandler instead of calling InventoryManager directly
+        /// </summary>
         private void OnMoveButtonClicked()
         {
-            if (config == null) return;
-
             if (_currentItemInstance == null || _currentItem == null)
             {
                 Debug.LogError("[GearPopup] Cannot move - no item instance");
                 return;
             }
 
-            var inventory = InventoryManager.Instance?.Inventory;
-            var database = InventoryManager.Instance?.Database;
-
-            if (inventory == null || database == null)
-            {
-                ShowError(ERROR_SYSTEM_UNAVAILABLE);
-                return;
-            }
-
-            Inventory.Data.InventoryResult result;
-
-            if (_currentItemInstance.location == ItemLocation.Bag)
-            {
-                result = inventory.MoveToStorage(_currentItemInstance, _currentItemInstance.quantity, database);
-            }
-            else if (_currentItemInstance.location == ItemLocation.Storage)
-            {
-                result = inventory.MoveToBag(_currentItemInstance, _currentItemInstance.quantity, database);
-            }
-            else
+            if (!_currentContext.CanMove)
             {
                 ShowError(ERROR_CANNOT_MOVE_EQUIPPED);
                 return;
             }
 
-            if (result.Success)
-            {
-                Debug.Log($"[GearPopup] {result.Message}");
-                Hide();
-            }
-            else
-            {
-                // Use error from inventory system
-                ShowError(result.Message);
-            }
+            // Determine target location
+            ItemLocation targetLocation = _currentContext.SourceLocation == ItemLocation.Bag
+                ? ItemLocation.Storage
+                : ItemLocation.Bag;
+
+            // ✅ Delegate to PopupActionHandler
+            PopupActionHandler.Instance.MoveItem(
+                _currentItemInstance, 
+                _currentItemInstance.quantity, 
+                targetLocation
+            );
         }
 
-        // ✅ Uses config for duration/color only
         private void ShowError(string message)
         {
-            if (config == null || errorText == null) return;
+            // if (config == null || errorText == null) return;
 
             Debug.LogWarning($"[GearPopup] Error: {message}");
 
-            if (_errorCoroutine != null)
-            {
-                StopCoroutine(_errorCoroutine);
-            }
+            // if (_errorCoroutine != null)
+            // {
+            //     StopCoroutine(_errorCoroutine);
+            // }
 
-            errorText.text = message;
-            errorText.color = config.errorTextColor;
-            errorText.gameObject.SetActive(true);
+            // errorText.text = message;
+            // errorText.color = config.errorTextColor;
+            // errorText.gameObject.SetActive(true);
 
-            _errorCoroutine = StartCoroutine(HideErrorAfterDelay());
+            // _errorCoroutine = StartCoroutine(HideErrorAfterDelay());
         }
 
-        private System.Collections.IEnumerator HideErrorAfterDelay()
-        {
-            if (config == null) yield break;
+        // private System.Collections.IEnumerator HideErrorAfterDelay()
+        // {
+        //     if (config == null) yield break;
 
-            yield return new WaitForSeconds(config.errorDisplayDuration);
+        //     yield return new WaitForSeconds(config.errorDisplayDuration);
             
-            if (errorText != null)
-            {
-                errorText.gameObject.SetActive(false);
-            }
+        //     if (errorText != null)
+        //     {
+        //         errorText.gameObject.SetActive(false);
+        //     }
             
-            _errorCoroutine = null;
-        }
+        //     _errorCoroutine = null;
+        // }
 
         #endregion
     }

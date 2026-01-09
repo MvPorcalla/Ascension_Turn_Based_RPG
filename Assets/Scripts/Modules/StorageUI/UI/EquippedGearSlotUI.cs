@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════
 // Assets\Scripts\Modules\StorageSystem\UI\EquippedGearSlotUI.cs
-// ✅ INTERACTIVE: Equipped gear slot with click-to-unequip popup
+// ✅ REFACTORED: Uses PopupManager instead of GearPopup.Instance
 // ══════════════════════════════════════════════════════════════════
 
 using UnityEngine;
@@ -8,12 +8,12 @@ using UnityEngine.UI;
 using Ascension.Equipment.Enums;
 using Ascension.Data.SO.Database;
 using Ascension.SharedUI.Popups;
+using Ascension.Inventory.Enums;
+using Ascension.Inventory.Manager;
+using System.Linq;
 
 namespace Ascension.Storage.UI
 {
-    /// <summary>
-    /// Individual equipped gear slot - clickable to show popup with unequip option
-    /// </summary>
     public class EquippedGearSlotUI : MonoBehaviour
     {
         [Header("UI References")]
@@ -51,27 +51,20 @@ namespace Ascension.Storage.UI
 
         #region Public Methods
 
-        /// <summary>
-        /// Update slot display with item
-        /// </summary>
         public void SetItem(string itemId, GameDatabaseSO database)
         {
             currentItemId = itemId;
             bool hasItem = !string.IsNullOrEmpty(itemId);
 
-            // Update empty overlay
             if (emptyOverlay != null)
                 emptyOverlay.SetActive(!hasItem);
 
-            // Update background color
             if (backgroundImage != null)
                 backgroundImage.color = hasItem ? filledSlotColor : emptySlotColor;
 
-            // Update button interactivity
             if (slotButton != null)
                 slotButton.interactable = hasItem;
 
-            // Update icon
             if (!hasItem || database == null)
             {
                 ClearIcon();
@@ -102,7 +95,7 @@ namespace Ascension.Storage.UI
         }
 
         /// <summary>
-        /// ✅ Handle slot click - show popup with unequip option
+        /// Uses PopupManager with PopupContext.FromEquippedGear()
         /// </summary>
         private void OnSlotClicked()
         {
@@ -112,7 +105,7 @@ namespace Ascension.Storage.UI
                 return;
             }
 
-            var inventoryMgr = Inventory.Manager.InventoryManager.Instance;
+            var inventoryMgr = InventoryManager.Instance;
             if (inventoryMgr?.Database == null)
             {
                 Debug.LogError("[EquippedGearSlotUI] InventoryManager not available");
@@ -126,15 +119,22 @@ namespace Ascension.Storage.UI
                 return;
             }
 
-            // Show popup for equipped item
-            if (GearPopup.Instance != null)
+            // Get ItemInstance from inventory
+            var itemInstance = inventoryMgr.Inventory.allItems
+                .FirstOrDefault(i => i.itemID == currentItemId && i.location == ItemLocation.Equipped);
+
+            if (itemInstance == null)
             {
-                GearPopup.Instance.ShowEquipped(itemData, currentItemId);
+                Debug.LogError($"[EquippedGearSlotUI] ItemInstance not found: {currentItemId}");
+                return;
             }
-            else
-            {
-                Debug.LogError("[EquippedGearSlotUI] GearPopup instance not found");
-            }
+
+            // Use PopupManager with equipped gear context
+            PopupManager.Instance.ShowItemPopup(
+                itemData,
+                itemInstance,
+                PopupContext.FromEquippedGear() // Shows "Unequip" only
+            );
         }
 
         #endregion

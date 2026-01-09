@@ -1,7 +1,6 @@
 // ──────────────────────────────────────────────────
 // Assets\Scripts\Modules\StorageSystem\UI\BagInventoryUI.cs
-// ✅ FIXED: Removed context parameter from GearPopup.Show()
-// Manages bag inventory display and interaction
+// UI component for displaying bag inventory with filtering
 // ──────────────────────────────────────────────────
 
 using System.Collections.Generic;
@@ -11,15 +10,11 @@ using Ascension.Data.SO.Item;
 using Ascension.Inventory.Manager;
 using Ascension.Inventory.Data;
 using Ascension.Inventory.Enums;
-using Ascension.Inventory.Popup;
 using Ascension.Inventory.UI;
 using Ascension.SharedUI.Popups;
 
 namespace Ascension.Storage.UI
 {
-    /// <summary>
-    /// Displays and manages the bag inventory section
-    /// </summary>
     public class BagInventoryUI : MonoBehaviour
     {
         [Header("UI References")]
@@ -30,11 +25,12 @@ namespace Ascension.Storage.UI
         [SerializeField] private Button storeAllButton;
 
         [Header("Configuration")]
-        [SerializeField] private int maxBagSlots = 12; // Should match InventoryManager
+        [SerializeField] private int maxBagSlots = 12;
 
-        [Header("Popups")]
-        [SerializeField] private InventoryItemPopup itemPopup;
-        [SerializeField] private InventoryPotionPopup potionPopup;
+        // ✅ REMOVED: No more direct popup references
+        // [Header("Popups")]
+        // [SerializeField] private ItemPopup itemPopup;
+        // [SerializeField] private PotionPopup potionPopup;
 
         private List<ItemSlotUI> slotCache = new List<ItemSlotUI>();
         private bool isInitialized = false;
@@ -86,11 +82,6 @@ namespace Ascension.Storage.UI
             if (storeAllButton != null)
             {
                 storeAllButton.onClick.AddListener(OnStoreAllClicked);
-                Debug.Log("[BagInventoryUI] Store All button connected");
-            }
-            else
-            {
-                Debug.LogWarning("[BagInventoryUI] Store All button not assigned in Inspector!");
             }
         }
 
@@ -106,21 +97,15 @@ namespace Ascension.Storage.UI
 
         #region Initialization
 
-        /// <summary>
-        /// ✅ ONE-TIME: Create all slots upfront (runs once on scene load)
-        /// Performance: ~10-15ms on low-end devices (one-time cost)
-        /// </summary>
         private void InitializeSlots()
         {
             if (isInitialized) return;
 
-            // Get actual max from InventoryManager if available
             if (InventoryManager.Instance != null)
             {
                 maxBagSlots = InventoryManager.Instance.Capacity.MaxBagSlots;
             }
 
-            // Pre-allocate all slots
             for (int i = 0; i < maxBagSlots; i++)
             {
                 GameObject slotObj = Instantiate(itemSlotPrefab, inventoryContent);
@@ -128,27 +113,22 @@ namespace Ascension.Storage.UI
 
                 if (slotUI == null)
                 {
-                    Debug.LogError("[BagInventoryUI] ItemSlotUI component missing on prefab!");
+                    Debug.LogError("[BagInventoryUI] ItemSlotUI component missing!");
                     Destroy(slotObj);
                     continue;
                 }
 
-                slotUI.gameObject.SetActive(false); // Start hidden
+                slotUI.gameObject.SetActive(false);
                 slotCache.Add(slotUI);
             }
 
             isInitialized = true;
-            Debug.Log($"[BagInventoryUI] Pre-allocated {maxBagSlots} bag slots");
         }
 
         #endregion
 
         #region Refresh Logic
 
-        /// <summary>
-        /// ✅ OPTIMIZED: Only updates existing slots, NO instantiation
-        /// Performance: ~0.5-1ms per refresh (vs 20-30ms with old approach)
-        /// </summary>
         private void RefreshBag()
         {
             if (!isInitialized)
@@ -158,14 +138,12 @@ namespace Ascension.Storage.UI
 
             var bagItems = InventoryManager.Instance.Inventory.GetBagItems();
 
-            // Update each slot (item or empty)
             for (int i = 0; i < maxBagSlots; i++)
             {
                 ItemSlotUI slot = slotCache[i];
 
                 if (i < bagItems.Count)
                 {
-                    // Show item
                     ItemInstance item = bagItems[i];
                     ItemBaseSO itemData = InventoryManager.Instance.Database.GetItem(item.itemID);
 
@@ -176,31 +154,24 @@ namespace Ascension.Storage.UI
                     }
                     else
                     {
-                        Debug.LogWarning($"[BagInventoryUI] Item data not found: {item.itemID}");
                         slot.ShowEmpty();
                         slot.gameObject.SetActive(true);
                     }
                 }
                 else
                 {
-                    // Show empty slot
                     slot.ShowEmpty();
                     slot.gameObject.SetActive(true);
                 }
             }
 
-            // Update Store All button state
             UpdateStoreAllButtonState(bagItems.Count);
         }
 
-        /// <summary>
-        /// Enable/disable Store All button based on bag contents
-        /// </summary>
         private void UpdateStoreAllButtonState(int bagItemCount)
         {
             if (storeAllButton != null)
             {
-                // Disable if bag is empty
                 storeAllButton.interactable = bagItemCount > 0;
             }
         }
@@ -210,7 +181,8 @@ namespace Ascension.Storage.UI
         #region Item Click Handler
 
         /// <summary>
-        /// ✅ FIXED: Removed context parameter - GearPopup now handles everything internally
+        /// ✅ REFACTORED: Uses PopupManager.ShowItemPopup() with context
+        /// PopupManager handles routing to correct popup type
         /// </summary>
         private void OnItemClicked(ItemInstance item)
         {
@@ -222,86 +194,48 @@ namespace Ascension.Storage.UI
                 return;
             }
 
-            // Route to appropriate popup based on item type
-            if (itemData is PotionSO potion)
-            {
-                // Potions use their own specialized popup
-                potionPopup.ShowPotion(potion, item, ItemLocation.Bag);
-            }
-            else if (itemData.IsStackable)
-            {
-                // Stackable items (materials, etc.) use generic item popup
-                itemPopup.ShowItem(itemData, item, ItemLocation.Bag);
-            }
-            else if (itemData is WeaponSO || itemData is GearSO)
-            {
-                // ✅ FIXED: Weapons/Gear use simplified GearPopup (no context needed)
-                GearPopup.Instance.Show(itemData, item);
-            }
+            // ✅ One line - PopupManager handles everything
+            PopupManager.Instance.ShowItemPopup(
+                itemData, 
+                item, 
+                PopupContext.FromBag() // Context tells popup "this is from bag"
+            );
         }
 
         #endregion
 
         #region Store All Handler
 
-        /// <summary>
-        /// ✅ Store All button handler - moves non-equipped items to storage
-        /// </summary>
         private void OnStoreAllClicked()
         {
-            Debug.Log("[BagInventoryUI] Store All button clicked");
-
             if (InventoryManager.Instance?.Inventory == null)
             {
                 Debug.LogError("[BagInventoryUI] InventoryManager not available!");
                 return;
             }
 
-            // Get equipment manager to check equipped status
             var equipmentManager = Ascension.Equipment.Manager.EquipmentManager.Instance;
-            
-            if (equipmentManager == null)
-            {
-                Debug.LogWarning("[BagInventoryUI] EquipmentManager not found - storing all items");
-            }
 
             int bagItemCount = InventoryManager.Instance.Inventory.GetBagItemCount();
             
             if (bagItemCount == 0)
             {
-                Debug.Log("[BagInventoryUI] Bag is empty, nothing to store");
                 return;
             }
 
-            // Execute store all operation
             InventoryManager.Instance.Inventory.StoreAllItems(
                 itemId => equipmentManager?.IsItemEquipped(itemId) ?? false,
                 InventoryManager.Instance.Database
             );
-
-            Debug.Log("[BagInventoryUI] Store All completed");
         }
 
         #endregion
 
         #region Public Methods
 
-        /// <summary>
-        /// Force a complete refresh (useful after loading save data)
-        /// </summary>
-        public void ForceRefresh()
-        {
-            RefreshBag();
-        }
-
-        /// <summary>
-        /// Get current slot count for debugging
-        /// </summary>
+        public void ForceRefresh() => RefreshBag();
         public int GetSlotCount() => slotCache.Count;
 
-        /// <summary>
-        /// ✅ Alias for initialization - called by StorageRoomController
-        /// </summary>
         public void Initialize()
         {
             if (!isInitialized)
@@ -310,13 +244,7 @@ namespace Ascension.Storage.UI
             }
         }
 
-        /// <summary>
-        /// ✅ Alias for refresh - called by StorageRoomController
-        /// </summary>
-        public void RefreshDisplay()
-        {
-            RefreshBag();
-        }
+        public void RefreshDisplay() => RefreshBag();
 
         #endregion
     }
