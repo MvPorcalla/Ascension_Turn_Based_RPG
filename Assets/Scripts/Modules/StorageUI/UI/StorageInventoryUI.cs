@@ -33,11 +33,6 @@ namespace Ascension.Storage.UI
         [SerializeField] private Button materialsButton;
         [SerializeField] private Button miscButton;
 
-        // ✅ REMOVED: No more direct popup references
-        // [Header("Popups")]
-        // [SerializeField] private ItemPopup itemPopup;
-        // [SerializeField] private PotionPopup potionPopup;
-
         private ItemType? currentFilter = null;
         private List<ItemSlotUI> slotCache = new List<ItemSlotUI>();
         private bool isInitialized = false;
@@ -204,7 +199,7 @@ namespace Ascension.Storage.UI
         #region Item Click Handler
 
         /// <summary>
-        /// ✅ REFACTORED: Uses PopupManager.ShowItemPopup() with context
+        /// Uses PopupManager.ShowItemPopup() with context
         /// </summary>
         private void OnItemClicked(ItemInstance item)
         {
@@ -216,7 +211,7 @@ namespace Ascension.Storage.UI
                 return;
             }
 
-            // ✅ One line - PopupManager handles everything
+            // Delegate to PopupManager with context
             PopupManager.Instance.ShowItemPopup(
                 itemData, 
                 item, 

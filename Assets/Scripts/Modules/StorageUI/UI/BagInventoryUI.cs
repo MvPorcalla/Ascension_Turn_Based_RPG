@@ -27,11 +27,6 @@ namespace Ascension.Storage.UI
         [Header("Configuration")]
         [SerializeField] private int maxBagSlots = 12;
 
-        // ✅ REMOVED: No more direct popup references
-        // [Header("Popups")]
-        // [SerializeField] private ItemPopup itemPopup;
-        // [SerializeField] private PotionPopup potionPopup;
-
         private List<ItemSlotUI> slotCache = new List<ItemSlotUI>();
         private bool isInitialized = false;
 
@@ -181,7 +176,7 @@ namespace Ascension.Storage.UI
         #region Item Click Handler
 
         /// <summary>
-        /// ✅ REFACTORED: Uses PopupManager.ShowItemPopup() with context
+        /// Uses PopupManager.ShowItemPopup() with context
         /// PopupManager handles routing to correct popup type
         /// </summary>
         private void OnItemClicked(ItemInstance item)
@@ -194,7 +189,7 @@ namespace Ascension.Storage.UI
                 return;
             }
 
-            // ✅ One line - PopupManager handles everything
+            // Delegate to PopupManager with context
             PopupManager.Instance.ShowItemPopup(
                 itemData, 
                 item, 

@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\Modules\SharedUI\Popups\PotionPopup.cs
-// ✅ REFACTORED: Uses PopupContext + PopupActionHandler
+// Popup for displaying potion details and actions
 // ════════════════════════════════════════════
 
 using UnityEngine;
@@ -53,7 +53,7 @@ namespace Ascension.SharedUI.Popups
         #region Private Fields
         private PotionSO currentPotion;
         private ItemInstance currentItem;
-        private PopupContext currentContext; // ✅ NEW: Store context
+        private PopupContext currentContext;
         private int selectedQuantity = 1;
         #endregion
 
@@ -94,7 +94,7 @@ namespace Ascension.SharedUI.Popups
         #region Public Methods
 
         /// <summary>
-        /// ✅ REFACTORED: Now accepts PopupContext
+        /// Shows the potion popup with given data
         /// </summary>
         public void ShowPotion(PotionSO potion, ItemInstance item, PopupContext context)
         {
@@ -351,7 +351,7 @@ namespace Ascension.SharedUI.Popups
         {
             if (config == null || currentContext == null) return;
 
-            // ✅ Use button is only available in bag (context.CanUse)
+            // Use button is only available in bag (context.CanUse)
             if (useButton != null)
             {
                 useButton.gameObject.SetActive(currentContext.CanUse);
@@ -366,7 +366,7 @@ namespace Ascension.SharedUI.Popups
                 }
             }
 
-            // ✅ Move button uses context
+            // Move button uses context
             if (actionButton1 != null)
             {
                 actionButton1.gameObject.SetActive(currentContext.CanMove);
@@ -423,13 +423,13 @@ namespace Ascension.SharedUI.Popups
         #region Action Handlers
 
         /// <summary>
-        /// ✅ REFACTORED: Uses PopupActionHandler instead of calling PotionManager directly
+        /// Uses PopupActionHandler instead of calling PotionManager directly
         /// </summary>
         private void OnUseClicked()
         {
             if (currentPotion == null || currentItem == null) return;
 
-            // ✅ Delegate to PopupActionHandler
+            // Delegate to PopupActionHandler
             PopupActionHandler.Instance.UsePotion(
                 currentPotion, 
                 currentItem, 
@@ -438,7 +438,7 @@ namespace Ascension.SharedUI.Popups
         }
 
         /// <summary>
-        /// ✅ REFACTORED: Uses PopupActionHandler instead of calling InventoryManager directly
+        /// Uses PopupActionHandler to move item
         /// </summary>
         private void OnActionButton1Clicked()
         {
@@ -449,7 +449,7 @@ namespace Ascension.SharedUI.Popups
                 ? ItemLocation.Storage
                 : ItemLocation.Bag;
 
-            // ✅ Delegate to PopupActionHandler
+            // Delegate to PopupActionHandler
             PopupActionHandler.Instance.MoveItem(
                 currentItem, 
                 selectedQuantity, 

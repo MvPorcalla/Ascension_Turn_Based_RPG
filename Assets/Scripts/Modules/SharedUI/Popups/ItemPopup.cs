@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\Modules\SharedUI\Popups\ItemPopup.cs
-// ✅ REFACTORED: Uses PopupContext + PopupActionHandler
+// Popup for displaying item details and actions
 // ════════════════════════════════════════════
 
 using UnityEngine;
@@ -49,7 +49,7 @@ namespace Ascension.SharedUI.Popups
         #region Private Fields
         private ItemBaseSO currentItem;
         private ItemInstance currentItemInstance;
-        private PopupContext currentContext; // ✅ NEW: Store context
+        private PopupContext currentContext;
         private int selectedQuantity = 1;
         #endregion
 
@@ -89,7 +89,7 @@ namespace Ascension.SharedUI.Popups
         #region Public Methods
 
         /// <summary>
-        /// ✅ REFACTORED: Now accepts PopupContext
+        /// Now accepts PopupContext
         /// </summary>
         public void ShowItem(ItemBaseSO item, ItemInstance itemInstance, PopupContext context)
         {
@@ -148,7 +148,7 @@ namespace Ascension.SharedUI.Popups
         }
 
         /// <summary>
-        /// ✅ REFACTORED: Uses context to determine button visibility
+        /// Uses context to determine button visibility
         /// </summary>
         private void SetupActionButtons()
         {
@@ -210,7 +210,7 @@ namespace Ascension.SharedUI.Popups
         #region Action Handlers
 
         /// <summary>
-        /// ✅ REFACTORED: Uses PopupActionHandler instead of calling InventoryManager directly
+        /// Uses PopupActionHandler instead of calling InventoryManager directly
         /// </summary>
         private void OnActionButton1Clicked()
         {
@@ -221,7 +221,7 @@ namespace Ascension.SharedUI.Popups
                 ? ItemLocation.Storage
                 : ItemLocation.Bag;
 
-            // ✅ Delegate to PopupActionHandler
+            // Delegate to PopupActionHandler
             PopupActionHandler.Instance.MoveItem(
                 currentItemInstance, 
                 selectedQuantity, 

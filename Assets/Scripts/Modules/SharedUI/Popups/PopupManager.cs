@@ -150,8 +150,9 @@ namespace Ascension.SharedUI.Popups
         #endregion
     }
 
-    // ============================= TODO: Separate this into its own file =============================
+    // ============================= SECTION: Popup Context =============================
 
+    #region Popup Context
     /// <summary>
     /// Context data for popups - tells popup where it was opened from
     /// and what actions are available
@@ -232,4 +233,5 @@ namespace Ascension.SharedUI.Popups
         Loot,
         Quest
     }
+    #endregion
 }

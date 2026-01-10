@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════
 // Assets\Scripts\Modules\StorageSystem\UI\EquippedGearSlotUI.cs
-// ✅ REFACTORED: Uses PopupManager instead of GearPopup.Instance
+// UI component for a single equipped gear slot in storage room
 // ══════════════════════════════════════════════════════════════════
 
 using UnityEngine;

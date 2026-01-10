@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════
 // Assets\Scripts\Modules\StorageSystem\UI\EquippedGearPreviewUI.cs
-// ✅ MINIMAL VERSION: Display-only equipped gear preview (no popups, no rarity)
+// Simple read-only display of equipped gear in storage room
 // ══════════════════════════════════════════════════════════════════
 
 using UnityEngine;

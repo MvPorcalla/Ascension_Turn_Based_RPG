@@ -90,7 +90,7 @@ namespace Ascension.SharedUI.Popups
         #region Public Methods
 
         /// <summary>
-        /// ✅ NEW: Show with context
+        /// Show with context
         /// </summary>
         public void Show(ItemBaseSO itemData, ItemInstance itemInstance, PopupContext context)
         {
@@ -198,7 +198,6 @@ namespace Ascension.SharedUI.Popups
             // Equip/Unequip button
             if (equipToggleButton != null)
             {
-                // ✅ FIX: Show button for equipped items OR when CanEquip is true
                 bool isEquipped = _currentContext.SourceLocation == ItemLocation.Equipped;
                 equipToggleButton.gameObject.SetActive(isEquipped || _currentContext.CanEquip);
 
@@ -314,7 +313,7 @@ namespace Ascension.SharedUI.Popups
         #region Event Handlers
 
         /// <summary>
-        /// ✅ REFACTORED: Uses PopupActionHandler instead of calling EquipmentManager directly
+        /// Uses PopupActionHandler instead of calling EquipmentManager directly
         /// </summary>
         private void OnEquipToggleClicked()
         {
@@ -328,18 +327,18 @@ namespace Ascension.SharedUI.Popups
 
             if (isEquipped)
             {
-                // ✅ Delegate to PopupActionHandler
+                // Delegate to PopupActionHandler
                 PopupActionHandler.Instance.UnequipItem(_currentItem, _currentItemInstance);
             }
             else
             {
-                // ✅ Delegate to PopupActionHandler
+                // Delegate to PopupActionHandler
                 PopupActionHandler.Instance.EquipItem(_currentItem, _currentItemInstance);
             }
         }
 
         /// <summary>
-        /// ✅ REFACTORED: Uses PopupActionHandler instead of calling InventoryManager directly
+        /// Uses PopupActionHandler instead of calling InventoryManager directly
         /// </summary>
         private void OnMoveButtonClicked()
         {
@@ -360,7 +359,7 @@ namespace Ascension.SharedUI.Popups
                 ? ItemLocation.Storage
                 : ItemLocation.Bag;
 
-            // ✅ Delegate to PopupActionHandler
+            // Delegate to PopupActionHandler
             PopupActionHandler.Instance.MoveItem(
                 _currentItemInstance, 
                 _currentItemInstance.quantity, 
