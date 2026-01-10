@@ -1,9 +1,10 @@
-// ──────────────────────────────────────────────────
-// CharacterAttribute.cs
+// ══════════════════════════════════════════════════
+// CharacterAttributes.cs
 // Holds base player attributes (STR, INT, etc.)
-// ──────────────────────────────────────────────────
+// ══════════════════════════════════════════════════
 
 using System;
+using Ascension.Character.Stat;
 
 [Serializable]
 public class CharacterAttributes
@@ -37,5 +38,33 @@ public class CharacterAttributes
         AGI = other.AGI;
         END = other.END;
         WIS = other.WIS;
+    }
+    
+    // ✅ NEW: Get attribute by type (compile-time safe)
+    public int GetAttribute(AttributeType type)
+    {
+        switch (type)
+        {
+            case AttributeType.STR: return STR;
+            case AttributeType.INT: return INT;
+            case AttributeType.AGI: return AGI;
+            case AttributeType.END: return END;
+            case AttributeType.WIS: return WIS;
+            default: throw new ArgumentException($"Invalid attribute type: {type}");
+        }
+    }
+    
+    // ✅ NEW: Set attribute by type (compile-time safe)
+    public void SetAttribute(AttributeType type, int value)
+    {
+        switch (type)
+        {
+            case AttributeType.STR: STR = value; break;
+            case AttributeType.INT: INT = value; break;
+            case AttributeType.AGI: AGI = value; break;
+            case AttributeType.END: END = value; break;
+            case AttributeType.WIS: WIS = value; break;
+            default: throw new ArgumentException($"Invalid attribute type: {type}");
+        }
     }
 }

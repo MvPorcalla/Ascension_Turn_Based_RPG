@@ -8,6 +8,7 @@ using TMPro;
 using System.Collections.Generic;
 using Ascension.App;
 using Ascension.Character.Stat;
+using Ascension.Character.Manager;
 using Ascension.Data.SO.Character;
 
 namespace Ascension.UI
@@ -60,8 +61,8 @@ namespace Ascension.UI
         private int tempSTR, tempINT, tempAGI, tempEND, tempWIS;
         private int tempPointsSpent = 0;
         
-        // ✅ FIX: Store original values in a dictionary
-        private Dictionary<string, int> _originalAttributes = new Dictionary<string, int>();
+        // ✅ FIXED: Use AttributeType enum instead of string
+        private Dictionary<AttributeType, int> _originalAttributes = new Dictionary<AttributeType, int>();
         #endregion
         
         #region Properties
@@ -106,21 +107,21 @@ namespace Ascension.UI
         
         private void SetupAttributeButtons()
         {
-            // ✅ FIX: Pass attribute name instead of ref int
-            strMinusBtn?.onClick.AddListener(() => ModifyAttribute("STR", -1));
-            strPlusBtn?.onClick.AddListener(() => ModifyAttribute("STR", 1));
+            // ✅ FIXED: Use enum instead of string
+            strMinusBtn?.onClick.AddListener(() => ModifyAttribute(AttributeType.STR, -1));
+            strPlusBtn?.onClick.AddListener(() => ModifyAttribute(AttributeType.STR, 1));
             
-            intMinusBtn?.onClick.AddListener(() => ModifyAttribute("INT", -1));
-            intPlusBtn?.onClick.AddListener(() => ModifyAttribute("INT", 1));
+            intMinusBtn?.onClick.AddListener(() => ModifyAttribute(AttributeType.INT, -1));
+            intPlusBtn?.onClick.AddListener(() => ModifyAttribute(AttributeType.INT, 1));
             
-            agiMinusBtn?.onClick.AddListener(() => ModifyAttribute("AGI", -1));
-            agiPlusBtn?.onClick.AddListener(() => ModifyAttribute("AGI", 1));
+            agiMinusBtn?.onClick.AddListener(() => ModifyAttribute(AttributeType.AGI, -1));
+            agiPlusBtn?.onClick.AddListener(() => ModifyAttribute(AttributeType.AGI, 1));
             
-            endMinusBtn?.onClick.AddListener(() => ModifyAttribute("END", -1));
-            endPlusBtn?.onClick.AddListener(() => ModifyAttribute("END", 1));
+            endMinusBtn?.onClick.AddListener(() => ModifyAttribute(AttributeType.END, -1));
+            endPlusBtn?.onClick.AddListener(() => ModifyAttribute(AttributeType.END, 1));
             
-            wisMinusBtn?.onClick.AddListener(() => ModifyAttribute("WIS", -1));
-            wisPlusBtn?.onClick.AddListener(() => ModifyAttribute("WIS", 1));
+            wisMinusBtn?.onClick.AddListener(() => ModifyAttribute(AttributeType.WIS, -1));
+            wisPlusBtn?.onClick.AddListener(() => ModifyAttribute(AttributeType.WIS, 1));
         }
         
         private void SetupActionButtons()
@@ -157,19 +158,19 @@ namespace Ascension.UI
             tempWIS = Player.attributes.WIS;
             tempPointsSpent = 0;
             
-            // ✅ FIX: Store original values for comparison
-            _originalAttributes["STR"] = Player.attributes.STR;
-            _originalAttributes["INT"] = Player.attributes.INT;
-            _originalAttributes["AGI"] = Player.attributes.AGI;
-            _originalAttributes["END"] = Player.attributes.END;
-            _originalAttributes["WIS"] = Player.attributes.WIS;
+            // ✅ FIXED: Use enum keys
+            _originalAttributes[AttributeType.STR] = Player.attributes.STR;
+            _originalAttributes[AttributeType.INT] = Player.attributes.INT;
+            _originalAttributes[AttributeType.AGI] = Player.attributes.AGI;
+            _originalAttributes[AttributeType.END] = Player.attributes.END;
+            _originalAttributes[AttributeType.WIS] = Player.attributes.WIS;
         }
         
-        // ✅ FIX: Cleaner attribute modification with string key
-        private void ModifyAttribute(string attributeName, int change)
+        // ✅ FIXED: Use enum parameter instead of string
+        private void ModifyAttribute(AttributeType attributeType, int change)
         {
-            ref int tempAttribute = ref GetTempAttribute(attributeName);
-            int originalValue = _originalAttributes[attributeName];
+            ref int tempAttribute = ref GetTempAttribute(attributeType);
+            int originalValue = _originalAttributes[attributeType];
             
             if (change > 0)
             {
@@ -189,17 +190,17 @@ namespace Ascension.UI
             RefreshUI();
         }
         
-        // Helper to get reference to temp attribute by name
-        private ref int GetTempAttribute(string attributeName)
+        // ✅ FIXED: Use enum parameter instead of string
+        private ref int GetTempAttribute(AttributeType attributeType)
         {
-            switch (attributeName)
+            switch (attributeType)
             {
-                case "STR": return ref tempSTR;
-                case "INT": return ref tempINT;
-                case "AGI": return ref tempAGI;
-                case "END": return ref tempEND;
-                case "WIS": return ref tempWIS;
-                default: throw new System.ArgumentException($"Invalid attribute: {attributeName}");
+                case AttributeType.STR: return ref tempSTR;
+                case AttributeType.INT: return ref tempINT;
+                case AttributeType.AGI: return ref tempAGI;
+                case AttributeType.END: return ref tempEND;
+                case AttributeType.WIS: return ref tempWIS;
+                default: throw new System.ArgumentException($"Invalid attribute: {attributeType}");
             }
         }
         
@@ -240,11 +241,12 @@ namespace Ascension.UI
         
         private void UpdateAttributeDisplay()
         {
-            if (strValueText) strValueText.text = FormatAttributeText(_originalAttributes["STR"], tempSTR);
-            if (intValueText) intValueText.text = FormatAttributeText(_originalAttributes["INT"], tempINT);
-            if (agiValueText) agiValueText.text = FormatAttributeText(_originalAttributes["AGI"], tempAGI);
-            if (endValueText) endValueText.text = FormatAttributeText(_originalAttributes["END"], tempEND);
-            if (wisValueText) wisValueText.text = FormatAttributeText(_originalAttributes["WIS"], tempWIS);
+            // ✅ FIXED: Use enum keys
+            if (strValueText) strValueText.text = FormatAttributeText(_originalAttributes[AttributeType.STR], tempSTR);
+            if (intValueText) intValueText.text = FormatAttributeText(_originalAttributes[AttributeType.INT], tempINT);
+            if (agiValueText) agiValueText.text = FormatAttributeText(_originalAttributes[AttributeType.AGI], tempAGI);
+            if (endValueText) endValueText.text = FormatAttributeText(_originalAttributes[AttributeType.END], tempEND);
+            if (wisValueText) wisValueText.text = FormatAttributeText(_originalAttributes[AttributeType.WIS], tempWIS);
             
             UpdatePointsDisplay();
         }
@@ -314,11 +316,12 @@ namespace Ascension.UI
         
         private void UpdateMinusButtons()
         {
-            strMinusBtn.interactable = tempSTR > _originalAttributes["STR"];
-            intMinusBtn.interactable = tempINT > _originalAttributes["INT"];
-            agiMinusBtn.interactable = tempAGI > _originalAttributes["AGI"];
-            endMinusBtn.interactable = tempEND > _originalAttributes["END"];
-            wisMinusBtn.interactable = tempWIS > _originalAttributes["WIS"];
+            // ✅ FIXED: Use enum keys
+            strMinusBtn.interactable = tempSTR > _originalAttributes[AttributeType.STR];
+            intMinusBtn.interactable = tempINT > _originalAttributes[AttributeType.INT];
+            agiMinusBtn.interactable = tempAGI > _originalAttributes[AttributeType.AGI];
+            endMinusBtn.interactable = tempEND > _originalAttributes[AttributeType.END];
+            wisMinusBtn.interactable = tempWIS > _originalAttributes[AttributeType.WIS];
         }
         #endregion
         
@@ -332,37 +335,24 @@ namespace Ascension.UI
             }
             
             ApplyAttributeChanges();
-            SaveChanges();
-            RefreshExternalUI();
+            GameManager.Instance.SaveGame();
             
             Debug.Log($"[ProfilePanelManager] Allocated {tempPointsSpent} attribute points");
             
             tempPointsSpent = 0;
             RefreshUI();
         }
-        
+
         private void ApplyAttributeChanges()
         {
-            Player.attributes.STR = tempSTR;
-            Player.attributes.INT = tempINT;
-            Player.attributes.AGI = tempAGI;
-            Player.attributes.END = tempEND;
-            Player.attributes.WIS = tempWIS;
-            Player.levelSystem.unallocatedPoints -= tempPointsSpent;
+            var tempAttributes = new CharacterAttributes(tempSTR, tempINT, tempAGI, tempEND, tempWIS);
             
-            Player.RecalculateStats(BaseStats, fullHeal: false);
-        }
-        
-        private void SaveChanges()
-        {
-            GameManager.Instance.SaveGame();
-        }
-        
-        private void RefreshExternalUI()
-        {
-            PlayerHUD hud = FindObjectOfType<PlayerHUD>();
-            if (hud != null) 
-                hud.RefreshHUD();
+            bool success = CharacterManager.Instance.ApplyAttributePoints(tempAttributes, tempPointsSpent);
+            
+            if (!success)
+            {
+                Debug.LogError("[ProfilePanelManager] Failed to apply attribute points!");
+            }
         }
         
         private void OnBackClicked()

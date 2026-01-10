@@ -8,9 +8,9 @@ using System;
 using Ascension.Core;
 using Ascension.Data.Save;
 using Ascension.Data.SO.Item;
-using Ascension.Data.SO.Character;
 using Ascension.Character.Stat;
-using Ascension.Equipment.Manager; // ✅ ADD THIS
+using Ascension.Data.SO.Character;
+using Ascension.Equipment.Manager;
 
 namespace Ascension.Character.Manager
 {
@@ -156,6 +156,29 @@ namespace Ascension.Character.Manager
         #endregion
 
         #region Public Methods - Player Actions
+
+        /// <summary>
+        /// Apply multiple attribute point allocations at once
+        /// </summary>
+        public bool ApplyAttributePoints(CharacterAttributes newAttributes, int pointsSpent)
+        {
+            if (!HasActivePlayer) return false;
+
+            if (_currentPlayer.UnallocatedPoints < pointsSpent)
+            {
+                Debug.LogWarning("[CharacterManager] Not enough unallocated points!");
+                return false;
+            }
+
+            _currentPlayer.attributes.CopyFrom(newAttributes);
+            _currentPlayer.levelSystem.unallocatedPoints -= pointsSpent;
+            
+            RecalculateStats();
+            
+            Debug.Log($"[CharacterManager] Applied {pointsSpent} attribute points");
+            return true;
+        }
+
         public void AddExperience(int amount)
         {
             if (!HasActivePlayer) return;

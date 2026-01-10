@@ -77,22 +77,28 @@ namespace Ascension.UI
                 return;
             }
 
-            cm.OnPlayerLoaded += _ => RefreshHUD();
-            cm.OnCharacterStatsChanged += _ => RefreshHUD();
-            cm.OnHealthChanged += (_, _) => RefreshHUDSafe();
-            cm.OnLevelUp += _ => RefreshHUDSafe();
+            cm.OnPlayerLoaded += HandlePlayerLoaded;              // ✅ Named method
+            cm.OnCharacterStatsChanged += HandleStatsChanged;    // ✅ Named method
+            cm.OnHealthChanged += HandleHealthChanged;           // ✅ Named method
+            cm.OnLevelUp += HandleLevelUp;                       // ✅ Named method
         }
 
         private void UnsubscribeFromEvents()
         {
             var cm = CharacterManager.Instance;
-            if (cm == null) return;
+            if (cm == null) return;  // ✅ Guard against null
 
-            cm.OnPlayerLoaded -= _ => RefreshHUD();
-            cm.OnCharacterStatsChanged -= _ => RefreshHUD();
-            cm.OnHealthChanged -= (_, _) => RefreshHUDSafe();
-            cm.OnLevelUp -= _ => RefreshHUDSafe();
+            cm.OnPlayerLoaded -= HandlePlayerLoaded;
+            cm.OnCharacterStatsChanged -= HandleStatsChanged;
+            cm.OnHealthChanged -= HandleHealthChanged;
+            cm.OnLevelUp -= HandleLevelUp;
         }
+
+        // Event Handlers
+        private void HandlePlayerLoaded(CharacterStats stats) => RefreshHUD();
+        private void HandleStatsChanged(CharacterStats stats) => RefreshHUD();
+        private void HandleHealthChanged(float current, float max) => RefreshHUDSafe();
+        private void HandleLevelUp(int level) => RefreshHUDSafe();
 
         private void RefreshHUDSafe()
         {
