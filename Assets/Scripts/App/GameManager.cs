@@ -1,13 +1,18 @@
-// ════════════════════════════════════════════
-// Assets\Scripts\AppFlow\GameManager.cs
-// Central game manager handling player state, saves, and scene transitions
-// ════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════
+// Assets/Scripts/App/GameManager.cs
+// ✅ UPDATED: Uses SceneConfigSO instead of hardcoded scene lists
+// ════════════════════════════════════════════════════════════════════════
 
 using System;
 using UnityEngine;
+using System.Collections;
+using UnityEngine.SceneManagement;
 using Ascension.Core;
 using Ascension.Character.Stat;
+using Ascension.Character.Manager;
+using Ascension.Data.SO;
 using Ascension.Data.SO.Character;
+using Ascension.Data.Config;
 
 namespace Ascension.App
 {
@@ -17,27 +22,30 @@ namespace Ascension.App
         public static GameManager Instance { get; private set; }
         #endregion
         
-        #region Injected Controllers
-        private SaveController _saveController;
-        private PlayerStateController _playerStateController;
-        private SceneController _sceneController;
+        #region Scene Configuration
+        [Header("Scene Configuration")]
+        [SerializeField] private SceneManifest sceneManifest;
+        #endregion
+        
+        #region Injected Dependencies
+        private SaveManager _saveManager;
+        private CharacterManager _characterManager;
         #endregion
         
         #region Runtime State
         [Header("Session Data (Read Only)")]
         [SerializeField] private float sessionPlayTime = 0f;
+        [SerializeField] private bool isAvatarCreationComplete = false;
+        
         #endregion
         
         #region Properties
-        public CharacterStats CurrentPlayer => _playerStateController?.CurrentPlayer;
-        public CharacterBaseStatsSO BaseStats => GetBaseStatsFromCharacterManager();
-        public bool HasActivePlayer => _playerStateController != null && _playerStateController.HasActivePlayer;
-        #endregion
-        
-        #region Events
-        public event Action<CharacterStats> OnPlayerLoaded;
-        public event Action OnPlayerSaved;
-        public event Action OnNewGameStarted;
+        public CharacterStats CurrentPlayer => _characterManager?.CurrentPlayer;
+        public CharacterBaseStatsSO BaseStats => _characterManager?.BaseStats;
+        public bool HasActivePlayer => _characterManager != null && _characterManager.HasActivePlayer;
+        public bool IsAvatarCreationComplete => isAvatarCreationComplete;
+        public float SessionPlayTime => sessionPlayTime;
+        public string CurrentMainScene => SceneFlowManager.Instance?.CurrentMainScene ?? "NONE";
         #endregion
         
         #region Unity Callbacks
@@ -46,11 +54,6 @@ namespace Ascension.App
             InitializeSingleton();
         }
 
-        private void OnDestroy()
-        {
-            UnsubscribeFromEvents();
-        }
-        
         private void Update()
         {
             if (HasActivePlayer)
@@ -74,6 +77,11 @@ namespace Ascension.App
                 SaveGame();
             }
         }
+        
+        private void OnDestroy()
+        {
+            UnsubscribeFromManagerEvents();
+        }
         #endregion
         
         #region Initialization
@@ -89,176 +97,276 @@ namespace Ascension.App
             Debug.Log("[GameManager] Singleton created");
         }
 
-        /// <summary>
-        /// ✅ FIXED: Called by ServiceContainer after all services are registered
-        /// This ensures dependencies are available
-        /// </summary>
         public void Initialize()
         {
             Debug.Log("[GameManager] Initializing...");
             
-            InjectControllers();
-            ValidateControllers();
-            SubscribeToControllerEvents();
+            ValidateSceneConfig();
+            InjectDependencies();
+            ValidateDependencies();
+            SubscribeToManagerEvents();
             
             Debug.Log("[GameManager] Ready");
         }
 
-        private void InjectControllers()
+        private void ValidateSceneConfig()
+        {
+            if (sceneManifest == null)
+            {
+                Debug.LogError("[GameManager] SceneManifest is not assigned! Please assign it in the Inspector.", this);
+            }
+            else
+            {
+                Debug.Log($"[GameManager] Scene manifest loaded: {sceneManifest.name}");
+            }
+        }
+
+        private void InjectDependencies()
         {
             var container = ServiceContainer.Instance;
             
             if (container == null)
             {
-                Debug.LogError("[GameManager] ServiceContainer is null during initialization!");
+                Debug.LogError("[GameManager] ServiceContainer is null!");
                 return;
             }
 
-            _saveController = container.Get<SaveController>();
-            _playerStateController = container.Get<PlayerStateController>();
-            _sceneController = container.Get<SceneController>();
+            _saveManager = container.GetRequired<SaveManager>();
+            _characterManager = container.GetRequired<CharacterManager>();
         }
 
-        private void ValidateControllers()
+        private void ValidateDependencies()
         {
-            if (_saveController == null)
-                Debug.LogError("[GameManager] SaveController not found!");
+            if (_saveManager == null)
+                throw new InvalidOperationException("SaveManager not found in ServiceContainer!");
             
-            if (_playerStateController == null)
-                Debug.LogError("[GameManager] PlayerStateController not found!");
-            
-            if (_sceneController == null)
-                Debug.LogError("[GameManager] SceneController not found!");
+            if (_characterManager == null)
+                throw new InvalidOperationException("CharacterManager not found in ServiceContainer!");
         }
 
-        private void SubscribeToControllerEvents()
+        private void SubscribeToManagerEvents()
         {
-            if (_saveController != null)
+            if (_characterManager != null)
             {
-                _saveController.OnSaveCompleted += HandleSaveCompleted;
-            }
-
-            if (_playerStateController != null)
-            {
-                _playerStateController.OnPlayerLoaded += HandlePlayerLoaded;
+                _characterManager.OnPlayerLoaded += HandlePlayerLoaded;
             }
         }
 
-        private void HandleSaveCompleted()
+        private void UnsubscribeFromManagerEvents()
         {
-            OnPlayerSaved?.Invoke();
+            if (_characterManager != null)
+            {
+                _characterManager.OnPlayerLoaded -= HandlePlayerLoaded;
+            }
         }
 
         private void HandlePlayerLoaded(CharacterStats stats)
         {
-            OnPlayerLoaded?.Invoke(stats);
-        }
-
-        private void UnsubscribeFromEvents()
-        {
-            if (_saveController != null)
-            {
-                _saveController.OnSaveCompleted -= HandleSaveCompleted;
-            }
-
-            if (_playerStateController != null)
-            {
-                _playerStateController.OnPlayerLoaded -= HandlePlayerLoaded;
-            }
+            GameEvents.TriggerGameLoaded(stats);
         }
         #endregion
         
-        #region Public API - Game Flow
-        public void StartNewGame()
+        // ════════════════════════════════════════════════════════════════
+        // PUBLIC API - GAME FLOW
+        // ════════════════════════════════════════════════════════════════
+        
+        public void StartNewGame(string playerName = "Adventurer")
         {
-            _playerStateController?.StartNewGame("Adventurer");
-            sessionPlayTime = 0f;
+            if (_characterManager == null)
+            {
+                Debug.LogError("[GameManager] Cannot start new game - CharacterManager missing!");
+                return;
+            }
             
-            OnNewGameStarted?.Invoke();
-            Debug.Log("[GameManager] New game started");
+            _characterManager.CreateNewPlayer(playerName);
+            sessionPlayTime = 0f;
+            isAvatarCreationComplete = false;
+            
+            GameEvents.TriggerNewGameStarted(CurrentPlayer);
+            
+            Debug.Log($"[GameManager] New game started: {playerName}");
         }
         
         public void SetPlayerName(string playerName)
         {
-            _playerStateController?.SetPlayerName(playerName);
+            if (!HasActivePlayer)
+            {
+                Debug.LogWarning("[GameManager] No active player to rename!");
+                return;
+            }
+            
+            CurrentPlayer.playerName = playerName;
+            GameEvents.TriggerPlayerNameChanged(playerName);
+            
+            Debug.Log($"[GameManager] Player name set: {playerName}");
         }
 
         public void CompleteAvatarCreation()
         {
-            _playerStateController?.CompleteAvatarCreation();
+            isAvatarCreationComplete = true;
+            Debug.Log("[GameManager] Avatar creation completed - saves now enabled");
         }
-        
+
         public bool SaveGame()
         {
-            if (!CanSave()) return false;
+            if (!CanSave())
+            {
+                Debug.LogWarning("[GameManager] Cannot save - conditions not met");
+                return false;
+            }
             
-            return _saveController != null && _saveController.SaveGame(sessionPlayTime);
+            bool success = _saveManager.SaveGame(CurrentPlayer, sessionPlayTime);
+            
+            if (success)
+            {
+                GameEvents.TriggerGameSaved();
+                Debug.Log("[GameManager] Game saved successfully");
+            }
+            
+            return success;
         }
 
         public bool LoadGame()
         {
-            bool success = _saveController != null && _saveController.LoadGame();
+            if (_saveManager == null)
+            {
+                Debug.LogError("[GameManager] Cannot load - SaveManager missing!");
+                return false;
+            }
+            
+            bool success = _saveManager.LoadGame();
             
             if (success)
             {
                 sessionPlayTime = 0f;
-                _playerStateController?.CompleteAvatarCreation();
+                isAvatarCreationComplete = true;
+                
+                Debug.Log("[GameManager] Game loaded successfully");
             }
             
             return success;
         }
         
-        public bool SaveExists()
-        {
-            return _saveController != null && _saveController.SaveExists();
-        }
+        public bool SaveExists() => _saveManager != null && _saveManager.SaveExists();
         
         public bool DeleteSave()
         {
-            return _saveController != null && _saveController.DeleteSave();
+            if (_saveManager == null) return false;
+            
+            bool success = _saveManager.DeleteSave();
+            
+            if (success)
+            {
+                if (_characterManager != null)
+                {
+                    _characterManager.UnloadPlayer();
+                }
+                
+                isAvatarCreationComplete = false;
+                sessionPlayTime = 0f;
+                
+                GameEvents.TriggerSaveDeleted();
+                Debug.Log("[GameManager] Save deleted");
+            }
+            
+            return success;
         }
 
-        private bool CanSave()
+        public bool CanSave()
         {
-            return _playerStateController != null && _playerStateController.CanSave();
+            if (!HasActivePlayer)
+            {
+                Debug.LogWarning("[GameManager] No active player to save!");
+                return false;
+            }
+            
+            if (!isAvatarCreationComplete)
+            {
+                Debug.LogWarning("[GameManager] Avatar creation not complete!");
+                return false;
+            }
+            
+            return true;
         }
-        #endregion
         
-        #region Public API - Player Actions
+        // ════════════════════════════════════════════════════════════════
+        // PUBLIC API - PLAYER ACTIONS
+        // ════════════════════════════════════════════════════════════════
+        
         public bool AddExperience(int amount)
         {
-            if (_playerStateController == null) return false;
+            if (!HasActivePlayer) return false;
             
-            bool leveledUp = _playerStateController.AddExperience(amount);
+            int oldLevel = CurrentPlayer.Level;
+            _characterManager.AddExperience(amount);
+            
+            bool leveledUp = CurrentPlayer.Level > oldLevel;
+            
+            GameEvents.TriggerExperienceGained(amount, CurrentPlayer.CurrentEXP);
             
             if (leveledUp)
             {
+                GameEvents.TriggerLevelUp(CurrentPlayer.Level);
                 SaveGame();
             }
             
             return leveledUp;
         }
 
-        public void Heal(float amount) => _playerStateController?.Heal(amount);
-        public void TakeDamage(float amount) => _playerStateController?.TakeDamage(amount);
-        public void FullHeal() => _playerStateController?.FullHeal();
-        #endregion
-        
-        #region Public API - Scene Management
-        public void LoadScene(string sceneName) => _sceneController?.LoadScene(sceneName);
-        public void LoadSceneWithSave(string sceneName) => _sceneController?.LoadSceneWithSave(sceneName, sessionPlayTime);
-        public void GoToMainBase() => _sceneController?.GoToMainBase();
-        public void ResetAndCreateNewCharacter() => _sceneController?.ResetAndCreateNewCharacter();
-        public void ReturnToMainBase() => _sceneController?.ReturnToMainBase(sessionPlayTime);
-        public void OnActivityCompleted() => _sceneController?.OnActivityCompleted(sessionPlayTime);
-        #endregion
-
-        #region Private Helpers
-        private CharacterBaseStatsSO GetBaseStatsFromCharacterManager()
+        public void Heal(float amount)
         {
-            var charManager = ServiceContainer.Instance?.Get<Ascension.Character.Manager.CharacterManager>();
-            return charManager?.BaseStats;
+            if (!HasActivePlayer) return;
+            
+            _characterManager.Heal(amount);
+            GameEvents.TriggerHealthChanged(CurrentPlayer.CurrentHP, CurrentPlayer.MaxHP);
         }
-        #endregion
+
+        public void TakeDamage(float amount)
+        {
+            if (!HasActivePlayer) return;
+            
+            _characterManager.TakeDamage(amount);
+            GameEvents.TriggerHealthChanged(CurrentPlayer.CurrentHP, CurrentPlayer.MaxHP);
+        }
+
+        public void FullHeal()
+        {
+            if (!HasActivePlayer) return;
+            
+            _characterManager.FullHeal();
+            GameEvents.TriggerHealthChanged(CurrentPlayer.CurrentHP, CurrentPlayer.MaxHP);
+        }
+        
+        // ════════════════════════════════════════════════════════════════
+        // DEBUG HELPERS
+        // ════════════════════════════════════════════════════════════════
+        
+        [ContextMenu("Debug: Print Loaded Scenes")]
+        private void DebugPrintLoadedScenes()
+        {
+            Debug.Log("=== LOADED SCENES ===");
+            Debug.Log($"Current Main Scene: {SceneFlowManager.Instance?.CurrentMainScene ?? "NONE"}"); // ✅ NEW
+            Debug.Log($"Current UI Scene: {SceneFlowManager.Instance?.CurrentUIScene ?? "NONE"}"); // ✅ ADD THIS
+            Debug.Log($"Active Scene: {SceneManager.GetActiveScene().name}");
+            Debug.Log($"Total Loaded Scenes: {SceneManager.sceneCount}");
+            
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                Scene scene = SceneManager.GetSceneAt(i);
+                string status = scene.isLoaded ? "✓ Loaded" : "✗ Unloaded";
+                string active = SceneManager.GetActiveScene() == scene ? " [ACTIVE]" : "";
+                
+                // Show scene type from manifest
+                string type = "";
+                if (sceneManifest != null)
+                {
+                    if (sceneManifest.IsContentScene(scene.name)) type = "[CONTENT]";
+                    else if (sceneManifest.IsUIScene(scene.name)) type = "[UI]";
+                    else if (sceneManifest.IsPersistentScene(scene.name)) type = "[PERSISTENT]";
+                }
+                
+                Debug.Log($"  [{i}] {type} {scene.name}: {status}{active}");
+            }
+        }
     }
 }

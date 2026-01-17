@@ -2,35 +2,40 @@
 
 Canvas
 ├── BackgroundLayer (empty GameObject)
-│     └── MainBackground (Image)
+│    └── MainBackground (Image)
 │
 ├── HUDLayer (empty GameObject)
-│    └── PlayerHUD (prefab)
-│         ├── PlayerInfo
-│         │    ├── background (image)
-│         │    ├── PlayerProfile
-│         │    │    └── PlayerIMG
-│         │    │
-│         │    ├── PlayerName (TMP)
-│         │    ├── PlayerLevel (TMP)
-│         │    │
-│         │    ├── HealthBar
-│         │    │    ├── background
-│         │    │    ├── Fill
-│         │    │    └── Percentage (TMP)
-│         │    │
-│         │    ├── ExpBar
-│         │         ├── background
-│         │         ├── Fill
-│         │         └── ExpCap (TMP)
-│         │
-│         ├── GameMenu (prefab)
-│              └── Gridpanel (GridLayout component)
-│                   ├── WorldMapButton (Button)
-│                   ├── ProfileButton (Button)
-│                   ├── InventoryButton (Button)
-│                   ├── QuestButton (Button)
-│                   └── CodexButton (Button)
+│    └── PlayerStatusHeader
+│        ├── Background
+│        │
+│        ├── PlayerIdentity
+│        │   ├── AvatarImage
+│        │   ├── PlayerNameText
+│        │   └── PlayerLevelText
+│        │
+│        ├── HealthBar
+│        │   ├── Background
+│        │   ├── Fill
+│        │   └── PercentageText
+│        │
+│        ├── ExpBar
+│        │   ├── Background
+│        │   ├── Fill
+│        │   └── ExpCapText
+│        │
+│        └── WorldStatusRow
+│            ├── LocationText
+│            ├── GameTimeText
+│            └── StatusEffectContainer
+│                └── StatusEffectIcon
+│ 
+├── GlobalMenuLayer       (should i name this menu or navigation)
+│    └── MenuGrid
+│          ├── WorldMapButton
+│          ├── ProfileButton
+│          ├── InventoryButton
+│          ├── QuestButton
+│          └── CodexButton
 │
 ├── MainPanelsLayer (empty GameObject)
 │     ├── MainBasePanel
@@ -47,67 +52,13 @@ Canvas
 │     │          ├── ButtonBox
 │     │          └── ...
 │     │
-│     ├── EquipmentRoomPanel (Full screen)
-│     │     ├── Roomheader
-│     │     ├── PlayerPreview (prefab has a script already just ereuse it)
-│     │     ├── GearSection
-│     │     │    ├── GearHeader
-│     │     │    │    ├── title
-│     │     │    │
-│     │     │    ├── GearContainer
-│     │     │    │    ├── WeaponSlot
-│     │     │    │    ├── HelmetSlot
-│     │     │    │    ├── ChestPlateSlot
-│     │     │    │    ├── GlovesSlot
-│     │     │    │    ├── BootsSlot
-│     │     │    │    ├── Accessory1Slot
-│     │     │    │    ├── Accessory2Slot
-│     │     │    │
-│     │     │    ├── HotBarContainer
-│     │     │         ├── NormalSkillSlot1
-│     │     │         ├── NormalSkillSlot2
-│     │     │         ├── UltimateSkillSlot
-│     │     │         ├── Item1
-│     │     │         ├── Item2
-│     │     │         ├── Item3
-│     │     │
-│     │     ├── StorageSection (Gear: only show Weapon, Gear, and Potions) (Abilities: only show ability)
-│     │           ├── StorageHeader
-│     │           │    ├── background
-│     │           │    ├── Title
-│     │           │    ├── GearButton (switch the storage to Gear)
-│     │           │    ├── AbilitiesButton (switch the storage to Abilities)
-│     │           │    ├── SortSection
-│     │           │         └── SortButtons
-│     │           │              ├── GearSortButtons (sort for Gear)
-│     │           │              │    ├── AllButton 
-│     │           │              │    ├── WeaponsButton 
-│     │           │              │    ├── HelmetsButton 
-│     │           │              │    ├── ChestsButton 
-│     │           │              │    ├── GlovesButton 
-│     │           │              │    ├── BootsButton 
-│     │           │              │    ├── AccessoriesButton 
-│     │           │              │    └── PotionsButton
-│     │           │              │
-│     │           │              ├── AbilitiesSortButtons (sort for Abilities)
-│     │           │
-│     │           └── StoragePanel (Prefab) (sotage Gear / Abilities)
-│     │                └── StorageViewport
-│     │                     └── StorageContent (GridLayoutGroup)
-│     │                          ├── ItemSlot (Button)
-│     │                          │    ├── rarity (image)
-│     │                          │    ├── Button
-│     │                          │    ├── ItemIcon (Image)
-│     │                          │    ├── EquipedIndicator
-│     │                          │    └── Quantity (TMP - max x999 after that new slot)
-│     │                          ├── ...
-│     │
+│      
 ├── StorageRoomPanel    (fills screen)
 │    ├── Roomheader
 │    │    ├── backButton
 │    │    └── Title
 │    │
-│    ├── BagInventorySection (Players Bag 12 Max slots (can be increase by equipable bag))
+│    ├── BagInventoryUI (Players Bag 12 Max slots (can be increase by equipable bag))
 │    │    ├── Bagheader
 │    │    │    ├── Title
 │    │    │    └── StoreAllButton
@@ -137,7 +88,7 @@ Canvas
 │    │         ├── GPS_Acc1
 │    │         └── GPS_Acc2
 │    │
-│    └── StorageSection (All Items Player have including weapon, misc, potion, gear, materials, etc)
+│    └── StorageInventoryUI (All Items Player have including weapon, misc, potion, gear, materials, etc)
 │         ├── Storageheader
 │         │    ├── background
 │         │    └── Title
@@ -158,7 +109,14 @@ Canvas
 │                        │    ├── EquipedIndicator
 │                        │    └── Quantity (TMP - max x999 after that new slot)
 │                        ├── ...
-
+│ 
+├── Cooking Panel (Future)
+│ 
+├── Potion brewing Panel (Future)
+│ 
+├── Crafting Panel (Future)
+│
+├── more Panel in the future
 │ 
 ├── MenuPanelsLayer (empty GameObject)
 │     ├── ProfilePanel (Full screen)
@@ -167,6 +125,44 @@ Canvas
 │     │     ├── PlayerPreview
 │     │     └── AttributeStatsSection
 │     
+├── InventoryPanel (Prefab) (prssing her in this panel outside the EquippedGearPreview and BagInventoryUI should close the bag) (only Bag  and equiped Gear display)
+│    ├── EquippedGearPreview
+│        ├── PreviewContent
+│        │    ├── GPS_Weapon
+│        │    │    ├── Background   ← Image
+│        │    │    ├── Icon         ← Image
+│        │    │    ├── EmptyOverlay ← Image or GO
+│        │    │    └── Label        ← TMP_Text (optional)
+│        │    ├── GPS_Helmet
+│        │    ├── GPS_Chest
+│        │    ├── GPS_Gloves
+│        │    ├── GPS_Boots
+│        │    ├── GPS_Acc1
+│        │    └── GPS_Acc2
+│        └── BagInventoryUI
+│             ├── Background
+│             ├── BagHeader
+│             │    └── Title
+│             │    └── CloseButton
+│             └── BagPanel
+│                  └── BagViewport
+│                       └── BagContent (GridLayoutGroup)
+│                            ├── EmptySlot (Prefab)
+│                            │    ├── Button (button)
+│                            │    ├── ItemIcon (Image)
+│                            │    ├── EquipedIndicator
+│                            │    └── Quantity (TMP - max x999 after that new slot)
+│                            ├── ...
+│    
+├── QuestPanel (Prefab) (fills screen)
+│    ├── QuestHeader
+│         ├── backButton
+│         └── Title
+│
+├── CodexPanel (Prefab) (fills screen)
+│    ├── CodexHeader
+│         ├── backButton
+│         └── Title
 
 
 ├── PopupLayer (empty GameObject)

@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // Assets\Scripts\Core\ServiceContainer.cs
-// Centralized service locator and lifecycle manager
+// ✅ FIXED: Added SceneFlowManager to initialization order
 // ═══════════════════════════════════════════════════════════════════════════════
 
 using System;
@@ -117,7 +117,7 @@ namespace Ascension.Core
         }
 
         /// <summary>
-        /// ✅ UPDATED: Changed HotbarManager → SkillLoadoutManager
+        /// ✅ FIXED: Added SceneFlowManager to initialization order
         /// </summary>
         private void InitializeAllServices()
         {
@@ -129,12 +129,10 @@ namespace Ascension.Core
                 typeof(SaveManager),                                    // Must be first (no dependencies)
                 typeof(Ascension.Character.Manager.CharacterManager),   // Depends on SaveManager
                 typeof(Ascension.Inventory.Manager.InventoryManager),   // Depends on CharacterManager
-                typeof(PlayerStateController),                          // Depends on CharacterManager
                 typeof(EquipmentManager),                               // Depends on InventoryManager
-                typeof(SkillLoadoutManager),                            // ✅ RENAMED from HotbarManager
-                typeof(SaveController),                                 // Depends on all managers
-                typeof(SceneController),                                // Depends on SaveController
-                typeof(Ascension.App.GameManager)                       // Orchestrator (depends on all)
+                typeof(SkillLoadoutManager),                            // Depends on EquipmentManager (skills from weapon)
+                typeof(Ascension.App.GameManager),                      // Orchestrator (depends on all)
+                typeof(SceneFlowManager)                                // ✅ ADDED: Scene flow manager
             };
 
             // Initialize services in order
@@ -256,6 +254,7 @@ namespace Ascension.Core
             allPresent &= ValidateService<SaveManager>("SaveManager");
             allPresent &= ValidateService<Ascension.Character.Manager.CharacterManager>("CharacterManager");
             allPresent &= ValidateService<Ascension.Inventory.Manager.InventoryManager>("InventoryManager");
+            allPresent &= ValidateService<SceneFlowManager>("SceneFlowManager"); // ✅ ADDED
 
             if (!allPresent)
             {

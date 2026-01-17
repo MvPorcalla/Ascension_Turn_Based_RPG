@@ -279,41 +279,252 @@ public void RunAllTests()
 
 =============================================
 
-Enhancement 2: Filter State Persistence
-csharp// In StorageInventoryUI.cs
-private const string FILTER_PREF_KEY = "StorageFilter";
+---
 
-private void SetFilter(ItemType? filterType)
+Check Popup and Toast at Assets\Scripts\UI if this is purely UI and no data logic
+
+---
+
+TODO: Critical
+
+this error show when i try to enter playmode
+
+Failed to present D3D11 swapchain due to device reset/removed. This error can happen if you draw or dispatch very expensive workload to the GPU, which can cause Windows to detect a GPU Timeout and reset device
+
+---
+
+when the game is still loading, the gamemenu is alread loaded so if i press the buttons worldmap and it loaded before the mainbase, the main base replace it after the loading  is done for mainbase and if i press the button again its says it already loaded even when the ui is still in the mainbase
+
+also i tried the manifest config i tried setting hte UIO behavior for worldMap for the Show PlayerHUD and show GlobalMenu to False but it still show the HUD and GameMenu why?
+
+---
+
+TODO:
+
+Did I design this scene flow correctly?
+Please review it for:
+Critical architectural errors Data leaks or lifecycle issues (especially with DontDestroyOnLoad) Redundant steps or unnecessary scene loads Inconsistent patterns or responsibilities Long-term maintainability problems for a solo dev
+I want to know if this flow is solid, or if there are hidden risks that will bite me later.
+Don’t be polite. If this is over-engineered, fragile, or masking bad design, call it out and explain why.
+you can ask me for code you want to see to review to have full picture of the code architecture
+
+Do you agree with this Findings:
+
+Immediate Action Items
+
+High Priority:
+- Remove Bootstrap scene after initialization - managers survive via DontDestroyOnLoad
+- Delete ICommand pattern - you don't need it yet
+- Fix CharacterCreation to pass initial data - don't create player twice
+- Merge scene loading into ONE system - GameManager OR SceneFlowManager, not both
+
+Medium Priority: 
+5. Replace SceneConfigSO arrays with scene manifest 
+6. Use OnEnable/OnDisable for event subscriptions - not Start/OnDestroy 
+7. Add scene validation in editor - build-time errors, not runtime
+
+Low Priority (Future): 
+8. Consider replacing static GameEvents with an injected EventBus if you need filtering/priorities 
+9. Add scene preloading for faster transitions 
+10. Add scene transition animations
+
+Bottom Line
+Your core architecture (ServiceContainer → Managers → GameEvents → UI) is solid.
+Your scene flow is overcomplicated with redundant validation and unclear ownership.
+You have speculative code (ICommand, scene categories) that adds complexity without proven value.
+
+---
+
+scene Load behaviour
+
+my active scene when i play is 
+
+what i see when i enter playmode in my Heirarchy
+01_Boostrap
+02_PersistentUI this occupy header and footer
+04_Mainbase.unity -> occupy middle (this gets highlited tho i dont know why even when i enter UI_WorldMap and still active)
+│   └── --- SYSTEMS ---
+│       └── Controller <- script
+├── Canvas
+│   ├── BackgroundLayer
+│   │   └── MainBackground
+│   ├── MainPanelsLayer ← ✅ CORE NAVIGATION ()   <- this still active even when UI_WorldMap is already open
+│       └── MainBasePanel (room selection grid)
+
+# UI Scene
+
+UI_Storage.unity (Load when entering WorldMap)
+└── Canvas
+    └── WorldMapPanel
+[DontDestroy]
+
+
+is this normal behaviour? or is this what it should do?
+
+this is what the debug say
+  [0] [PERSISTENT] 01_Bootstrap: ✓ Loaded
+  [1] [PERSISTENT] 02_UIPersistent: ✓ 
+  [2] [CONTENT] 04_MainBase: ✓ Loaded [ACTIVE]
+  [3] [UI] UI_WorldMap: ✓ Loaded
+
+---
+
+**TODO: Critical Issue**
+
+I think that if there is **no avatar yet**, `02_UIPersistent` should **not** be loaded. Instead, it should go to `03_AvatarCreation`, so the only scenes loaded in the hierarchy are:
+
+```
+01_Bootstrap
+03_AvatarCreation
+```
+
+
+Issue i found
+
+TODO: Critical - when player_data.json data half of it got deleted or curropted it dont go back to the previous backup instead it just make a backup of the tempered data
+
+behaviour i play a game then exit i tempered the data like deleting half of the data and instead of going to the old backup with the correct data it makes a backup of the tempered data instead, also if i delete half of the json data like the structure got destroyed and just throw error and warning saying incomplete avaatr creation or something
+
+TODO: Critical – When player_data.json becomes partially deleted or corrupted, the system does not revert to the previous backup. Instead, it creates a backup of the corrupted data.
+
+Observed behavior:
+I play the game, then exit.
+I manually tamper with the data (e.g., delete half of the JSON).
+Instead of restoring the last valid backup, the system overwrites it with the corrupted file.
+
+Additionally, if the JSON structure is broken, it throws errors/warnings like “Incomplete avatar creation” or similar.
+
+
+TODO: issue persistent UI shoulodnot show up on 02_AvatarCreation
+
+---
+
+issue found by AI : do you agree with this? you can ask me for scripts dont assume code before giving critism or rafactor
+
+
+2. Missing NULL Check in Bootstrap
+Location: Bootstrap.cs - Line 140
+Problem:
+csharpprivate void NotifySceneFlowManager(string sceneName)
 {
-    currentFilter = filterType;
-    PlayerPrefs.SetInt(FILTER_PREF_KEY, (int)(filterType ?? -1));
-    RefreshStorage();
-    UpdateFilterButtonStates();
+    if (SceneFlowManager.Instance == null)
+    {
+        LogWarning("SceneFlowManager not available - cannot notify");
+        return; // ❌ Returns but scene loading continues without tracking!
+    }
+    
+    // ... notification logic ...
+}
+Impact:
+
+If SceneFlowManager fails to initialize, Bootstrap will load scenes but SceneFlowManager won't track them
+Subsequent scene transitions via SceneFlowManager will fail silently
+You'll see scenes loaded but SceneFlowManager.CurrentMainScene will be null
+
+3. Race Condition in ServiceContainer
+Location: ServiceContainer.cs - Line 46-61 + Bootstrap.cs - Line 72-87
+Problem:
+csharp// Bootstrap.cs
+private IEnumerator WaitForServiceContainer()
+{
+    while (!ServiceContainer.Instance.IsInitialized)
+    {
+        yield return null; // ❌ Infinite loop if initialization fails!
+    }
 }
 
+// ServiceContainer.cs - Start() can throw exceptions
 private void Start()
 {
-    // ... existing code ...
+    InitializeAllServices(); // ❌ If this throws, IsInitialized never becomes true
+    _isInitialized = true;   // This line never executes on error
+}
+Impact:
+
+If ANY service fails to initialize (throws exception), Bootstrap will hang forever
+No timeout mechanism
+Game becomes unresponsive in production builds
+
+⚠️ HIGH PRIORITY WARNINGS
+4. GameManager.LoadGame() Called Before InventoryManager is Ready
+Location: Bootstrap.cs - Line 103-116
+Problem:
+csharpprivate string DetermineTargetScene()
+{
+    if (GameManager.Instance.SaveExists())
+    {
+        if (GameManager.Instance.LoadGame()) // ❌ Calls LoadGame too early!
+        {
+            return SCENE_MAIN_BASE;
+        }
+    }
+}
+In GameManager.cs:
+csharppublic bool LoadGame()
+{
+    // This calls SaveManager.LoadGame()
+    // Which calls InventoryManager.LoadInventory()
+    // But InventoryManager might not be fully initialized yet!
+}
+Impact:
+
+LoadGame() is called immediately after WaitForServiceContainer() completes
+While services are "initialized", they may not have subscribers ready
+Example: InventoryManager loads items but UI hasn't subscribed to OnInventoryLoaded yet
+
+5. No Validation That PersistentUICanvas Actually Persisted
+Location: Bootstrap.cs - Line 92-108
+Problem:
+csharpprivate void SetupPersistentUI()
+{
+    if (persistentUICanvas != null)
+    {
+        DontDestroyOnLoad(persistentUICanvas);
+        // ❌ No verification that it actually worked!
+    }
+}
+Impact:
+
+If DontDestroyOnLoad fails silently (rare but possible), UI will disappear on scene change
+No way to detect this issue until you manually test scene transitions
+
+6. MainbasePanelController Has No Safety Checks
+Location: MainbasePanelController.cs - Line 47-69
+Problem:
+csharpprivate void OnStorageRoomClicked()
+{
+    SceneFlowManager.Instance?.OpenStorage(); // ❌ Silent failure if Instance is null
+}
+Impact:
+
+If SceneFlowManager is somehow null, button click does nothing
+No feedback to player
+Hard to debug in production
+
+7. SceneFlowManager Doesn't Validate Scene Names
+Location: SceneFlowManager.cs - Line 194
+When you call OpenUIScene("UI_Storage"), there's no validation that this scene exists in Build Settings until the load fails.
+
+8. No Error Handling in GameManager Event Subscriptions
+Location: GameManager.cs - Line 129-139
+If an event subscriber throws an exception, it will break the entire event chain.
+
+9. Issue: Double Character Creation
+Look at this flow:
+csharp// CharacterCreationManager.cs - Line 260
+GameManager.Instance.StartNewGame(characterName); // ← Creates player #1
+
+// GameManager.cs - StartNewGame()
+public void StartNewGame(string playerName = "Adventurer")
+{
+    _characterManager.CreateNewPlayer(playerName);  // ← Creates with BASE stats
+    sessionPlayTime = 0f;
+    isAvatarCreationComplete = false;  // ❌ Still false!
     
-    // Restore last filter
-    int savedFilter = PlayerPrefs.GetInt(FILTER_PREF_KEY, -1);
-    if (savedFilter >= 0)
-        currentFilter = (ItemType)savedFilter;
+    GameEvents.TriggerNewGameStarted(CurrentPlayer);
 }
 
----
-TODO: CritikaL
-
-GearPopup
-- The Button for Unequip for the Popup of the EquippedGearSlotUI.cs Dont showup why is that? did it got remove?
-
-PotionPopup
-- the button for [ Use Item ] disappaer also the Searializ Field button for add pocket is alread obsolete should be remove
-
-ItemPopup
-
-- the Searializ Field button for add pocket is alread obsolete should be remove
-
----
-
-lastly where do i put the PopupManager and PopupActionHandler script should i put it along the other singleton in the 01_Bootsrap or in the 03_MainBase scene EmptyGO where the UI is??
+// Then CharacterCreationManager.cs - Line 265
+GameManager.Instance.CurrentPlayer.attributes.CopyFrom(tempAttributes); // ← Overrides stats
+The Problem:
+GameManager.StartNewGame() sets isAvatarCreationComplete = false, but your UI already has all the custom data! Why is this a "new game" if the avatar is already created?

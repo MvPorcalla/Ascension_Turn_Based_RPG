@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════
 // Assets\Scripts\Modules\EquipmentSystem\Manager\EquipmentManager.cs
-// ✅ REFACTORED: Uses coordinator pattern, no direct inventory mutations
+// ✅ FIXED: Load equipment without modifying inventory locations
 // ════════════════════════════════════════════
 
 using System;
@@ -38,7 +38,7 @@ namespace Ascension.Equipment.Manager
         
         // Services
         private GearSlotService _slotService;
-        private GearEquipCoordinator _coordinator; // ✅ Renamed from GearEquipService
+        private GearEquipCoordinator _coordinator;
         private GearStatsService _statsService;
         
         // Dependencies
@@ -84,7 +84,7 @@ namespace Ascension.Equipment.Manager
         private void InitializeServices()
         {
             _slotService = new GearSlotService();
-            _coordinator = new GearEquipCoordinator(_slotService); // ✅ Use coordinator
+            _coordinator = new GearEquipCoordinator(_slotService);
             _statsService = new GearStatsService();
         }
 
@@ -114,9 +114,6 @@ namespace Ascension.Equipment.Manager
 
         #region Public API - Primary Methods
 
-        /// <summary>
-        /// ✅ REFACTORED: Equip item via coordinator (no direct inventory mutations)
-        /// </summary>
         public bool EquipItem(string itemId)
         {
             var result = _coordinator.EquipFromInventory(
@@ -128,7 +125,6 @@ namespace Ascension.Equipment.Manager
 
             if (result.Success)
             {
-                // Find which slot was equipped
                 var slot = _coordinator.FindEquippedSlot(_equippedGear, itemId);
                 if (slot.HasValue)
                 {
@@ -151,9 +147,6 @@ namespace Ascension.Equipment.Manager
             return result.Success;
         }
 
-        /// <summary>
-        /// ✅ REFACTORED: Unequip item by ID (via coordinator)
-        /// </summary>
         public bool UnequipItem(string itemId)
         {
             var slot = _coordinator.FindEquippedSlot(_equippedGear, itemId);
@@ -166,9 +159,6 @@ namespace Ascension.Equipment.Manager
             return UnequipSlot(slot.Value);
         }
 
-        /// <summary>
-        /// ✅ REFACTORED: Unequip specific slot (via coordinator)
-        /// </summary>
         public bool UnequipSlot(GearSlotType slotType)
         {
             var result = _coordinator.UnequipViaInventory(
@@ -198,9 +188,6 @@ namespace Ascension.Equipment.Manager
 
         #region Public API - Advanced Methods
 
-        /// <summary>
-        /// Equip to specific slot (for manual slot selection)
-        /// </summary>
         public bool EquipItemToSlot(string itemId, GearSlotType slotType)
         {
             var result = _coordinator.EquipFromInventory(
@@ -225,9 +212,6 @@ namespace Ascension.Equipment.Manager
             return result.Success;
         }
 
-        /// <summary>
-        /// Toggle equip/unequip (for button that switches state)
-        /// </summary>
         public bool ToggleEquip(string itemId)
         {
             if (IsItemEquipped(itemId))
@@ -236,9 +220,6 @@ namespace Ascension.Equipment.Manager
                 return EquipItem(itemId);
         }
 
-        /// <summary>
-        /// Swap accessory slots
-        /// </summary>
         public bool SwapAccessorySlots()
         {
             bool success = _coordinator.SwapAccessorySlots(_equippedGear);
@@ -255,49 +236,31 @@ namespace Ascension.Equipment.Manager
 
         #region Public API - Query Methods
 
-        /// <summary>
-        /// Check if an item is currently equipped
-        /// </summary>
         public bool IsItemEquipped(string itemId)
         {
             return _coordinator.IsItemEquipped(_equippedGear, itemId);
         }
 
-        /// <summary>
-        /// Get item ID in a specific slot
-        /// </summary>
         public string GetEquippedItemId(GearSlotType slotType)
         {
             return _equippedGear.GetSlot(slotType);
         }
 
-        /// <summary>
-        /// Check if a slot is empty
-        /// </summary>
         public bool IsSlotEmpty(GearSlotType slotType)
         {
             return _equippedGear.IsSlotEmpty(slotType);
         }
 
-        /// <summary>
-        /// Find which slot an item is equipped in
-        /// </summary>
         public GearSlotType? FindEquippedSlot(string itemId)
         {
             return _coordinator.FindEquippedSlot(_equippedGear, itemId);
         }
 
-        /// <summary>
-        /// Get total stats from all equipped gear
-        /// </summary>
         public CharacterItemStats GetTotalItemStats()
         {
             return _statsService.CalculateTotalStats(_equippedGear, database);
         }
 
-        /// <summary>
-        /// Get currently equipped weapon
-        /// </summary>
         public WeaponSO GetEquippedWeapon()
         {
             return _statsService.GetEquippedWeapon(_equippedGear, database);
@@ -305,12 +268,8 @@ namespace Ascension.Equipment.Manager
 
         #endregion
 
-                #region Synchronization Validation
+        #region Synchronization Validation
 
-        /// <summary>
-        /// ✅ NEW: Validates that equipment slots and inventory locations are synchronized
-        /// Call this after loading saves or after critical operations
-        /// </summary>
         [ContextMenu("Validate Equipment Sync")]
         public bool ValidateEquipmentSync()
         {
@@ -332,7 +291,6 @@ namespace Ascension.Equipment.Manager
                 
                 if (string.IsNullOrEmpty(itemId))
                 {
-                    // Empty slot is fine
                     continue;
                 }
 
@@ -379,10 +337,6 @@ namespace Ascension.Equipment.Manager
             return isValid;
         }
 
-        /// <summary>
-        /// ✅ NEW: Auto-repair synchronization issues
-        /// Call this if ValidateEquipmentSync() returns false
-        /// </summary>
         public void RepairEquipmentSync()
         {
             if (_inventoryManager == null)
@@ -413,7 +367,6 @@ namespace Ascension.Equipment.Manager
                 }
                 else if (item == null)
                 {
-                    // Item doesn't exist - clear the slot
                     Debug.LogWarning($"🔧 Repairing: Clearing slot {slot} (item {itemId} not found in inventory)");
                     _equippedGear.ClearSlot(slot);
                     repairsApplied++;
@@ -427,7 +380,6 @@ namespace Ascension.Equipment.Manager
 
             foreach (var item in orphanedItems)
             {
-                // Move back to previous location (or Bag if unknown)
                 ItemLocation targetLocation = item.previousLocation ?? ItemLocation.Bag;
                 
                 Debug.LogWarning($"🔧 Repairing: Moving orphaned item {item.itemID} from Equipped to {targetLocation}");
@@ -438,7 +390,6 @@ namespace Ascension.Equipment.Manager
 
             Debug.Log($"[EquipmentManager] === Auto-Repair Complete: {repairsApplied} fixes applied ===");
 
-            // Trigger UI refresh
             UpdateCharacterStats();
             OnEquipmentChanged?.Invoke();
         }
@@ -448,7 +399,8 @@ namespace Ascension.Equipment.Manager
         #region Public API - Save/Load
 
         /// <summary>
-        /// Load equipment from save data and validate sync
+        /// ✅ FIXED: Load equipment slots without modifying inventory locations
+        /// Inventory locations are already correct from InventoryManager.LoadInventory()
         /// </summary>
         public void LoadEquipment(EquipmentSaveData saveData)
         {
@@ -460,16 +412,17 @@ namespace Ascension.Equipment.Manager
 
             Debug.Log("[EquipmentManager] Loading equipment from save...");
 
-            // Load all slots using the new helper method
-            LoadAndEquipSlot(GearSlotType.Weapon, saveData.weaponId);
-            LoadAndEquipSlot(GearSlotType.Helmet, saveData.helmetId);
-            LoadAndEquipSlot(GearSlotType.Chest, saveData.chestId);
-            LoadAndEquipSlot(GearSlotType.Gloves, saveData.glovesId);
-            LoadAndEquipSlot(GearSlotType.Boots, saveData.bootsId);
-            LoadAndEquipSlot(GearSlotType.Accessory1, saveData.accessory1Id);
-            LoadAndEquipSlot(GearSlotType.Accessory2, saveData.accessory2Id);
+            // ✅ CRITICAL FIX: Just populate slots - DON'T modify inventory locations
+            // Inventory locations were already set correctly by InventoryManager.LoadInventory()
+            _equippedGear.weaponId = saveData.weaponId ?? string.Empty;
+            _equippedGear.helmetId = saveData.helmetId ?? string.Empty;
+            _equippedGear.chestId = saveData.chestId ?? string.Empty;
+            _equippedGear.glovesId = saveData.glovesId ?? string.Empty;
+            _equippedGear.bootsId = saveData.bootsId ?? string.Empty;
+            _equippedGear.accessory1Id = saveData.accessory1Id ?? string.Empty;
+            _equippedGear.accessory2Id = saveData.accessory2Id ?? string.Empty;
 
-            // Validate synchronization after load
+            // Validate synchronization after load (read-only check)
             bool isValid = ValidateEquipmentSync();
             
             if (!isValid)
@@ -495,39 +448,6 @@ namespace Ascension.Equipment.Manager
             Debug.Log("[EquipmentManager] Equipment loaded successfully");
         }
 
-        /// <summary>
-        /// Helper method to load and sync a single equipment slot
-        /// </summary>
-        private void LoadAndEquipSlot(GearSlotType slot, string itemId)
-        {
-            if (string.IsNullOrEmpty(itemId))
-            {
-                _equippedGear.ClearSlot(slot);
-                return;
-            }
-            
-            // Set the slot ID in EquippedGear
-            _equippedGear.SetSlot(slot, itemId);
-            
-            // ✅ CRITICAL: Update the ItemInstance location to match
-            var item = _inventoryManager.Inventory.allItems
-                .FirstOrDefault(i => i.itemID == itemId);
-            
-            if (item != null)
-            {
-                item.location = ItemLocation.Equipped;
-                Debug.Log($"[EquipmentManager] Loaded {itemId} into slot {slot}");
-            }
-            else
-            {
-                Debug.LogError($"[EquipmentManager] Item {itemId} not found in inventory during load!");
-                _equippedGear.ClearSlot(slot);  // Clear invalid slot
-            }
-        }
-
-        /// <summary>
-        /// Save equipment to data structure
-        /// </summary>
         public EquipmentSaveData SaveEquipment()
         {
             return new EquipmentSaveData
@@ -542,9 +462,6 @@ namespace Ascension.Equipment.Manager
             };
         }
 
-        /// <summary>
-        /// Unequip all gear (returns to bag/storage)
-        /// </summary>
         public void UnequipAll()
         {
             foreach (GearSlotType slot in Enum.GetValues(typeof(GearSlotType)))

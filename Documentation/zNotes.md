@@ -191,3 +191,32 @@ public static PopupContext FromShop()
 | Shop (future) | ❌ Hidden      | ❌ Hidden       | ❌ Hidden                |
 
 ---
+
+
+TODO: Move EquippedGearSlotUI.cs from storage UI to Inventory UI
+
+---
+
+TODO: Inevmtory Grid having the Max slots x - is this fine to keep or should not be editable and only can be change through the config of the Inventory system
+
+Filter have this bug where the filter active color only show up after i press something in my storage ui
+
+
+Open `SceneManifest` in Inspector and adjust:
+```
+03_AvatarCreation:
+  ✅ Category: Content
+  ✅ Show Player HUD: false
+  ✅ Show Global Menu: false
+  ✅ Allow Saving: false
+
+12_Combat:
+  ✅ Category: Content
+  ✅ Show Player HUD: true
+  ✅ Show Global Menu: false  ← Hide menu during combat
+  ✅ Allow Saving: true
+
+
+=============================
+
+Important: Before refactoring, reviewing, or giving suggestions about any code, always ask me first if you want to see the full script or relevant code context. Do not assume or guess the code—always request it before making changes.

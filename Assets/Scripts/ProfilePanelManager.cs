@@ -63,6 +63,7 @@ namespace Ascension.UI
         
         // ✅ FIXED: Use AttributeType enum instead of string
         private Dictionary<AttributeType, int> _originalAttributes = new Dictionary<AttributeType, int>();
+        private bool isInitialized = false;
         #endregion
         
         #region Properties
@@ -71,21 +72,31 @@ namespace Ascension.UI
         #endregion
         
         #region Unity Callbacks
-        private void Start()
-        {
-            SetupButtons();
-        }
-        
         private void OnEnable()
         {
             if (debugMode)
                 Debug.Log("[ProfilePanelManager] OnEnable called");
+            
+            // ✅ MOVE BUTTON SETUP HERE (in case buttons were destroyed/recreated)
+            if (!isInitialized)
+            {
+                SetupButtons();
+                isInitialized = true;
+            }
             
             if (!ValidateGameManager())
                 return;
             
             InitializeTempValues();
             RefreshUI();
+        }
+
+        private void OnDisable()
+        {
+            // ProfilePanelManager doesn't subscribe to GameEvents
+            // But good to have for consistency
+            if (debugMode)
+                Debug.Log("[ProfilePanelManager] OnDisable called");
         }
         #endregion
         

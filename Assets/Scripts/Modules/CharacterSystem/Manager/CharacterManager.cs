@@ -1,7 +1,7 @@
-// ════════════════════════════════════════════
-// Assets\Scripts\CharacterSystem\Manager\CharacterManager.cs
-// Manager for character stats and state
-// ════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════
+// Assets/Scripts/CharacterSystem/Manager/CharacterManager.cs
+// ✅ FIXED: Removed duplicate events, now triggers GameEvents instead
+// ════════════════════════════════════════════════════════════════════════
 
 using UnityEngine;
 using System;
@@ -36,12 +36,12 @@ namespace Ascension.Character.Manager
         public bool HasActivePlayer => _isInitialized && _currentPlayer != null;
         #endregion
 
-        #region Events
+        #region Events (Keep ONLY for GameManager integration)
+        /// <summary>
+        /// ⚠️ IMPORTANT: This event is ONLY for GameManager to forward to GameEvents
+        /// UI should subscribe to GameEvents.OnGameLoaded instead
+        /// </summary>
         public event Action<CharacterStats> OnPlayerLoaded;
-        public event Action<CharacterStats> OnCharacterStatsChanged;
-        public event Action<float, float> OnHealthChanged;
-        public event Action<int> OnLevelUp;
-        public event Action<int> OnExperienceGained;
         #endregion
 
         #region Unity Callbacks
@@ -85,7 +85,11 @@ namespace Ascension.Character.Manager
 
             Debug.Log($"[CharacterManager] Created new player: {playerName}");
             
-            TriggerPlayerLoadedEvents();
+            // ✅ Fire local event for GameManager integration
+            OnPlayerLoaded?.Invoke(_currentPlayer);
+            
+            // ✅ Trigger GameEvents for UI consumption
+            GameEvents.TriggerStatsRecalculated(_currentPlayer);
         }
 
         public void LoadPlayer(CharacterStats loadedStats)
@@ -103,7 +107,12 @@ namespace Ascension.Character.Manager
 
             Debug.Log($"[CharacterManager] Loaded player: {_currentPlayer.playerName}");
             
-            TriggerPlayerLoadedEvents();
+            // ✅ Fire local event for GameManager integration
+            OnPlayerLoaded?.Invoke(_currentPlayer);
+            
+            // ✅ Trigger GameEvents for UI consumption
+            GameEvents.TriggerStatsRecalculated(_currentPlayer);
+            
             UpdateStatsFromEquipment();
         }
 
@@ -116,9 +125,6 @@ namespace Ascension.Character.Manager
         #endregion
 
         #region Equipment Integration
-        /// <summary>
-        /// ✅ GOOD: This implementation is correct!
-        /// </summary>
         public void UpdateStatsFromEquipment()
         {
             if (!HasActivePlayer) return;
@@ -131,7 +137,9 @@ namespace Ascension.Character.Manager
                 _currentPlayer.ApplyItemStats(equipStats, baseStats);
                 
                 Debug.Log("[CharacterManager] Stats updated from equipment");
-                OnCharacterStatsChanged?.Invoke(_currentPlayer);
+                
+                // ✅ Trigger GameEvents instead of local event
+                GameEvents.TriggerStatsRecalculated(_currentPlayer);
             }
             else
             {
@@ -157,9 +165,6 @@ namespace Ascension.Character.Manager
 
         #region Public Methods - Player Actions
 
-        /// <summary>
-        /// Apply multiple attribute point allocations at once
-        /// </summary>
         public bool ApplyAttributePoints(CharacterAttributes newAttributes, int pointsSpent)
         {
             if (!HasActivePlayer) return false;
@@ -183,16 +188,17 @@ namespace Ascension.Character.Manager
         {
             if (!HasActivePlayer) return;
 
-            OnExperienceGained?.Invoke(amount);
-
             bool leveledUp = _currentPlayer.AddExperience(amount, baseStats);
+
+            // ✅ Trigger GameEvents instead of local events
+            GameEvents.TriggerExperienceGained(amount, _currentPlayer.CurrentEXP);
 
             if (leveledUp)
             {
                 HandleLevelUp();
             }
 
-            OnCharacterStatsChanged?.Invoke(_currentPlayer);
+            GameEvents.TriggerStatsRecalculated(_currentPlayer);
         }
 
         public void Heal(float amount)
@@ -203,7 +209,9 @@ namespace Ascension.Character.Manager
             _currentPlayer.combatRuntime.Heal(amount, _currentPlayer.MaxHP);
             
             Debug.Log($"[CharacterManager] Healed {amount} HP ({oldHP:F0} → {_currentPlayer.CurrentHP:F0})");
-            OnHealthChanged?.Invoke(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
+            
+            // ✅ Trigger GameEvents instead of local event
+            GameEvents.TriggerHealthChanged(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
         }
 
         public void ApplyHeal(float amount)
@@ -214,7 +222,9 @@ namespace Ascension.Character.Manager
             _currentPlayer.combatRuntime.Heal(amount, _currentPlayer.MaxHP);
             
             Debug.Log($"[CharacterManager] Applied heal {amount} HP ({oldHP:F0} → {_currentPlayer.CurrentHP:F0})");
-            OnHealthChanged?.Invoke(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
+            
+            // ✅ Trigger GameEvents instead of local event
+            GameEvents.TriggerHealthChanged(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
         }
 
         public void TakeDamage(float amount)
@@ -225,7 +235,9 @@ namespace Ascension.Character.Manager
             _currentPlayer.combatRuntime.TakeDamage(amount, _currentPlayer.MaxHP);
             
             Debug.Log($"[CharacterManager] Took {amount} damage ({oldHP:F0} → {_currentPlayer.CurrentHP:F0})");
-            OnHealthChanged?.Invoke(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
+            
+            // ✅ Trigger GameEvents instead of local event
+            GameEvents.TriggerHealthChanged(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
 
             if (_currentPlayer.CurrentHP <= 0)
             {
@@ -239,7 +251,9 @@ namespace Ascension.Character.Manager
 
             _currentPlayer.combatRuntime.currentHP = _currentPlayer.MaxHP;
             Debug.Log("[CharacterManager] Full heal applied");
-            OnHealthChanged?.Invoke(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
+            
+            // ✅ Trigger GameEvents instead of local event
+            GameEvents.TriggerHealthChanged(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
         }
 
         public void EquipWeapon(WeaponSO weapon)
@@ -247,7 +261,9 @@ namespace Ascension.Character.Manager
             if (!HasActivePlayer) return;
 
             _currentPlayer.EquipWeapon(weapon, baseStats);
-            OnCharacterStatsChanged?.Invoke(_currentPlayer);
+            
+            // ✅ Trigger GameEvents instead of local event
+            GameEvents.TriggerStatsRecalculated(_currentPlayer);
         }
 
         public void UnequipWeapon()
@@ -255,7 +271,9 @@ namespace Ascension.Character.Manager
             if (!HasActivePlayer) return;
 
             _currentPlayer.UnequipWeapon(baseStats);
-            OnCharacterStatsChanged?.Invoke(_currentPlayer);
+            
+            // ✅ Trigger GameEvents instead of local event
+            GameEvents.TriggerStatsRecalculated(_currentPlayer);
         }
 
         public void SetGuildRank(string rank)
@@ -263,7 +281,9 @@ namespace Ascension.Character.Manager
             if (!HasActivePlayer) return;
 
             _currentPlayer.SetGuildRank(rank);
-            OnCharacterStatsChanged?.Invoke(_currentPlayer);
+            
+            // ✅ Trigger GameEvents instead of local event
+            GameEvents.TriggerStatsRecalculated(_currentPlayer);
         }
 
         public bool AllocateAttributePoint(string attributeName)
@@ -280,7 +300,9 @@ namespace Ascension.Character.Manager
             _currentPlayer.levelSystem.unallocatedPoints--;
             
             Debug.Log($"[CharacterManager] Allocated point to {attributeName}");
-            OnCharacterStatsChanged?.Invoke(_currentPlayer);
+            
+            // ✅ Trigger GameEvents instead of local event
+            GameEvents.TriggerStatsRecalculated(_currentPlayer);
             return true;
         }
         #endregion
@@ -291,7 +313,9 @@ namespace Ascension.Character.Manager
             if (!HasActivePlayer) return;
 
             _currentPlayer.RecalculateStats(baseStats, fullHeal: false);
-            OnCharacterStatsChanged?.Invoke(_currentPlayer);
+            
+            // ✅ Trigger GameEvents instead of local event
+            GameEvents.TriggerStatsRecalculated(_currentPlayer);
         }
 
         public CharacterStats GetCharacterDataForSave()
@@ -313,17 +337,13 @@ namespace Ascension.Character.Manager
             }
         }
 
-        private void TriggerPlayerLoadedEvents()
-        {
-            OnPlayerLoaded?.Invoke(_currentPlayer);
-            OnCharacterStatsChanged?.Invoke(_currentPlayer);
-        }
-
         private void HandleLevelUp()
         {
             Debug.Log($"[CharacterManager] Level up! Now level {_currentPlayer.Level}");
-            OnLevelUp?.Invoke(_currentPlayer.Level);
-            OnHealthChanged?.Invoke(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
+            
+            // ✅ Trigger GameEvents instead of local events
+            GameEvents.TriggerLevelUp(_currentPlayer.Level);
+            GameEvents.TriggerHealthChanged(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
         }
 
         private void HandlePlayerDeath()
