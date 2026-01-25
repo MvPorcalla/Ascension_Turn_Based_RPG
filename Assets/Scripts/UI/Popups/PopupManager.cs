@@ -1,7 +1,7 @@
-// ════════════════════════════════════════════
-// Assets/Scripts/Modules/SharedUI/Popups/PopupManager.cs
-// Centralized manager for all popup types
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
+// Assets/Scripts/UI/Popups/PopupManager.cs
+// ✅ FIXED: Added comprehensive debugging
+// ══════════════════════════════════════════════════════════════════
 
 using UnityEngine;
 using Ascension.Data.SO.Item;
@@ -10,10 +10,6 @@ using Ascension.Inventory.Enums;
 
 namespace Ascension.UI.Popups
 {
-    /// <summary>
-    /// Central access point for all popup types.
-    /// Ensures only one popup is active at a time.
-    /// </summary>
     public class PopupManager : MonoBehaviour
     {
         #region Singleton
@@ -26,6 +22,8 @@ namespace Ascension.UI.Popups
         [SerializeField] private ItemPopup itemPopup;
         [SerializeField] private PotionPopup potionPopup;
 
+        [Header("Debug")]
+        [SerializeField] private bool enableDebugLogs = true;
         #endregion
 
         #region Private Fields
@@ -43,32 +41,39 @@ namespace Ascension.UI.Popups
         {
             if (Instance != null && Instance != this)
             {
+                Debug.LogWarning("[PopupManager] Duplicate instance destroyed");
                 Destroy(gameObject);
                 return;
             }
             Instance = this;
+            Log("PopupManager initialized");
         }
 
         private void ValidatePopups()
         {
             if (gearPopup == null)
                 Debug.LogError("[PopupManager] GearPopup not assigned!");
+            else
+                Log($"GearPopup found: {gearPopup.name}");
             
             if (itemPopup == null)
                 Debug.LogError("[PopupManager] ItemPopup not assigned!");
+            else
+                Log($"ItemPopup found: {itemPopup.name}");
             
             if (potionPopup == null)
                 Debug.LogError("[PopupManager] PotionPopup not assigned!");
+            else
+                Log($"PotionPopup found: {potionPopup.name}");
         }
         #endregion
 
         #region Public API - Smart Routing
 
-        /// <summary>
-        /// Smart popup opener - automatically routes to correct popup type
-        /// </summary>
         public void ShowItemPopup(ItemBaseSO itemData, ItemInstance itemInstance, PopupContext context)
         {
+            Log($"ShowItemPopup called: {itemData?.ItemName ?? "NULL"}, Type: {itemData?.GetType().Name ?? "NULL"}");
+
             if (itemData == null || itemInstance == null)
             {
                 Debug.LogError("[PopupManager] Cannot show popup - null data");
@@ -77,18 +82,21 @@ namespace Ascension.UI.Popups
 
             CloseCurrentPopup();
 
-            // Route to appropriate popup based on item type
+            // ✅ FIXED: Check specific types BEFORE IsStackable
             if (itemData is PotionSO potion)
             {
+                Log($"Routing to PotionPopup: {itemData.ItemName}");
                 ShowPotionPopup(potion, itemInstance, context);
-            }
-            else if (itemData.IsStackable)
-            {
-                ShowStackableItemPopup(itemData, itemInstance, context);
             }
             else if (itemData is WeaponSO || itemData is GearSO)
             {
+                Log($"Routing to GearPopup: {itemData.ItemName}");
                 ShowGearPopup(itemData, itemInstance, context);
+            }
+            else if (itemData.IsStackable)
+            {
+                Log($"Routing to ItemPopup (stackable): {itemData.ItemName}");
+                ShowStackableItemPopup(itemData, itemInstance, context);
             }
             else
             {
@@ -102,29 +110,59 @@ namespace Ascension.UI.Popups
 
         public void ShowGearPopup(ItemBaseSO itemData, ItemInstance itemInstance, PopupContext context)
         {
-            if (gearPopup == null) return;
+            Log($"ShowGearPopup: {itemData.ItemName}");
+
+            if (gearPopup == null)
+            {
+                Debug.LogError("[PopupManager] GearPopup is null!");
+                return;
+            }
 
             CloseCurrentPopup();
+            
+            Log("Calling gearPopup.Show()");
             gearPopup.Show(itemData, itemInstance, context);
             currentActivePopup = gearPopup;
+            
+            Log($"GearPopup active: {gearPopup.gameObject.activeSelf}");
         }
 
         public void ShowStackableItemPopup(ItemBaseSO itemData, ItemInstance itemInstance, PopupContext context)
         {
-            if (itemPopup == null) return;
+            Log($"ShowStackableItemPopup: {itemData.ItemName}");
+
+            if (itemPopup == null)
+            {
+                Debug.LogError("[PopupManager] ItemPopup is null!");
+                return;
+            }
 
             CloseCurrentPopup();
+            
+            Log("Calling itemPopup.ShowItem()");
             itemPopup.ShowItem(itemData, itemInstance, context);
             currentActivePopup = itemPopup;
+            
+            Log($"ItemPopup active: {itemPopup.gameObject.activeSelf}");
         }
 
         public void ShowPotionPopup(PotionSO potionData, ItemInstance itemInstance, PopupContext context)
         {
-            if (potionPopup == null) return;
+            Log($"ShowPotionPopup: {potionData.ItemName}");
+
+            if (potionPopup == null)
+            {
+                Debug.LogError("[PopupManager] PotionPopup is null!");
+                return;
+            }
 
             CloseCurrentPopup();
+            
+            Log("Calling potionPopup.ShowPotion()");
             potionPopup.ShowPotion(potionData, itemInstance, context);
             currentActivePopup = potionPopup;
+            
+            Log($"PotionPopup active: {potionPopup.gameObject.activeSelf}");
         }
 
         #endregion
@@ -133,7 +171,13 @@ namespace Ascension.UI.Popups
 
         public void CloseCurrentPopup()
         {
-            if (currentActivePopup == null) return;
+            if (currentActivePopup == null)
+            {
+                Log("CloseCurrentPopup: No popup open");
+                return;
+            }
+
+            Log($"Closing popup: {currentActivePopup.GetType().Name}");
 
             if (currentActivePopup is GearPopup gear)
                 gear.Hide();
@@ -143,10 +187,19 @@ namespace Ascension.UI.Popups
                 potion.Hide();
 
             currentActivePopup = null;
+            Log("Popup closed");
         }
 
         public bool IsAnyPopupOpen() => currentActivePopup != null;
 
+        #endregion
+
+        #region Logging
+        private void Log(string message)
+        {
+            if (enableDebugLogs)
+                Debug.Log($"[PopupManager] {message}");
+        }
         #endregion
     }
 }

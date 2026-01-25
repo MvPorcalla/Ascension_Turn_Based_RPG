@@ -1,5 +1,6 @@
 // ══════════════════════════════════════════════════════════════════
 // Assets/Scripts/UI/Components/Inventory/EquipmentSlotUI.cs
+// ✅ FIXED: Updated to use GameBootstrap and GameEvents
 // ✅ REUSABLE: Single labeled equipment slot (Weapon, Helmet, etc.)
 // Used by EquippedGearPreview in both Storage scene and InventoryPanel
 // ══════════════════════════════════════════════════════════════════
@@ -8,6 +9,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Linq;
+using Ascension.Core;
 using Ascension.Equipment.Enums;
 using Ascension.Equipment.Manager;
 using Ascension.Inventory.Manager;
@@ -65,13 +67,14 @@ namespace Ascension.UI.Components.Inventory
 
         private void OnDisable()
         {
-            // Only unsubscribe, don't cleanup (we might be re-enabled)
+            // Unsubscribe to prevent memory leaks
             UnsubscribeFromEvents();
         }
 
         private void OnDestroy()
         {
             // Full cleanup on destroy
+            UnsubscribeFromEvents();
             CleanupButton();
         }
         #endregion
@@ -79,19 +82,19 @@ namespace Ascension.UI.Components.Inventory
         #region Initialization
         private void Initialize()
         {
-            // Get manager references
-            equipmentManager = EquipmentManager.Instance;
-            inventoryManager = InventoryManager.Instance;
+            // ✅ FIXED: Get manager references from GameBootstrap
+            equipmentManager = GameBootstrap.Equipment;
+            inventoryManager = GameBootstrap.Inventory;
 
             if (equipmentManager == null)
             {
-                Debug.LogError("[EquipmentSlotUI] EquipmentManager not found!");
+                Debug.LogError("[EquipmentSlotUI] EquipmentManager not found in GameBootstrap!");
                 return;
             }
 
             if (inventoryManager == null)
             {
-                Debug.LogError("[EquipmentSlotUI] InventoryManager not found!");
+                Debug.LogError("[EquipmentSlotUI] InventoryManager not found in GameBootstrap!");
                 return;
             }
 
@@ -134,20 +137,20 @@ namespace Ascension.UI.Components.Inventory
         #endregion
 
         #region Event Management
+        /// <summary>
+        /// ✅ FIXED: Subscribe to GameEvents instead of manager events
+        /// </summary>
         private void SubscribeToEvents()
         {
-            if (equipmentManager != null)
-            {
-                equipmentManager.OnEquipmentChanged += RefreshSlot;
-            }
+            GameEvents.OnEquipmentChanged += RefreshSlot;
         }
 
+        /// <summary>
+        /// ✅ FIXED: Unsubscribe from GameEvents
+        /// </summary>
         private void UnsubscribeFromEvents()
         {
-            if (equipmentManager != null)
-            {
-                equipmentManager.OnEquipmentChanged -= RefreshSlot;
-            }
+            GameEvents.OnEquipmentChanged -= RefreshSlot;
         }
         #endregion
 

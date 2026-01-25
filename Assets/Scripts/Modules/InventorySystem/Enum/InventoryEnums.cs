@@ -1,22 +1,23 @@
-// ──────────────────────────────────────────────────
-// Assets\Scripts\Modules\InventorySystem\Enum\InventoryEnums.cs
-// Inventory-related enumerations
-// ──────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+// Assets/Scripts/Modules/InventorySystem/Enums/InventoryEnums.cs
+// ✅ FIXED: Consistent enum numbering
+// ══════════════════════════════════════════════════════════════════
 
 namespace Ascension.Inventory.Enums
 {
     /// <summary>
-    /// Item location within the inventory system
-    /// Explicit values for save compatibility:
-    /// - Storage = 0 (default, unlimited capacity)
-    /// - Bag = 1 (player's main inventory)
-    /// 
+    /// Item location within the inventory system.
+    /// Explicit values for save compatibility.
     /// </summary>
     public enum ItemLocation
     {
-        Storage = 0,    // Default storage (unlimited, slower access)
-        Bag = 2,        // Player bag (12 slots, expandable with equipment)
-        Equipped = 3,   // Currently equipped items
-        None = -1       // Indicates no valid location (used when all locations full)
+        /// <summary>Storage (home base, large capacity)</summary>
+        Storage = 0,
+        /// <summary>Bag (portable inventory, limited slots)</summary>
+        Bag = 1,
+        /// <summary>Equipped (currently worn/wielded gear)</summary>
+        Equipped = 2,
+        /// <summary>None (invalid/error state)</summary>
+        None = -1
     }
 }

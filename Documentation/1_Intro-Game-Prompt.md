@@ -19,23 +19,20 @@ Theme is fantasy isekai. UI is tap-based (no drag-and-drop).
 ## Folder Structure
 
 Scripts/
-├── App/                                    // High-level orchestration
-│   ├── Commands/                              ✅ NEW FOLDER
-│   │   ├── ICommand.cs                        ✅ Interface
-│   │   ├── SaveGameCommand.cs                 ✅ Save validation
-│   │   ├── LoadGameCommand.cs                 ✅ Load validation
-│   │   ├── EquipItemCommand.cs                ✅ Equipment + undo support
-│   │
-│   ├── GameManager.cs                         ✅ REFACTORED
-│   └── SceneFlowManager.cs                         ✅ REFACTORED
 │
-├── Core/                                   // Core engine / bootstrap
-│   ├── Bootstrap.cs                           ✅ REFACTORED
-│   ├── GameEvents.cs                          ✅ NEW
-│   ├── IGameService.cs                        ✅ EXISTS
-│   ├── SaveManager.cs                         ✅ REFACTORED
-│   └── ServiceContainer.cs                    ✅ UPDATED (removed old controllers)
-│
+├── Core/                                   ← Bootstrap + Core Systems
+│   ├── GameBootstrap.cs                    ← Single initialization point
+│   ├── GameEvents.cs                       ← Static event hub (KEEP!)
+│   ├── SaveManager.cs                      ← Save/load logic
+│   └── SceneFlowManager.cs                 ← Scene orchestration
+│       
+├── CharacterCreation/
+│   ├── Data/
+│   │   └── CharacterCreationData.cs           ← Pure data
+│   ├── Manager/
+│   │   └── CharacterCreationManager.cs        ← Business logic
+│   └── UI/
+│       └── CharacterCreationUI.cs             ← Presentation layer
 │
 ├── Data/                                   // Pure data / scriptable objects
 │   ├── Config/
@@ -45,7 +42,8 @@ Scripts/
 │   ├── Enums/
 │   │   └── WeaponEnums.cs
 │   ├── Save/
-│   │   └── SaveData.cs
+│   │   ├── SaveData.cs                     ← ✅ Updated (DTOs only)
+│   │   └── SaveDataExtensions.cs           ← ✅ NEW (conversion logic)
 │   └── ScriptableObject/
 │       ├── Character/
 │       │   └── CharacterBaseStatsSO.cs
@@ -60,105 +58,184 @@ Scripts/
 │           ├── MaterialSO.cs
 │           └── AbilitySO.cs
 │
-├── Modules/                                    // ✅ PURE DATA LOGIC - NO UI
-│   │
-│   ├── CharacterSystem/
-│   │   ├── Manager/
-│   │   │   └── CharacterManager.cs            // ✅ Events: OnStatsChanged, OnHealthChanged
-│   │   ├── Model/
-│   │   │   └── CharacterData.cs
-│   │   ├── Runtime/
-│   │   │   ├── CharacterCombatRuntime.cs
-│   │   │   └── CharacterLevelSystem.cs
-│   │   └── Stats/
-│   │       ├── AttributeType.cs
-│   │       ├── CharacterAttributes.cs
-│   │       ├── CharacterAttributes.cs
-│   │       ├── CharacterItemStats.cs
-│   │       └── CharacterStats.cs
-│   │
-│   ├── EquipmentSystem/
-│   │   ├── Coordinators/
-│   │   │   └── GearEquipCoordinator.cs
-│   │   ├── Data/
-│   │   │   ├── EquipmentTransaction.cs
-│   │   │   ├── EquippedGear.cs
-│   │   │   └── SkillLoadout.cs
-│   │   ├── Enums/
-│   │   │   ├── EquipmentEnums.cs
-│   │   │   └── GearSlotTypeExtensions.cs
-│   │   ├── Manager/
-│   │   │   ├── EquipmentManager.cs           // ✅ Events: OnEquipmentChanged
-│   │   │   └── SkillLoadoutManager.cs
-│   │   └── Services/
-│   │       ├── GearSlotService.cs
-│   │       └── GearStatsService.cs
-│   │
-│   ├── InventorySystem/
-│   │   ├── Config/
-│   │   │   └── InventoryConfig.cs
-│   │   ├── Constants/
-│   │   │   └── InventoryConstants.cs
-│   │   ├── Data/
-│   │   │   ├── InventoryCore.cs              // ✅ Events: OnInventoryChanged, OnItemMoved
-│   │   │   ├── InventoryCoreData.cs
-│   │   │   ├── InventoryResult.cs
-│   │   │   └── ItemInstance.cs
-│   │   ├── Enums/
-│   │   │   ├── InventoryEnums.cs
-│   │   │   └── ItemLocationExtensions.cs
-│   │   ├── Manager/
-│   │   │   ├── InventoryManager.cs           // ✅ Events: OnInventoryLoaded
-│   │   │   └── SlotCapacityManager.cs
-│   │   └── Services/
-│   │       ├── ItemQueryService.cs
-│   │       ├── ItemStackingService.cs
-│   │       └── ItemLocationService.cs
-│   │
-│   └── PotionSystem/                          // (Future) rename GameSystem to PotionSystem
-│       └── Manager/
-│           └── PotionManager.cs
-│
-├── Controllers/                                // ✅ PURE PRESENTATION - Scene-specific orchestrators
-│   ├── PlayerInventoryPanelController.cs       // ✅ Configures persistent bag panel
-│   ├── StorageRoomController.cs                // ✅ Configures StorageScene grids
-│   ├── CharacterSheetController.cs             // ✅ Character stats screen
-│   └── ShopController.cs                       // ✅ Future: Shop UI
-│
-├── UI/                                         // ✅ PURE PRESENTATION - SUBSCRIBES TO MODULES
-│   ├── Components/                             // ✅ Reusable UI building blocks
+├── Modules
+    ├── CharacterSystem/
+    │   ├── Core/                              ← Core character data (ALL SERIALIZABLE)
+    │   │   ├── CharacterStats.cs              ← ✅ Main container (runtime + save)
+    │   │   ├── CharacterAttributes.cs         ← STR, INT, AGI, END, WIS
+    │   │   ├── CharacterItemStats.cs          ← Equipment bonuses
+    │   │   └── CharacterDerivedStats.cs       ← Calculated stats (AD, AP, HP)
+    │   │
+    │   ├── Runtime/                           ← Volatile state (SERIALIZABLE)
+    │   │   ├── CharacterLevelSystem.cs        ← Leveling & EXP
+    │   │   └── CharacterCombatRuntime.cs      ← Current HP, buffs, cooldowns
+    │   │
+    │   ├── Manager/                           ← Singleton manager
+    │       └── CharacterManager.cs            ← Manages player instance
+    │
+    ├── EquipmentSystem/
+    │   ├── Data/
+    │   │   └── EquippedGear.cs              ← ✅ Pure data
+    │   ├── Enums/
+    │   │   └── EquipmentEnums.cs            ← ✅ Core enums
+    │   ├── Extensions/
+    │   │   └── GearSlotTypeExtensions.cs    ← ✅ UI helpers
+    │   ├── Manager/
+    │   │   └── EquipmentManager.cs          ← ✅ Simplified (no coordinator)
+    │   └── Services/
+    │       ├── GearSlotService.cs           ← ✅ Slot validation
+    │       └── GearStatsService.cs          ← ✅ Stats calculation
+    │
+    ├── InventorySystem/
+        │
+        ├── Config/                                  ← Configuration
+        │   └── InventoryConfig.cs                   ← Constants (slot capacities)
+        │
+        ├── Constants/                               ← Static Constants
+        │   └── InventoryConstants.cs                ← Item ID prefixes, log tags
+        │
+        ├── Core/                                    ← Business Logic Layer
+        │   └── InventoryCore.cs                     ← Core logic (triggers GameEvents)
+        │
+        ├── Data/                                    ← Data Models
+        │   ├── ItemInstance.cs                      ← Item instance data
+        │   ├── InventoryResult.cs                   ← Result pattern with error handling
+        │   └── InventoryCoreData.cs                 ← Save/load serialization
+        │
+        ├── Enums/                                   ← Enumerations
+        │   └── InventoryEnums.cs                    ← ItemLocation, InventoryErrorCode
+        │
+        ├── Manager/                                 ← Singleton manager
+        │   └── InventoryManager.cs                  ← Public API (delegates to InventoryCore)
+        │
+        └── Services/                                ← Service Layer (Business Logic)
+            ├── ItemQueryService.cs                  ← Read operations (queries)
+            ├── ItemStackingService.cs               ← Stacking logic (merge/split)
+            ├── ItemLocationService.cs               ← Movement operations
+            └── SlotCapacityManager.cs               ← Capacity tracking
+
+    ├── PotionSystem/          ← NEW FOLDER (pure logic, no UI)
+        ├── Manager/
+        │   └── PotionManager.cs
+        ├── Data/
+        │   ├── ActiveBuff.cs
+        │   └── ActiveHealOverTurn.cs
+        └── Services/           ← OPTIONAL (for future complexity)
+
+    ├── SkillSystem/                        // Not Implemented yet will do in the future
+        ├── Core/
+        │   └── SkillCollection.cs          ← Like InventoryCore (owns all unlocked skills)
+        │
+        ├── Data/
+        │   ├── SkillLoadout.cs             ← Pure data (current equipped skills)
+        │   └── SkillInstance.cs            ← ✅ NEW (unlocked skill data)
+        │
+        ├── Manager/
+        │   ├── SkillCollectionManager.cs   ← Like InventoryManager (unlock/query skills)
+        │   └── SkillLoadoutManager.cs      ← Like EquipmentManager (equip/unequip only)
+        │
+        └── Services/
+            ├── SkillQueryService.cs        ← Query unlocked skills
+            └── SkillLoadoutService.cs      ← Validate loadout rules
+
+├── UI/                                     ← All UI scripts
+│   ├── Components/                         ← Reusable UI building blocks
 │   │   ├── Inventory/
-│   │   │   ├── InventoryGridUI.cs              // ✅ NEW: Replaces Bag/Storage/Equipped UIs
-│   │   │   ├── ItemSlotUI.cs                   // ✅ KEEP: Individual slot display
-│   │   │   ├── EquipmentSlotUI.cs              // ✅ NEW: Special slot for equipped gear
-│   │   │   └── InventoryFilterBarUI.cs         // ✅ NEW: Optional filter buttons
-│   │   │
-│   │   ├── Character/
-│   │   │   ├── PlayerHudUI.cs                  // ✅ RENAMED: from PlayerHUD.cs
-│   │   │   ├── HealthBarUI.cs                  // ✅ NEW: Extracted from PlayerHUD
-│   │   │   ├── ExpBarUI.cs                     // ✅ NEW: Extracted from PlayerHUD
-│   │   │   └── StatDisplayUI.cs                // ✅ NEW: Reusable stat display
-│   │   │
+│   │   │   ├── PlayerHUDUI.cs
+│   │   │   ├── PlayerStatsPreviewUI.cs
+│   │   │   └── LevelUpPanelUI.cs
+│   │   │   ├── HealthBarUI.cs                  // Future
+│   │   │   └── ExpBarUI.cs                     // Future
+│   │   ├── Inventory/
+│   │   │   ├── EquipmentSlotUI.cs
+│   │   │   ├── 
+│   │   │   ├── InventoryFilterBarUI.cs
+│   │   │   ├── InventoryGridUI.cs
+│   │   │   └── ItemSlotUI.cs
 │   │   └── Shared/
-│   │       ├── BuffLineUI.cs                   // ✅ MOVED from SharedUI
+│   │       ├── BuffLineUI.cs
+│   │       └── StatDisplayUI.cs
+│   │       
+│   ├── Controller/                             ← Note: Will be move to UI folder
+│   │   ├── DisclamerController.cs              ←
+│   │   ├── GlobalMenuController.cs             ← 
+│   │   ├── MainBasePanelController.cs          ← 
+│   │   ├── PersistentUIController.cs           ← Already been Refactored (I think)
+│   │   ├── PlayerInventoryController.cs        ← 
+│   │   └── StorageRoomController.cs            ←
 │   │
-│   ├── Popups/                                 // ✅ Modal dialogs
-│   │   ├── Handlers/
-│   │   │   └── PopupActionHandler.cs           // ✅ Business logic executor
+│   ├── Popups/                             ← Modal dialogs
+│   │   ├── PopupManager.cs
+│   │   ├── PopupActionHandler.cs
+│   │   ├── PopupContext.cs
 │   │   ├── GearPopup.cs
 │   │   ├── ItemPopup.cs
-│   │   ├── PotionPopup.cs
-│   │   ├── PopupManager.cs                     // ✅ Central popup controller
-│   │   └── PopupContext.cs                     // ✅ NEW: Extract from PopupManager.cs
+│   │   └── PotionPopup.cs
 │   │
+│   ├── ScreensPanels/                    ← Full-screen UI for GlobalMenu (scenes)
+│   │   ├── ProfilePanelUI.cs
+│   │   ├── PlayerBagUI.cs
+│   │   └── WorldMapUI.cs
 │   │
-│   └── Toast/                                  // ✅ Non-blocking notifications
+│   └── Toast/                      ← Notifications
+│       ├── ToastManager.cs
+│       └── ToastNotification.cs
+
+# Note: This folder structure is from an older version of the project. Some scripts listed here no longer exist or have been refactored.
+│
+├── UI/                                     ← All UI scripts
+│   ├── Components/                         ← Reusable UI building blocks
+│   │   ├── Inventory/
+│   │   │   ├── PlayerHUD.cs
+│   │   │   ├── PlayerStatsPreviewUI.cs
+│   │   │   └── LevelUpManager.cs
+│   │   │   ├── HealthBarUI.cs                  // Future
+│   │   │   └── ExpBarUI.cs                     // Future
+│   │   ├── Inventory/
+│   │   │   ├── InventoryGridUI.cs
+│   │   │   ├── ItemSlotUI.cs
+│   │   │   └── EquipmentSlotUI.cs
+│   │   └── Shared/
+│   │       ├── BuffLineUI.cs
+│   │       └── StatDisplayUI.cs
+│   │       
+│   ├── Controller/                             ← Note: Will be move to UI folder
+│   │   ├── DisclamerController.cs              ←
+│   │   ├── GlobalMenuController.cs             ← 
+│   │   ├── MainBasePanelController.cs          ← 
+│   │   ├── PersistentUIController.cs           ← Already been Refactored (I think)
+│   │   ├── PlayerInventoryController.cs        ← 
+│   │   └── StorageRoomController.cs            ←
+│   │
+│   ├── Popups/                             ← Modal dialogs
+│   │   ├── PopupManager.cs
+│   │   ├── GearPopup.cs
+│   │   ├── ItemPopup.cs
+│   │   └── PotionPopup.cs
+│   │
+│   ├── ScreensPanels/                    ← Full-screen UI for GlobalMenu (scenes)
+│   │   ├── ProfilePanelUI.cs
+│   │   ├── PlayerBagUI.cs
+│   │   └── WorldMapUI.cs
+│   │
+│   └── Toast/                      ← Notifications
 │       ├── ToastManager.cs
 │       └── ToastNotification.cs
 │
-├── Utilities/                                  // ✅ NEW: Helper scripts
+├── Utilities/                      ← Helper scripts
 │   ├── UIHelpers.cs
 │   └── ColorUtility.cs
 │
-├── DisclaimerController.cs                     // ✅ TODO: Move to UI/Controllers/
-├── ProfilePanelManager.cs                      // ✅ TODO: Move to UI/Controllers/
+└── Enums/                          ← Shared enums (optional folder)
+    ├── GearSlotType.cs
+    ├── ItemLocation.cs
+    └── AttributeType.cs
+
+
+---
+
+**Important RULE:**
+* Before refactoring, reviewing, or suggesting changes to any code, always ask me if you need the full script or relevant context.
+* Do **not** assume or invent code. Refactor only based on code I explicitly provide.
+* The **Modules/System** folder should contain **only pure data logic** (no UI, scenes, or presentation code).
+* All UI presentation logic should always go in the **UI** folder.

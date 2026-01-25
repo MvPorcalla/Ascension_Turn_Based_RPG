@@ -16,57 +16,46 @@ CharacterManager (Single Source of Truth)
 ├── Main Camera
 ├── Canvas
 
-📁 01_Bootstrap.unity (Partially persists)
-│
-├── ServiceController (DontDestroyOnLoad)
-│   ├── GameManager
-│   ├── SceneFlowManager
+📁 01_Bootstrap.unity
+├── [GameBootstrap] ← SINGLE initialization object
 │   ├── SaveManager
-│   └── ... (all managers)
+│   ├── CharacterManager
+│   ├── InventoryManager
+│   ├── EquipmentManager
+│   ├── SkillLoadoutManager
+│   └── SceneFlowManager
 │
-├── PersistentUICanvas (DontDestroyOnLoad) [PersistentUIController]
-│   ├── EventSystem
-│   ├── PopupManager        [PopupManager.cs]
-│   ├── PopupActionHandler  [PopupActionHandler.cs]
-│   ├── ToastManager        [ToastManager.cs]
-│   ├── HUDLayer
-│   │   ├── PlayerHUD (prefab) [PlayerHud.cs] ← ALWAYS VISIBLE
-│   │   │   ├── Background
-│   │   │   ├── PlayerInfo
-│   │   │   │   ├── PlayerProfile → PlayerIMG
-│   │   │   │   ├── PlayerName (TMP)
-│   │   │   │   └── PlayerLevel (TMP)
-│   │   │   ├── HealthBar [HealthBarUI.cs]
-│   │   │   │   ├── Background
-│   │   │   │   ├── Fill
-│   │   │   │   └── Percentage (TMP)
-│   │   │   └── ExpBar [ExpBarUI.cs]
-│   │   │       ├── Background
-│   │   │       ├── Fill
-│   │   │       └── ExpCap (TMP)
-│   │   │
-│   │   └── GlobalMenu (prefab) [GlobalMenuController.cs]
-│   │       └── MenuGrid (GridLayoutGroup)
-│   │           ├── WorldMapButton
-│   │           ├── ProfileButton
-│   │           ├── InventoryButton
-│   │           ├── QuestButton
-│   │           └── CodexButton
-│   │
-│   ├── PopupLayer                              ← ALWAYS AVAILABLE
-│   │   ├── PotionPopup
-│   │   ├── ItemPopup
-│   │   └── GearPopup
-│   │
-│   ├── ToastContainer                          ← ALWAYS AVAILABLE
-│   │   └── (Toast prefabs spawn here)
-│   │
-│   └── OverlayLayer
-│       ├── FadeScreen
-│       ├── Tooltip
-│       └── SystemMessages
+└── [PersistentUI] ← Canvas with all UI (DontDestroyOnLoad)
+    ├── EventSystem
+    ├── HUDLayer
+    │   ├── PlayerHUD
+    │   └── GlobalMenu
+    ├── PopupLayer
+    │   ├── PotionPopup
+    │   ├── ItemPopup
+    │   └── GearPopup
+    ├── ToastLayer
+    │   └── ToastManager
+    └── OverlayLayer
+        └── FadeScreen
+
+📁 01_Bootstrap.unity
+├── [GameBootstrap] ← Main GameObject with GameBootstrap.cs
+│   ├── SaveManager (child GameObject)
+│   ├── CharacterManager (child GameObject)
+│   ├── InventoryManager (child GameObject)
+│   ├── EquipmentManager (child GameObject)
+│   ├── SkillLoadoutManager (child GameObject) ← Need to see script
+│   ├── PotionManager (child GameObject) ← Need to see script
+│   └── SceneFlowManager (child GameObject)
 │
-└── Bootstrap (GameObject with Bootstrap.cs - gets destroyed)
+└── [PersistentUICanvas] ← Assigned to GameBootstrap's persistentUICanvas field
+    ├── EventSystem
+    ├── HUDLayer (GameObject)
+    │   ├── PlayerHUD (GameObject) ← Need to confirm script
+    │   └── GlobalMenu (GameObject) ← Need to confirm script
+    └── OverlayLayer (GameObject)
+        └── FadeScreen (GameObject)
 
 📁 02_AvatarCreation.unity ← ✅ Avatar Creation
 ├── Main Camera
@@ -84,13 +73,87 @@ CharacterManager (Single Source of Truth)
 │   ├── BackgroundLayer
 │   │   └── MainBackground
 │   ├── MainPanelsLayer ← ✅ CORE NAVIGATION ()
-│       └── MainBasePanel (room selection grid)
+│   │   └── MainBasePanel (room selection grid)
+│   │       └── Gridpanel
+│   │            ├── ButtonBox
+│   │            ├── ButtonBox
+│   │            ├── ButtonBox
+│   │            └── ...
+
+📁 UI_Storage.unity (Load when entering Storage Room)
+└── Canvas
+    ├── Background
+    ├── PopupLayer (GameObject)
+    │   ├── PopupManager (with PopupManager.cs)
+    │   │
+    │   ├── PotionPopup (GameObject) (PotionPopup.cs)
+    │   ├── ItemPopup (GameObject) (ItemPopup.cs)
+    │   └── GearPopup (GameObject) (GearPopup.cs)
+    ├── ToastLayer (GameObject)
+    │   └── ToastManager (GameObject) ← Need to confirm script
+    │
+    ├── StorageRoomPanel    (fills screen)
+    │    ├── Roomheader
+    │    │    ├── backButton
+    │    │    └── Title
+    │    │
+    │    ├── BagInventoryUI (Players Bag 12 Max slots (can be increase by equipable bag))
+    │    │    ├── Bagheader
+    │    │    │    ├── Title
+    │    │    │    └── StoreAllButton
+    │    │    │         └── text (TMP)
+    │    │    └── BagPanel
+    │    │         └── BagViewport
+    │    │              └── BagContent (GridLayoutGroup)
+    │    │                   ├── EmptySlot (Prefab)
+    │    │                   │    ├── Button (button)
+    │    │                   │    ├── ItemIcon (Image)
+    │    │                   │    ├── EquipedIndicator
+    │    │                   │    └── Quantity (TMP - max x999 after that new slot)
+    │    │                   ├── ...
+    │    │ 
+    │    ├── EquippedGearPreview   ← (EquippedGearPreviewUI)
+    │    │     ├── PreviewHeader
+    │    │     └── PreviewContent
+    │    │         ├── GPS_Weapon
+    │    │         │    ├── Background   ← Image
+    │    │         │    ├── Icon         ← Image
+    │    │         │    ├── EmptyOverlay ← Image or GO
+    │    │         │    └── Label        ← TMP_Text (optional)
+    │    │         ├── GPS_Helmet
+    │    │         ├── GPS_Chest
+    │    │         ├── GPS_Gloves
+    │    │         ├── GPS_Boots
+    │    │         ├── GPS_Acc1
+    │    │         └── GPS_Acc2
+    │    │
+    │    └── StorageInventoryUI (All Items Player have including weapon, misc, potion, gear, materials, etc)
+    │         ├── Storageheader
+    │         │    ├── background
+    │         │    └── Title
+    │         ├── SortSection
+    │              ├── SortButtons
+    │         │         ├── AllItemButton
+    │         │         ├── WeaponButton
+    │         │         ├── GearButton
+    │         │         ├── PotionButton
+    │         │         ├── MaterialsButton
+    │         │         ├── MiscButton
+    │         └── StoragePanel
+    │              └── StorageViewport
+    │                   └── StorageContent (GridLayoutGroup)
+    │                        ├── SitemSlot (Prefab)
+    │                        │    ├── Button (button)
+    │                        │    ├── ItemIcon (Image)
+    │                        │    ├── EquipedIndicator
+    │                        │    └── Quantity (TMP - max x999 after that new slot)
+    │                        ├── ...
 
 ---------------------------------------------------------------------------
 
 # UI Scene
 
-📁 UI_Storage.unity (Load when entering WorldMap)
+📁 UI_Worldmap.unity (Load when entering WorldMap)
 └── Canvas
     └── WorldMapPanel
 

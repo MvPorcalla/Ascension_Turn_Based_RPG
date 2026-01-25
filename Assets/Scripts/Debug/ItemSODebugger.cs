@@ -1,8 +1,8 @@
-// ════════════════════════════════════════════
-// Assets\Scripts\Editor\ItemSODebugger.cs
+// ════════════════════════════════════════════════════════════════════════
+// Assets/Scripts/Editor/ItemSODebugger.cs
+// ✅ REFACTORED: Removed ServiceContainer - uses GameBootstrap
 // Editor-only debug utilities for ItemBaseSO testing
-// ✅ UPDATED: Uses new AddToBag/AddToStorage API
-// ════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════
 
 #if UNITY_EDITOR
 using UnityEngine;
@@ -11,11 +11,11 @@ using Ascension.Data.SO.Item;
 using Ascension.Core;
 using Ascension.Character.Manager;
 using Ascension.Inventory.Manager;
-using Ascension.GameSystem;
 
 /// <summary>
 /// Adds context menu items to ItemBaseSO assets in the Project window
 /// This keeps ScriptableObjects pure while providing debug functionality
+/// ✅ UPDATED: Uses GameBootstrap static references instead of ServiceContainer
 /// </summary>
 public static class ItemSODebugger
 {
@@ -38,7 +38,7 @@ public static class ItemSODebugger
         
         int quantity = item.IsStackable ? 5 : 1;
         
-        // ✅ FIXED: Use new AddToBag() method
+        // ✅ Use new AddToBag() method
         var result = invMgr.AddToBag(item.ItemID, quantity);
         
         if (result.Success)
@@ -72,7 +72,7 @@ public static class ItemSODebugger
         
         int quantity = item.IsStackable ? 10 : 1;
         
-        // ✅ FIXED: Use new AddToStorage() method
+        // ✅ Use new AddToStorage() method
         var result = invMgr.AddToStorage(item.ItemID, quantity);
         
         if (result.Success)
@@ -105,10 +105,9 @@ public static class ItemSODebugger
         PotionSO potion = Selection.activeObject as PotionSO;
         if (potion == null) return;
         
-        PotionManager potionMgr = GetPotionManager();
         CharacterManager charMgr = GetCharacterManager();
         
-        if (potionMgr == null || charMgr == null) return;
+        if (charMgr == null) return;
         
         if (!charMgr.HasActivePlayer)
         {
@@ -116,12 +115,18 @@ public static class ItemSODebugger
             return;
         }
         
-        bool success = potionMgr.UsePotion(potion, charMgr.CurrentPlayer, charMgr.BaseStats);
+        // ✅ NOTE: If you have a PotionManager, add it to GameBootstrap
+        // For now, you might need to handle potion usage differently
+        // Example: charMgr.UsePotion(potion) if CharacterManager handles it
         
-        if (success)
-            Debug.Log($"✅ Used {potion.ItemName}");
-        else
-            Debug.LogWarning($"❌ Failed to use {potion.ItemName}");
+        Debug.LogWarning($"⚠️ Potion usage not implemented - add PotionManager to GameBootstrap or handle in CharacterManager");
+        
+        // Placeholder implementation:
+        // bool success = charMgr.UsePotion(potion);
+        // if (success)
+        //     Debug.Log($"✅ Used {potion.ItemName}");
+        // else
+        //     Debug.LogWarning($"❌ Failed to use {potion.ItemName}");
     }
     
     #endregion
@@ -223,54 +228,44 @@ public static class ItemSODebugger
     
     #endregion
     
-    #region Helper Methods
+    #region Helper Methods - Uses GameBootstrap
     
+    /// <summary>
+    /// ✅ FIXED: Get InventoryManager from GameBootstrap
+    /// </summary>
     private static InventoryManager GetInventoryManager()
     {
-        if (ServiceContainer.Instance == null)
+        if (GameBootstrap.Instance == null || !GameBootstrap.Instance.IsInitialized)
         {
-            Debug.LogError("❌ ServiceContainer not found! Make sure you're in Play Mode.");
+            Debug.LogError("❌ GameBootstrap not initialized! Make sure you're in Play Mode and Bootstrap scene is loaded.");
             return null;
         }
         
-        InventoryManager invMgr = ServiceContainer.Instance.Get<InventoryManager>();
+        InventoryManager invMgr = GameBootstrap.Inventory;
         
         if (invMgr == null)
-            Debug.LogError("❌ InventoryManager not found in ServiceContainer!");
+            Debug.LogError("❌ InventoryManager not found in GameBootstrap!");
         
         return invMgr;
     }
     
+    /// <summary>
+    /// ✅ FIXED: Get CharacterManager from GameBootstrap
+    /// </summary>
     private static CharacterManager GetCharacterManager()
     {
-        if (ServiceContainer.Instance == null)
+        if (GameBootstrap.Instance == null || !GameBootstrap.Instance.IsInitialized)
         {
-            Debug.LogError("❌ ServiceContainer not found! Make sure you're in Play Mode.");
+            Debug.LogError("❌ GameBootstrap not initialized! Make sure you're in Play Mode and Bootstrap scene is loaded.");
             return null;
         }
         
-        CharacterManager charMgr = ServiceContainer.Instance.Get<CharacterManager>();
+        CharacterManager charMgr = GameBootstrap.Character;
         
         if (charMgr == null)
-            Debug.LogError("❌ CharacterManager not found in ServiceContainer!");
+            Debug.LogError("❌ CharacterManager not found in GameBootstrap!");
         
         return charMgr;
-    }
-    
-    private static PotionManager GetPotionManager()
-    {
-        if (ServiceContainer.Instance == null)
-        {
-            Debug.LogError("❌ ServiceContainer not found! Make sure you're in Play Mode.");
-            return null;
-        }
-        
-        PotionManager potionMgr = ServiceContainer.Instance.Get<PotionManager>();
-        
-        if (potionMgr == null)
-            Debug.LogError("❌ PotionManager not found in ServiceContainer!");
-        
-        return potionMgr;
     }
     
     #endregion

@@ -6,7 +6,7 @@
 using UnityEngine;
 using Ascension.Data.SO.Item;
 using Ascension.Data.SO.Database;
-using Ascension.Character.Stat;
+using Ascension.Character.Core;
 using Ascension.Equipment.Data;
 using Ascension.Data.Enums;
 

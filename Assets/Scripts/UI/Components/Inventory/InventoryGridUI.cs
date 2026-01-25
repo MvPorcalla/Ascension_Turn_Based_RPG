@@ -1,11 +1,11 @@
 // ══════════════════════════════════════════════════════════════════
 // Assets/Scripts/UI/Components/Inventory/InventoryGridUI.cs
-// ✅ FIXED: Prevents memory leaks by caching manager reference
+// ✅ REFACTORED: CanvasGroup visibility, no lambda allocations, removed debug logs
 // ══════════════════════════════════════════════════════════════════
 
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
+using Ascension.Core;
 using Ascension.Data.SO.Item;
 using Ascension.Inventory.Manager;
 using Ascension.Inventory.Data;
@@ -14,6 +14,11 @@ using Ascension.UI.Popups;
 
 namespace Ascension.UI.Components.Inventory
 {
+    /// <summary>
+    /// Displays inventory items in a grid layout
+    /// Uses CanvasGroup for visibility (no SetActive layout thrashing)
+    /// Uses GameEvents for click handling (no lambda allocations)
+    /// </summary>
     public class InventoryGridUI : MonoBehaviour
     {
         #region Serialized Fields
@@ -39,8 +44,7 @@ namespace Ascension.UI.Components.Inventory
         private bool isInitialized = false;
         private Coroutine refreshCoroutine;
         
-        // ✅ NEW: Cache manager reference for safe unsubscribe
-        private InventoryManager _cachedInventoryManager;
+        private InventoryManager InventoryMgr => GameBootstrap.Inventory;
         #endregion
 
         #region Unity Callbacks
@@ -64,18 +68,10 @@ namespace Ascension.UI.Components.Inventory
             UnsubscribeFromEvents();
         }
         
-        // ✅ NEW: Extra safety cleanup
         private void OnDestroy()
         {
             UnsubscribeFromEvents();
-            
-            // Clear slot cache to free memory
-            foreach (var slot in slotCache)
-            {
-                if (slot != null)
-                    Destroy(slot.gameObject);
-            }
-            slotCache.Clear();
+            ClearSlotCache();
         }
         #endregion
 
@@ -91,16 +87,16 @@ namespace Ascension.UI.Components.Inventory
             }
 
             // Adjust max slots based on location
-            if (location == ItemLocation.Bag && maxSlots == 12)
+            if (location == ItemLocation.Bag && InventoryMgr != null)
             {
-                maxSlots = InventoryManager.Instance?.Capacity.MaxBagSlots ?? 12;
+                maxSlots = InventoryMgr.Capacity?.MaxBagSlots ?? 12;
             }
-            else if (location == ItemLocation.Storage && maxSlots == 60)
+            else if (location == ItemLocation.Storage && InventoryMgr != null)
             {
-                maxSlots = InventoryManager.Instance?.Capacity.MaxStorageSlots ?? 60;
+                maxSlots = InventoryMgr.Capacity?.MaxStorageSlots ?? 60;
             }
 
-            // Create slot objects
+            // ✅ NEW: Create all slots immediately, keep them active
             for (int i = 0; i < maxSlots; i++)
             {
                 GameObject slotObj = Instantiate(itemSlotPrefab, gridContent);
@@ -108,40 +104,39 @@ namespace Ascension.UI.Components.Inventory
 
                 if (slotUI == null)
                 {
-                    Debug.LogError($"[InventoryGridUI] ItemSlotUI component missing!");
+                    Debug.LogError($"[InventoryGridUI] ItemSlotUI component missing on prefab!");
                     Destroy(slotObj);
                     continue;
                 }
 
-                slotUI.gameObject.SetActive(false);
+                // ✅ CRITICAL: Keep slot active, hide via CanvasGroup
+                slotObj.SetActive(true);
+                slotUI.ShowEmpty(); // Initializes CanvasGroup to invisible
+                
                 slotCache.Add(slotUI);
             }
 
             isInitialized = true;
-            Debug.Log($"[InventoryGridUI] Initialized {slotCache.Count} slots for {location}");
+        }
+
+        private void ClearSlotCache()
+        {
+            foreach (var slot in slotCache)
+            {
+                if (slot != null)
+                    Destroy(slot.gameObject);
+            }
+            slotCache.Clear();
         }
         #endregion
 
-        #region Event Management - FIXED
-        /// <summary>
-        /// ✅ FIXED: Cache manager reference for safe unsubscribe
-        /// </summary>
+        #region Event Management
         private void SubscribeToEvents()
         {
-            // Get fresh instance
-            var inventoryMgr = InventoryManager.Instance;
-            if (inventoryMgr == null)
-            {
-                Debug.LogWarning($"[InventoryGridUI] InventoryManager not found!");
-                return;
-            }
-
-            // ✅ CRITICAL: Cache the manager reference BEFORE subscribing
-            _cachedInventoryManager = inventoryMgr;
-
-            // Subscribe to events
-            _cachedInventoryManager.Inventory.OnInventoryChanged += ScheduleRefresh;
-            _cachedInventoryManager.OnInventoryLoaded += RefreshGrid;
+            GameEvents.OnInventoryChanged += ScheduleRefresh;
+            
+            // ✅ NEW: Listen for item slot clicks
+            GameEvents.OnItemSlotClicked += OnItemSlotClicked;
 
             if (filterBar != null)
             {
@@ -149,19 +144,10 @@ namespace Ascension.UI.Components.Inventory
             }
         }
 
-        /// <summary>
-        /// ✅ FIXED: Always unsubscribe from cached manager, even if Instance is null
-        /// </summary>
         private void UnsubscribeFromEvents()
         {
-            // ✅ Use cached reference instead of Instance
-            // This works even if InventoryManager.Instance is null!
-            if (_cachedInventoryManager != null)
-            {
-                _cachedInventoryManager.Inventory.OnInventoryChanged -= ScheduleRefresh;
-                _cachedInventoryManager.OnInventoryLoaded -= RefreshGrid;
-                _cachedInventoryManager = null; // Clear cache
-            }
+            GameEvents.OnInventoryChanged -= ScheduleRefresh;
+            GameEvents.OnItemSlotClicked -= OnItemSlotClicked;
 
             if (filterBar != null)
             {
@@ -179,7 +165,7 @@ namespace Ascension.UI.Components.Inventory
 
         private System.Collections.IEnumerator DebouncedRefresh()
         {
-            yield return null;
+            yield return null; // Wait 1 frame
             RefreshGrid();
             refreshCoroutine = null;
         }
@@ -192,6 +178,9 @@ namespace Ascension.UI.Components.Inventory
         #endregion
 
         #region Refresh Logic
+        /// <summary>
+        /// ✅ OPTIMIZED: No SetActive calls, no lambda allocations
+        /// </summary>
         private void RefreshGrid()
         {
             if (!isInitialized)
@@ -199,14 +188,12 @@ namespace Ascension.UI.Components.Inventory
                 InitializeSlots();
             }
 
-            var inventoryMgr = InventoryManager.Instance;
-            if (inventoryMgr == null)
+            if (InventoryMgr == null)
             {
-                Debug.LogWarning($"[InventoryGridUI] InventoryManager not available!");
                 return;
             }
 
-            List<ItemInstance> items = GetFilteredItems(inventoryMgr);
+            List<ItemInstance> items = GetFilteredItems();
 
             for (int i = 0; i < maxSlots; i++)
             {
@@ -215,71 +202,81 @@ namespace Ascension.UI.Components.Inventory
                 if (i < items.Count)
                 {
                     ItemInstance item = items[i];
-                    ItemBaseSO itemData = inventoryMgr.Database.GetItem(item.itemID);
+                    ItemBaseSO itemData = InventoryMgr.Database?.GetItem(item.itemID);
 
                     if (itemData != null)
                     {
-                        slot.Setup(itemData, item, () => OnItemClicked(item));
-                        slot.gameObject.SetActive(true);
+                        // ✅ CRITICAL: No lambda allocation, uses GameEvents
+                        slot.Setup(itemData, item, null);
                     }
                     else
                     {
                         slot.ShowEmpty();
-                        slot.gameObject.SetActive(showEmptySlots);
                     }
                 }
                 else
                 {
-                    slot.ShowEmpty();
-                    slot.gameObject.SetActive(showEmptySlots);
+                    // ✅ CRITICAL: ShowEmpty() uses CanvasGroup, not SetActive
+                    if (showEmptySlots)
+                    {
+                        slot.ShowEmpty();
+                    }
+                    else
+                    {
+                        slot.SetVisible(false);
+                    }
                 }
             }
         }
 
-        private List<ItemInstance> GetFilteredItems(InventoryManager inventoryMgr)
+        private List<ItemInstance> GetFilteredItems()
         {
             if (currentFilter.HasValue)
             {
                 if (location == ItemLocation.Storage)
                 {
-                    return inventoryMgr.Inventory.GetStorageItemsByType(currentFilter, inventoryMgr.Database);
+                    return InventoryMgr.Inventory.GetStorageItemsByType(currentFilter, InventoryMgr.Database);
                 }
                 else
                 {
-                    var allItems = inventoryMgr.Inventory.GetItemsByLocation(location);
-                    return allItems.FindAll(item =>
+                    var allItems = InventoryMgr.Inventory.GetItemsByLocation(location);
+                    var filtered = new List<ItemInstance>(allItems.Count);
+                    
+                    for (int i = 0; i < allItems.Count; i++)
                     {
-                        var itemData = inventoryMgr.Database.GetItem(item.itemID);
-                        return itemData != null && itemData.ItemType == currentFilter.Value;
-                    });
+                        var item = allItems[i];
+                        var itemData = InventoryMgr.Database?.GetItem(item.itemID);
+                        if (itemData != null && itemData.ItemType == currentFilter.Value)
+                        {
+                            filtered.Add(item);
+                        }
+                    }
+                    
+                    return filtered;
                 }
             }
             else
             {
-                return inventoryMgr.Inventory.GetItemsByLocation(location);
+                return InventoryMgr.Inventory.GetItemsByLocation(location);
             }
         }
         #endregion
 
-        #region Item Click Handler
-        private void OnItemClicked(ItemInstance item)
+        #region Click Handler (No Lambda)
+        /// <summary>
+        /// ✅ NEW: Handles clicks from GameEvents (triggered by ItemSlotUI)
+        /// </summary>
+        private void OnItemSlotClicked(ItemBaseSO itemData, ItemInstance itemInstance)
         {
-            var inventoryMgr = InventoryManager.Instance;
-            if (inventoryMgr?.Database == null)
-            {
-                Debug.LogError($"[InventoryGridUI] InventoryManager not available!");
+            if (itemData == null || itemInstance == null)
                 return;
-            }
 
-            ItemBaseSO itemData = inventoryMgr.Database.GetItem(item.itemID);
-            if (itemData == null)
-            {
-                Debug.LogError($"[InventoryGridUI] Item data not found: {item.itemID}");
+            // Verify this click is for our grid's location
+            if (itemInstance.location != location)
                 return;
-            }
 
             PopupContext context = GetPopupContext();
-            PopupManager.Instance?.ShowItemPopup(itemData, item, context);
+            PopupManager.Instance?.ShowItemPopup(itemData, itemInstance, context);
         }
 
         private PopupContext GetPopupContext()
@@ -296,11 +293,33 @@ namespace Ascension.UI.Components.Inventory
         #endregion
 
         #region Public API
-        public void ForceRefresh() => RefreshGrid();
+        public void ForceRefresh()
+        {
+            RefreshGrid();
+        }
         
-        public int GetVisibleSlotCount() => slotCache.FindAll(slot => slot.gameObject.activeSelf).Count;
+        public int GetVisibleSlotCount()
+        {
+            int count = 0;
+            for (int i = 0; i < slotCache.Count; i++)
+            {
+                if (slotCache[i].GetComponent<CanvasGroup>().alpha > 0f)
+                    count++;
+            }
+            return count;
+        }
         
-        public int GetFilledSlotCount() => slotCache.FindAll(slot => !slot.IsEmpty() && slot.gameObject.activeSelf).Count;
+        public int GetFilledSlotCount()
+        {
+            int count = 0;
+            for (int i = 0; i < slotCache.Count; i++)
+            {
+                var slot = slotCache[i];
+                if (!slot.IsEmpty() && slot.GetComponent<CanvasGroup>().alpha > 0f)
+                    count++;
+            }
+            return count;
+        }
 
         public void ConnectFilterBar(InventoryFilterBarUI newFilterBar)
         {
@@ -322,7 +341,6 @@ namespace Ascension.UI.Components.Inventory
         {
             if (newMax < maxSlots)
             {
-                Debug.LogWarning($"[InventoryGridUI] Cannot reduce slot count");
                 return;
             }
 
@@ -334,7 +352,8 @@ namespace Ascension.UI.Components.Inventory
 
                 if (slotUI != null)
                 {
-                    slotUI.gameObject.SetActive(false);
+                    slotObj.SetActive(true);
+                    slotUI.ShowEmpty();
                     slotCache.Add(slotUI);
                 }
             }
@@ -342,6 +361,30 @@ namespace Ascension.UI.Components.Inventory
             maxSlots = newMax;
             RefreshGrid();
         }
+        #endregion
+
+        #region Debug Tools
+#if UNITY_EDITOR
+        [ContextMenu("Debug: Force Refresh")]
+        private void DebugForceRefresh()
+        {
+            if (Application.isPlaying)
+            {
+                ForceRefresh();
+            }
+        }
+
+        [ContextMenu("Debug: Print Slot Info")]
+        private void DebugPrintSlotInfo()
+        {
+            Debug.Log($"=== {gameObject.name} ===");
+            Debug.Log($"Location: {location}");
+            Debug.Log($"Max Slots: {maxSlots}");
+            Debug.Log($"Visible Slots: {GetVisibleSlotCount()}");
+            Debug.Log($"Filled Slots: {GetFilledSlotCount()}");
+            Debug.Log($"Current Filter: {(currentFilter.HasValue ? currentFilter.Value.ToString() : "None")}");
+        }
+#endif
         #endregion
     }
 }

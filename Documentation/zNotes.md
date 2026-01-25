@@ -217,6 +217,68 @@ Open `SceneManifest` in Inspector and adjust:
   ✅ Allow Saving: true
 
 
+
+======
+
+TODO: Later SceneManifest.cs and SceneMetadata.cs
+
+public enum SceneCategory
+{
+    Core,           // Bootstrap, disclaimer, character creation
+    Hub,            // MainBase (central navigation)
+    GameplayUI,     // Storage, Inventory, Cooking, Brewing, Crafting
+    MenuUI,         // Profile, Quest, Codex, WorldMap
+    Combat,         // Combat scenes
+    Exploration     // Future: Town, Dungeon, etc.
+}
+```
+
+**Mapping:**
+```
+Core:
+├── 00_Disclaimer
+├── 01_Bootstrap
+└── 02_AvatarCreation
+
+Hub:
+└── 03_MainBase
+
+GameplayUI: (Room/Activity screens - accessed from MainBase)
+├── UI_Storage
+├── UI_Inventory
+├── UI_Cooking
+├── UI_Brewing
+└── UI_Crafting
+
+MenuUI: (Global navigation - accessible anywhere)
+├── UI_Profile
+├── UI_Quest
+├── UI_Codex
+└── UI_WorldMap
+
+Combat:
+└── 12_Combat
+
+Exploration: (Future)
+├── 05_Town
+└── 06_Dungeon
+
+
 =============================
 
-Important: Before refactoring, reviewing, or giving suggestions about any code, always ask me first if you want to see the full script or relevant code context. Do not assume or guess the code—always request it before making changes.
+📝 Quick Note: Main Menu Implementation (For Later)Scene Order:
+00_Disclaimer → 01_Bootstrap → 02_MainMenu (press start game/newgame and Delete save button) → 03_AvatarCreation / 04_MainBaseWhy this structure:
+
+02_MainMenu
+Start/New Game Button - show new game if there  is no save and start gaem if there is
+Delete Save - this will nuke the save (i think i already have this logic in my savemanager.cs) with lods of modal popup asking if are they sure for safety net.
+
+=============================
+
+**Important RULE:**
+* Before refactoring, reviewing, or suggesting changes to any code, always ask me if you need the full script or relevant context.
+* Do **not** assume or invent code. Refactor only based on code I explicitly provide.
+* Generate code only. If you include a summary, keep it to 1 short paragraph max.
+
+* The **Modules/System** folder should contain **only pure data logic** (no UI, scenes, or presentation code).
+* All UI presentation logic should always go in the **UI** folder.

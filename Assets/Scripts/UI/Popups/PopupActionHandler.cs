@@ -1,17 +1,19 @@
 // ════════════════════════════════════════════
-// Assets/Scripts/Modules/SharedUI/Popups/PopupActionHandler.cs
+// Assets/Scripts/UI/Popups/PopupActionHandler.cs
+// ✅ FIXED: Updated to use GameBootstrap pattern and new PotionSystem namespace
 // Centralized business logic handler for all popup actions
 // ════════════════════════════════════════════
 
 using System;
 using UnityEngine;
+using Ascension.Core;
 using Ascension.Data.SO.Item;
 using Ascension.Inventory.Data;
 using Ascension.Inventory.Enums;
 using Ascension.Inventory.Manager;
 using Ascension.Equipment.Manager;
 using Ascension.Character.Manager;
-using Ascension.GameSystem;
+using Ascension.PotionSystem.Manager;
 
 namespace Ascension.UI.Popups
 {
@@ -47,7 +49,8 @@ namespace Ascension.UI.Popups
 
         public bool EquipItem(ItemBaseSO itemData, ItemInstance itemInstance)
         {
-            var equipMgr = EquipmentManager.Instance;
+            // ✅ FIXED: Use GameBootstrap instead of Instance
+            var equipMgr = GameBootstrap.Equipment;
             if (equipMgr == null)
             {
                 NotifyFailure("Equipment system unavailable");
@@ -71,7 +74,8 @@ namespace Ascension.UI.Popups
 
         public bool UnequipItem(ItemBaseSO itemData, ItemInstance itemInstance)
         {
-            var equipMgr = EquipmentManager.Instance;
+            // ✅ FIXED: Use GameBootstrap instead of Instance
+            var equipMgr = GameBootstrap.Equipment;
             if (equipMgr == null)
             {
                 NotifyFailure("Equipment system unavailable");
@@ -99,8 +103,16 @@ namespace Ascension.UI.Popups
 
         public bool MoveItem(ItemInstance itemInstance, int quantity, ItemLocation targetLocation)
         {
-            var inventory = InventoryManager.Instance?.Inventory;
-            var database = InventoryManager.Instance?.Database;
+            // ✅ FIXED: Use GameBootstrap instead of Instance
+            var inventoryMgr = GameBootstrap.Inventory;
+            if (inventoryMgr == null)
+            {
+                NotifyFailure("Inventory system unavailable");
+                return false;
+            }
+
+            var inventory = inventoryMgr.Inventory;
+            var database = inventoryMgr.Database;
 
             if (inventory == null || database == null)
             {
@@ -143,20 +155,25 @@ namespace Ascension.UI.Popups
 
         public bool UsePotion(PotionSO potionData, ItemInstance itemInstance, int quantity)
         {
-            if (PotionManager.Instance == null)
+            // ✅ FIXED: Use GameBootstrap instead of Instance
+            var potionMgr = GameBootstrap.Potion;
+            var characterMgr = GameBootstrap.Character;
+            var inventoryMgr = GameBootstrap.Inventory;
+
+            if (potionMgr == null)
             {
                 NotifyFailure("Potion system unavailable");
                 return false;
             }
 
-            if (!CharacterManager.Instance.HasActivePlayer)
+            if (characterMgr == null || !characterMgr.HasActivePlayer)
             {
                 NotifyFailure("No active player");
                 return false;
             }
 
-            var playerStats = CharacterManager.Instance.CurrentPlayer;
-            var baseStats = CharacterManager.Instance.BaseStats;
+            var playerStats = characterMgr.CurrentPlayer;
+            var baseStats = characterMgr.BaseStats;
 
             if (playerStats == null || baseStats == null)
             {
@@ -167,7 +184,8 @@ namespace Ascension.UI.Popups
             int successfulUses = 0;
             for (int i = 0; i < quantity; i++)
             {
-                bool success = PotionManager.Instance.UsePotion(potionData, playerStats, baseStats);
+                // ✅ FIXED: Use new UsePotion signature (simplified)
+                bool success = potionMgr.UsePotion(potionData);
                 
                 if (success)
                 {
@@ -185,7 +203,12 @@ namespace Ascension.UI.Popups
 
             if (successfulUses > 0)
             {
-                InventoryManager.Instance.Inventory.RemoveItem(itemInstance, successfulUses);
+                // Remove items from inventory
+                if (inventoryMgr != null && inventoryMgr.Inventory != null)
+                {
+                    inventoryMgr.Inventory.RemoveItem(itemInstance, successfulUses);
+                }
+
                 NotifySuccess($"Used {successfulUses}x {potionData.ItemName}");
                 
                 if (successfulUses == quantity || itemInstance.quantity <= 0)

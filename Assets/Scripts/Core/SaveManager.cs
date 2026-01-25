@@ -1,94 +1,71 @@
 // ════════════════════════════════════════════════════════════════════════
 // Assets/Scripts/Core/SaveManager.cs
-// ✅ FIXED: Added comprehensive validation in LoadCharacter()
-// ✅ FIXED: Prevents crashes from corrupt/incomplete save files
+// ✅ FIXED: Corrected MP and EXP casing issues
 // ════════════════════════════════════════════════════════════════════════
 
 using System;
 using System.IO;
 using UnityEngine;
-using Ascension.Data.Save;
-using Ascension.Character.Stat;
+using Ascension.Character.Core;
 using Ascension.Character.Manager;
 using Ascension.Inventory.Manager;
-using Ascension.Inventory.Enums;
 using Ascension.Inventory.Data;
 using Ascension.Inventory.Config;
 using Ascension.Equipment.Manager;
+using Ascension.Skill.Manager;
+using Ascension.Data.Save;
 
 namespace Ascension.Core
 {
-    public class SaveManager : MonoBehaviour, IGameService
+    public class SaveManager : MonoBehaviour
     {
-        #region Singleton
-        public static SaveManager Instance { get; private set; }
-        #endregion
-        
-        #region Serialized Settings
+        #region Serialized References
         [Header("Settings")]
         [SerializeField] private bool prettyPrintJson = true;
         [SerializeField] private bool enableAutoBackup = true;
         [SerializeField] private bool enableDebugLogs = true;
         [SerializeField] private int maxBackupCount = 3;
-        #endregion
         
-        #region Injected Dependencies
-        private CharacterManager _characterManager;
-        private InventoryManager _inventoryManager;
-        private EquipmentManager _equipmentManager;
-        private SkillLoadoutManager _skillLoadoutManager;
+        [Header("Fallback Behavior")]
+        [Tooltip("If true, corrupted saves will load with default values instead of throwing errors")]
+        [SerializeField] private bool allowGracefulDegradation = true;
         #endregion
-        
+
         #region File Paths
         private const string ROOT_SAVE_FOLDER = "Saves";
         private const string PLAYER_DATA_FOLDER = "CharacterData";
         private const string BACKUP_FOLDER = "Backups";
         private const string PLAYER_DATA_FILE = "player_data.json";
-        
+
         private string RootSavePath => Path.Combine(Application.persistentDataPath, ROOT_SAVE_FOLDER);
         private string CharacterDataPath => Path.Combine(RootSavePath, PLAYER_DATA_FOLDER);
         private string BackupPath => Path.Combine(CharacterDataPath, BACKUP_FOLDER);
         private string CharacterDataFile => Path.Combine(CharacterDataPath, PLAYER_DATA_FILE);
         #endregion
-        
+
         #region Unity Callbacks
         private void Awake()
         {
-            InitializeSingleton();
+            EnsureFoldersExist();
+            Log("SaveManager ready");
         }
-        
-        #if UNITY_EDITOR
+
+#if UNITY_EDITOR
         private void Update()
         {
             HandleDebugKeys();
         }
-        #endif
+#endif
         #endregion
 
-        #region IGameService Implementation
-        public void Initialize()
+        #region Public API - Initialization
+        public void Init()
         {
-            Debug.Log("[SaveManager] Initializing...");
-            
-            InjectDependencies();
-            EnsureFoldersExist();
-            
-            Debug.Log($"[SaveManager] Ready - Save path: {CharacterDataPath}");
+            Log("SaveManager initialized");
         }
 
-        private void InjectDependencies()
-        {
-            var container = ServiceContainer.Instance;
-            
-            _characterManager = container.GetRequired<CharacterManager>();
-            _inventoryManager = container.GetRequired<InventoryManager>();
-            _equipmentManager = container.GetRequired<EquipmentManager>();
-            _skillLoadoutManager = container.GetRequired<SkillLoadoutManager>();
-        }
-        #endregion
-        
         // ════════════════════════════════════════════════════════════════
-        // PUBLIC API - SAVE/LOAD
+        // ✅ SAVE GAME - Runtime → DTO → JSON
         // ════════════════════════════════════════════════════════════════
         
         public bool SaveGame(CharacterStats playerStats, float sessionPlayTime)
@@ -102,75 +79,93 @@ namespace Ascension.Core
             try
             {
                 CreateBackupIfNeeded();
-                
-                CharacterSaveData charData = ConvertCharacterToSaveData(playerStats);
-                InventorySaveData invData = GatherInventoryData();
-                EquipmentSaveData eqData = GatherEquipmentData();
-                SkillLoadoutSaveData skillData = GatherSkillLoadoutData();
-                
-                SaveData saveData = BuildSaveData(charData, invData, eqData, skillData, sessionPlayTime);
-                
+
+                // ✅ STEP 1: Convert runtime data → DTOs
+                CharacterSaveData characterDTO = playerStats.ToSaveData();
+                InventorySaveData inventoryDTO = GatherInventoryData();
+                EquipmentSaveData equipmentDTO = GatherEquipmentData();
+                SkillLoadoutSaveData skillDTO = GatherSkillLoadoutData();
+
+                // ✅ STEP 2: Build unified save container
+                SaveData saveData = BuildSaveData(characterDTO, inventoryDTO, equipmentDTO, skillDTO, sessionPlayTime);
+
+                // ✅ STEP 3: Write to file
                 WriteSaveFile(saveData);
-                
+
                 Log("Game saved successfully");
+                GameEvents.TriggerGameSaved();
                 return true;
             }
             catch (Exception e)
             {
-                LogError($"Save failed: {e.Message}");
+                LogError($"Save failed: {e.Message}\n{e.StackTrace}");
                 return false;
             }
         }
+
+        // ════════════════════════════════════════════════════════════════
+        // ✅ LOAD GAME - JSON → DTO → Runtime
+        // ════════════════════════════════════════════════════════════════
         
         public bool LoadGame()
         {
             SaveData saveData = TryLoadFromPath(CharacterDataFile);
-            
+
             if (saveData == null)
             {
                 Log("Main save not found, trying backup...");
                 saveData = TryLoadFromBackup();
             }
-            
+
             if (saveData == null)
             {
                 LogError("No valid save found");
                 return false;
             }
-            
+
             try
             {
-                LoadCharacter(saveData);
-                LoadInventory(saveData);
-                LoadEquipment(saveData);
-                LoadSkillLoadout(saveData);
-                
+                LoadCharacter(saveData.characterData);
+                LoadInventory(saveData.inventoryData);
+                LoadEquipment(saveData.equipmentData);
+                LoadSkillLoadout(saveData.skillLoadoutData);
+
                 Log("Game loaded successfully");
+                GameEvents.TriggerGameLoaded(GameBootstrap.Character.CurrentPlayer);
                 return true;
             }
             catch (Exception e)
             {
-                LogError($"Load failed: {e.Message}");
+                LogError($"Load failed: {e.Message}\n{e.StackTrace}");
+                
+                // ✅ Graceful degradation option
+                if (allowGracefulDegradation)
+                {
+                    LogWarning("Attempting to recover with default values...");
+                    return TryLoadWithDefaults();
+                }
+                
                 return false;
             }
         }
-        
+
         public bool SaveExists()
         {
             if (File.Exists(CharacterDataFile))
                 return true;
-            
+
             return HasBackupFiles();
         }
-        
+
         public bool DeleteSave()
         {
             try
             {
                 DeleteMainSave();
                 DeleteAllBackups();
-                
+
                 Log("Save deleted");
+                GameEvents.TriggerSaveDeleted();
                 return true;
             }
             catch (Exception e)
@@ -179,429 +174,304 @@ namespace Ascension.Core
                 return false;
             }
         }
-        
-        // ════════════════════════════════════════════════════════════════
-        // PRIVATE - CHARACTER CONVERSION
-        // ════════════════════════════════════════════════════════════════
-        
-        private CharacterSaveData ConvertCharacterToSaveData(CharacterStats stats)
-        {
-            return new CharacterSaveData
-            {
-                playerName = stats.playerName,
-                level = stats.Level,
-                currentExperience = stats.CurrentEXP,
-                currentHealth = stats.CurrentHP,
-                currentMana = 0f,
-                attributePoints = stats.UnallocatedPoints,
-                
-                strength = stats.attributes.STR,
-                agility = stats.attributes.AGI,
-                intelligence = stats.attributes.INT,
-                endurance = stats.attributes.END,
-                wisdom = stats.attributes.WIS
-            };
-        }
+        #endregion
 
+        #region Private - Character Save/Load (DTO Pattern)
+        
         /// <summary>
-        /// ✅ FIXED: Added comprehensive validation to prevent crashes from corrupt saves
-        /// 
-        /// VALIDATION CHECKS:
-        /// - Save data exists and is not null
-        /// - Character data exists within save
-        /// - Player name is valid (not null/empty)
-        /// - Level is within valid range (1-100)
-        /// - Attributes are within valid range (0-9999)
-        /// - Health values are non-negative
-        /// - Base stats are loaded
-        /// 
-        /// THROWS: InvalidOperationException with detailed error message if validation fails
-        /// CAUGHT BY: Bootstrap.DetermineTargetScene() try-catch block
+        /// ✅ REFACTORED: Load character from DTO → Runtime conversion
         /// </summary>
-        private void LoadCharacter(SaveData saveData)
+        private void LoadCharacter(CharacterSaveData saveData)
         {
-            // ✅ Validation 1: Ensure save data exists
             if (saveData == null)
             {
-                throw new InvalidOperationException(
-                    "Save data is null! This should never happen - file was loaded but contains no data."
-                );
+                if (allowGracefulDegradation)
+                {
+                    LogWarning("Character data missing - loading defaults");
+                    LoadDefaultCharacter();
+                    return;
+                }
+                
+                throw new InvalidOperationException("Invalid save data - character data missing!");
             }
 
-            // ✅ Validation 2: Ensure character data exists
-            if (saveData.characterData == null)
+            // ✅ STEP 1: Validate DTO
+            if (!saveData.IsValid(out string validationError))
             {
-                throw new InvalidOperationException(
-                    "Save file is missing character data section! File may be corrupted or from an old version."
-                );
+                if (allowGracefulDegradation)
+                {
+                    LogWarning($"Invalid character data: {validationError} - sanitizing...");
+                    saveData.Sanitize(); // Fix corrupted values
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Character save data invalid: {validationError}");
+                }
             }
 
-            CharacterSaveData charData = saveData.characterData;
+            // ✅ STEP 2: Convert DTO → Runtime
+            CharacterStats stats = saveData.ToRuntimeData();
 
-            // ✅ Validation 3: Player name must exist and be valid
-            if (string.IsNullOrWhiteSpace(charData.playerName))
+            if (stats == null)
             {
-                throw new InvalidOperationException(
-                    "Save file has invalid or missing player name!"
-                );
+                throw new InvalidOperationException("Failed to convert save data to CharacterStats");
             }
 
-            // ✅ Validation 4: Level must be within valid range
-            if (charData.level < 1 || charData.level > 100)
+            // ✅ STEP 3: Recalculate derived stats (ensures formulas are up-to-date)
+            var characterManager = GameBootstrap.Character;
+            if (characterManager == null || characterManager.BaseStats == null)
             {
-                throw new InvalidOperationException(
-                    $"Save file has invalid level: {charData.level}. Expected 1-100."
-                );
+                throw new InvalidOperationException("CharacterManager or BaseStats not available!");
             }
 
-            // ✅ Validation 5: Attributes must be within valid range
-            const int MIN_ATTRIBUTE = 0;
-            const int MAX_ATTRIBUTE = 9999;
+            stats.RecalculateStats(characterManager.BaseStats, fullHeal: false);
 
-            if (!IsAttributeValid(charData.strength, MIN_ATTRIBUTE, MAX_ATTRIBUTE) ||
-                !IsAttributeValid(charData.agility, MIN_ATTRIBUTE, MAX_ATTRIBUTE) ||
-                !IsAttributeValid(charData.intelligence, MIN_ATTRIBUTE, MAX_ATTRIBUTE) ||
-                !IsAttributeValid(charData.endurance, MIN_ATTRIBUTE, MAX_ATTRIBUTE) ||
-                !IsAttributeValid(charData.wisdom, MIN_ATTRIBUTE, MAX_ATTRIBUTE))
-            {
-                throw new InvalidOperationException(
-                    $"Save file has invalid attributes! " +
-                    $"STR={charData.strength}, AGI={charData.agility}, INT={charData.intelligence}, " +
-                    $"END={charData.endurance}, WIS={charData.wisdom}. Expected {MIN_ATTRIBUTE}-{MAX_ATTRIBUTE}."
-                );
-            }
-
-            // ✅ Validation 6: Health values must be non-negative
-            if (charData.currentHealth < 0)
-            {
-                LogWarning($"Save file has negative health ({charData.currentHealth}), clamping to 0");
-                charData.currentHealth = 0;
-            }
-
-            // ✅ Validation 7: Experience must be non-negative
-            if (charData.currentExperience < 0)
-            {
-                LogWarning($"Save file has negative experience ({charData.currentExperience}), clamping to 0");
-                charData.currentExperience = 0;
-            }
-
-            // ✅ Validation 8: Base stats must be loaded
-            if (_characterManager.BaseStats == null)
-            {
-                throw new InvalidOperationException(
-                    "CharacterBaseStatsSO is not loaded! Cannot restore character without base stats."
-                );
-            }
-
-            // ✅ All validations passed - proceed with loading
-            CharacterStats stats = new CharacterStats();
-            stats.Initialize(_characterManager.BaseStats);
-            
-            // Restore saved values
-            stats.playerName = charData.playerName;
-            stats.guildRank = "Unranked";
-            
-            stats.levelSystem.level = charData.level;
-            stats.levelSystem.currentEXP = charData.currentExperience;
-            stats.levelSystem.unallocatedPoints = charData.attributePoints;
-            
-            stats.attributes.STR = charData.strength;
-            stats.attributes.AGI = charData.agility;
-            stats.attributes.INT = charData.intelligence;
-            stats.attributes.END = charData.endurance;
-            stats.attributes.WIS = charData.wisdom;
-            
-            stats.RecalculateStats(_characterManager.BaseStats, fullHeal: false);
-            stats.combatRuntime.currentHP = charData.currentHealth;
-            
-            // ✅ Final validation: Ensure HP doesn't exceed MaxHP
+            // ✅ STEP 4: Clamp HP/MP to max values
             if (stats.CurrentHP > stats.MaxHP)
-            {
-                LogWarning($"Loaded HP ({stats.CurrentHP}) exceeds MaxHP ({stats.MaxHP}), clamping");
                 stats.combatRuntime.currentHP = stats.MaxHP;
+
+            // ✅ FIXED: MP clamping (uses placeholder currentMP field)
+            if (stats.CurrentMP > stats.MaxMP)
+                stats.combatRuntime.currentMP = stats.MaxMP;
+
+            // Ensure HP is at least 1 if alive
+            if (stats.CurrentHP <= 0 && allowGracefulDegradation)
+            {
+                LogWarning("HP was 0 or negative - setting to 1");
+                stats.combatRuntime.currentHP = 1;
             }
-            
-            _characterManager.LoadPlayer(stats);
-            
-            Log($"✓ Character loaded: {stats.playerName} (Lv.{stats.Level}, HP: {stats.CurrentHP}/{stats.MaxHP})");
+
+            // ✅ STEP 5: Load into CharacterManager
+            characterManager.LoadPlayer(stats);
+
+            Log($"✓ Character loaded: {stats.playerName} (Lv.{stats.Level}, HP: {stats.CurrentHP:F0}/{stats.MaxHP:F0})");
         }
 
         /// <summary>
-        /// ✅ NEW: Helper method to validate attribute values
+        /// ✅ Fallback method if save is completely corrupted
         /// </summary>
-        private bool IsAttributeValid(int value, int min, int max)
+        private bool TryLoadWithDefaults()
         {
-            return value >= min && value <= max;
+            try
+            {
+                LogWarning("Loading with default character state");
+                LoadDefaultCharacter();
+                
+                // Empty inventory
+                var inventoryManager = GameBootstrap.Inventory;
+                inventoryManager?.LoadInventory(new InventoryCoreData
+                {
+                    items = new System.Collections.Generic.List<ItemInstance>(),
+                    maxBagSlots = InventoryConfig.DEFAULT_BAG_SLOTS,
+                    maxStorageSlots = InventoryConfig.DEFAULT_STORAGE_SLOTS
+                });
+                
+                // Empty equipment
+                var equipmentManager = GameBootstrap.Equipment;
+                equipmentManager?.LoadEquipment(new EquipmentSaveData());
+                
+                // Empty skills
+                var skillManager = GameBootstrap.Skills;
+                skillManager?.LoadSkillLoadout(new SkillLoadoutSaveData());
+                
+                Log("✓ Loaded with default values");
+                return true;
+            }
+            catch (Exception e)
+            {
+                LogError($"Failed to load even with defaults: {e.Message}");
+                return false;
+            }
         }
+
+        /// <summary>
+        /// ✅ Create minimal valid character
+        /// </summary>
+        private void LoadDefaultCharacter()
+        {
+            var characterManager = GameBootstrap.Character;
+            
+            if (characterManager == null || characterManager.BaseStats == null)
+            {
+                throw new InvalidOperationException("Cannot create default character - CharacterManager not initialized");
+            }
+
+            CharacterStats defaultStats = new CharacterStats
+            {
+                playerName = "Adventurer",
+                attributes = new CharacterAttributes
+                {
+                    STR = 5,
+                    AGI = 5,
+                    INT = 5,
+                    END = 5,
+                    WIS = 5
+                }
+            };
+
+            // ✅ FIXED: Changed currentExp → currentEXP (correct casing)
+            defaultStats.levelSystem.level = 1;
+            defaultStats.levelSystem.currentEXP = 0;
+            defaultStats.RecalculateStats(characterManager.BaseStats, fullHeal: true);
+            
+            characterManager.LoadPlayer(defaultStats);
+            
+            LogWarning("Default character created - save was corrupted or missing");
+        }
+        #endregion
+
+        #region Private - Inventory (DTO Pattern)
         
-        // ════════════════════════════════════════════════════════════════
-        // PRIVATE - INVENTORY CONVERSION
-        // ════════════════════════════════════════════════════════════════
-        
+        /// <summary>
+        /// ✅ REFACTORED: Use extension method for conversion
+        /// </summary>
         private InventorySaveData GatherInventoryData()
         {
-            if (_inventoryManager == null)
-            {
-                return new InventorySaveData 
-                { 
-                    items = Array.Empty<ItemInstanceData>(),
-                    maxBagSlots = InventoryConfig.DEFAULT_BAG_SLOTS,
-                    maxStorageSlots = InventoryConfig.DEFAULT_STORAGE_SLOTS
-                };
-            }
-
-            InventoryCoreData bagData = _inventoryManager.SaveInventory();
-
-            if (bagData == null || bagData.items == null)
-            {
-                return new InventorySaveData 
-                { 
-                    items = Array.Empty<ItemInstanceData>(),
-                    maxBagSlots = InventoryConfig.DEFAULT_BAG_SLOTS,
-                    maxStorageSlots = InventoryConfig.DEFAULT_STORAGE_SLOTS
-                };
-            }
+            var inventoryManager = GameBootstrap.Inventory;
             
-            ItemInstanceData[] itemArray = new ItemInstanceData[bagData.items.Count];
-            
-            for (int i = 0; i < bagData.items.Count; i++)
+            if (inventoryManager == null)
             {
-                ItemInstance item = bagData.items[i];
-                
-                itemArray[i] = new ItemInstanceData
+                return new InventorySaveData
                 {
-                    itemId = item.itemID,
-                    quantity = item.quantity,
-                    location = (int)item.location,
-                    previousLocation = item.previousLocation.HasValue 
-                        ? (int)item.previousLocation.Value 
-                        : -1
+                    items = Array.Empty<ItemInstanceData>(),
+                    maxBagSlots = InventoryConfig.DEFAULT_BAG_SLOTS,
+                    maxStorageSlots = InventoryConfig.DEFAULT_STORAGE_SLOTS
                 };
             }
-            
+
+            InventoryCoreData coreData = inventoryManager.SaveInventory();
+
+            if (coreData == null || coreData.items == null)
+            {
+                return new InventorySaveData
+                {
+                    items = Array.Empty<ItemInstanceData>(),
+                    maxBagSlots = InventoryConfig.DEFAULT_BAG_SLOTS,
+                    maxStorageSlots = InventoryConfig.DEFAULT_STORAGE_SLOTS
+                };
+            }
+
+            // ✅ Use extension method for clean conversion
             return new InventorySaveData
             {
-                items = itemArray,
-                maxBagSlots = bagData.maxBagSlots,
-                maxStorageSlots = bagData.maxStorageSlots
+                items = coreData.items.ToSaveDataArray(),
+                maxBagSlots = coreData.maxBagSlots,
+                maxStorageSlots = coreData.maxStorageSlots
             };
         }
 
         /// <summary>
-        /// ✅ ENHANCED: Added validation for inventory data
+        /// ✅ REFACTORED: Use extension method for conversion
         /// </summary>
-        private void LoadInventory(SaveData saveData)
+        private void LoadInventory(InventorySaveData saveData)
         {
-            if (_inventoryManager == null)
+            var inventoryManager = GameBootstrap.Inventory;
+            
+            if (inventoryManager == null)
             {
                 LogWarning("Cannot load inventory - InventoryManager missing");
                 return;
             }
 
-            if (saveData.inventoryData == null)
+            // ✅ Use extension method for clean conversion
+            InventoryCoreData coreData = new InventoryCoreData
             {
-                LogWarning("Save file has no inventory data, initializing empty inventory");
-                InventoryCoreData emptyInventory = new InventoryCoreData
-                {
-                    maxBagSlots = InventoryConfig.DEFAULT_BAG_SLOTS,
-                    maxStorageSlots = InventoryConfig.DEFAULT_STORAGE_SLOTS,
-                    items = new System.Collections.Generic.List<ItemInstance>()
-                };
-                _inventoryManager.LoadInventory(emptyInventory);
-                return;
-            }
-
-            InventoryCoreData bagData = new InventoryCoreData
-            {
-                maxBagSlots = saveData.inventoryData.maxBagSlots,
-                maxStorageSlots = saveData.inventoryData.maxStorageSlots,
-                items = new System.Collections.Generic.List<ItemInstance>()
+                maxBagSlots = saveData?.maxBagSlots ?? InventoryConfig.DEFAULT_BAG_SLOTS,
+                maxStorageSlots = saveData?.maxStorageSlots ?? InventoryConfig.DEFAULT_STORAGE_SLOTS,
+                items = saveData?.items?.ToRuntimeDataList() ?? new System.Collections.Generic.List<ItemInstance>()
             };
-            
-            // ✅ Validate items array exists
-            if (saveData.inventoryData.items != null)
-            {
-                foreach (var itemData in saveData.inventoryData.items)
-                {
-                    // ✅ Validate item ID is not empty
-                    if (string.IsNullOrEmpty(itemData.itemId))
-                    {
-                        LogWarning("Skipping item with empty ID in save file");
-                        continue;
-                    }
 
-                    ItemLocation location = (ItemLocation)itemData.location;
-                    
-                    ItemInstance item = new ItemInstance(
-                        itemData.itemId, 
-                        itemData.quantity, 
-                        location
-                    );
-                    
-                    if (itemData.previousLocation >= 0)
-                    {
-                        item.previousLocation = (ItemLocation)itemData.previousLocation;
-                    }
-                    
-                    bagData.items.Add(item);
-                }
-            }
-            
-            _inventoryManager.LoadInventory(bagData);
-
-            Log($"✓ Inventory loaded: {bagData.items.Count} items");
+            inventoryManager.LoadInventory(coreData);
+            Log($"✓ Inventory loaded: {coreData.items.Count} items");
         }
-        
-        // ════════════════════════════════════════════════════════════════
-        // PRIVATE - EQUIPMENT CONVERSION
-        // ════════════════════════════════════════════════════════════════
-        
+        #endregion
+
+        #region Private - Equipment
         private EquipmentSaveData GatherEquipmentData()
         {
-            if (_equipmentManager != null)
-            {
-                return _equipmentManager.SaveEquipment();
-            }
-
-            return new EquipmentSaveData
-            {
-                weaponId = string.Empty,
-                helmetId = string.Empty,
-                chestId = string.Empty,
-                glovesId = string.Empty,
-                bootsId = string.Empty,
-                accessory1Id = string.Empty,
-                accessory2Id = string.Empty
-            };
+            var equipmentManager = GameBootstrap.Equipment;
+            return equipmentManager?.SaveEquipment() ?? new EquipmentSaveData();
         }
 
-        /// <summary>
-        /// ✅ ENHANCED: Added validation for equipment data
-        /// </summary>
-        private void LoadEquipment(SaveData saveData)
+        private void LoadEquipment(EquipmentSaveData saveData)
         {
-            if (_equipmentManager == null)
+            var equipmentManager = GameBootstrap.Equipment;
+            var characterManager = GameBootstrap.Character;
+            
+            if (equipmentManager == null)
             {
                 LogWarning("Cannot load equipment - EquipmentManager missing");
                 return;
             }
 
-            if (saveData.equipmentData == null)
-            {
-                LogWarning("Save file has no equipment data, initializing empty equipment");
-                return;
-            }
+            if (saveData == null) return;
 
-            _equipmentManager.LoadEquipment(saveData.equipmentData);
-            
-            if (_characterManager != null)
-            {
-                _characterManager.UpdateStatsFromEquipment();
-            }
-            
+            equipmentManager.LoadEquipment(saveData);
+
+            if (characterManager != null)
+                characterManager.UpdateStatsFromEquipment();
+
             Log("✓ Equipment loaded");
         }
-        
-        // ════════════════════════════════════════════════════════════════
-        // PRIVATE - SKILL LOADOUT CONVERSION
-        // ════════════════════════════════════════════════════════════════
-        
+        #endregion
+
+        #region Private - Skill Loadout
         private SkillLoadoutSaveData GatherSkillLoadoutData()
         {
-            if (_skillLoadoutManager != null)
-            {
-                return _skillLoadoutManager.SaveSkillLoadout();
-            }
-
-            return new SkillLoadoutSaveData
-            {
-                normalSkill1Id = string.Empty,
-                normalSkill2Id = string.Empty,
-                ultimateSkillId = string.Empty
-            };
+            var skillManager = GameBootstrap.Skills;
+            return skillManager?.SaveSkillLoadout() ?? new SkillLoadoutSaveData();
         }
 
-        /// <summary>
-        /// ✅ ENHANCED: Added validation for skill loadout data
-        /// </summary>
-        private void LoadSkillLoadout(SaveData saveData)
+        private void LoadSkillLoadout(SkillLoadoutSaveData saveData)
         {
-            if (_skillLoadoutManager == null)
+            var skillManager = GameBootstrap.Skills;
+            
+            if (skillManager == null)
             {
                 LogWarning("Cannot load skills - SkillLoadoutManager missing");
                 return;
             }
 
-            if (saveData.skillLoadoutData == null)
-            {
-                LogWarning("Save file has no skill loadout data, initializing empty loadout");
-                return;
-            }
+            if (saveData == null) return;
 
-            _skillLoadoutManager.LoadSkillLoadout(saveData.skillLoadoutData);
-            
+            skillManager.LoadSkillLoadout(saveData);
             Log("✓ Skill loadout loaded");
         }
+        #endregion
+
+        #region Private - File Operations
         
-        // ════════════════════════════════════════════════════════════════
-        // PRIVATE - FILE OPERATIONS
-        // ════════════════════════════════════════════════════════════════
-        
-        private void InitializeSingleton()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            
-            Instance = this;
-        }
-        
-        private void EnsureFoldersExist()
-        {
-            CreateFolderIfMissing(RootSavePath);
-            CreateFolderIfMissing(CharacterDataPath);
-            CreateFolderIfMissing(BackupPath);
-        }
-        
-        private void CreateFolderIfMissing(string path)
-        {
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
-        }
-        
+        /// <summary>
+        /// ✅ Build unified save data structure
+        /// </summary>
         private SaveData BuildSaveData(
-            CharacterSaveData characterData, 
-            InventorySaveData inventoryData, 
+            CharacterSaveData characterData,
+            InventorySaveData inventoryData,
             EquipmentSaveData equipmentData,
             SkillLoadoutSaveData skillLoadoutData,
             float playTime)
         {
-            SaveData existing = null;
-            
-            if (File.Exists(CharacterDataFile))
-            {
-                existing = TryLoadFromPath(CharacterDataFile);
-            }
-            
+            SaveData existing = File.Exists(CharacterDataFile) ? TryLoadFromPath(CharacterDataFile) : null;
+
             if (existing != null)
             {
+                // ✅ Update existing save
                 existing.characterData = characterData;
                 existing.inventoryData = inventoryData;
                 existing.equipmentData = equipmentData;
                 existing.skillLoadoutData = skillLoadoutData;
-                
+
                 existing.metaData.lastSaveTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 existing.metaData.totalPlayTimeSeconds += playTime;
                 existing.metaData.saveCount++;
-                
+
                 return existing;
             }
             else
             {
+                // ✅ Create new save
                 string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                
+
                 return new SaveData
                 {
                     metaData = new SaveMetaData
@@ -619,201 +489,139 @@ namespace Ascension.Core
                 };
             }
         }
-        
+
         private void WriteSaveFile(SaveData saveData)
         {
             string json = JsonUtility.ToJson(saveData, prettyPrintJson);
             File.WriteAllText(CharacterDataFile, json);
         }
-        
-        /// <summary>
-        /// ✅ ENHANCED: Added JSON validation before parsing
-        /// </summary>
+
         private SaveData TryLoadFromPath(string path)
         {
-            if (!File.Exists(path))
-                return null;
-            
+            if (!File.Exists(path)) return null;
+
             try
             {
                 string json = File.ReadAllText(path);
-                
-                // ✅ Validate JSON is not empty or whitespace
-                if (string.IsNullOrWhiteSpace(json))
-                {
-                    LogError($"Save file at {path} is empty!");
-                    return null;
-                }
+                if (string.IsNullOrWhiteSpace(json)) return null;
 
                 SaveData data = JsonUtility.FromJson<SaveData>(json);
-                
-                if (data == null || data.characterData == null)
-                {
-                    LogError($"Invalid save data at: {path}");
-                    return null;
-                }
-                
+                if (data == null || data.characterData == null) return null;
+
                 return data;
             }
             catch (Exception e)
             {
-                LogError($"Failed to load {path}: {e.Message}");
+                LogError($"Failed to load save from {path}: {e.Message}");
                 return null;
             }
         }
-        
-        // ════════════════════════════════════════════════════════════════
-        // PRIVATE - BACKUP SYSTEM
-        // ════════════════════════════════════════════════════════════════
-        
+
+        private void EnsureFoldersExist()
+        {
+            CreateFolderIfMissing(RootSavePath);
+            CreateFolderIfMissing(CharacterDataPath);
+            CreateFolderIfMissing(BackupPath);
+        }
+
+        private void CreateFolderIfMissing(string path)
+        {
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+        }
+
         private void CreateBackupIfNeeded()
         {
             if (enableAutoBackup && File.Exists(CharacterDataFile))
-            {
                 CreateRollingBackup();
-            }
         }
-        
+
         private void CreateRollingBackup()
         {
             try
             {
-                string backupFileName = GenerateBackupFileName();
-                string backupFilePath = Path.Combine(BackupPath, backupFileName);
-                
+                string backupFilePath = Path.Combine(BackupPath, GenerateBackupFileName());
                 File.Copy(CharacterDataFile, backupFilePath, overwrite: true);
-                Log($"Backup created: {backupFileName}");
-                
                 CleanupOldBackups();
             }
             catch (Exception e)
             {
-                LogError($"Backup failed: {e.Message}");
+                LogWarning($"Backup creation failed: {e.Message}");
             }
         }
-        
-        private string GenerateBackupFileName()
-        {
-            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            return $"backup_player_{timestamp}.json";
-        }
-        
+
+        private string GenerateBackupFileName() => $"backup_player_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+
         private void CleanupOldBackups()
         {
-            try
-            {
-                FileInfo[] backupFiles = GetBackupFiles();
-                Array.Sort(backupFiles, (a, b) => b.CreationTime.CompareTo(a.CreationTime));
-                
-                for (int i = maxBackupCount; i < backupFiles.Length; i++)
-                {
-                    backupFiles[i].Delete();
-                    Log($"Old backup deleted: {backupFiles[i].Name}");
-                }
-            }
-            catch (Exception e)
-            {
-                LogError($"Backup cleanup failed: {e.Message}");
-            }
+            FileInfo[] backupFiles = new DirectoryInfo(BackupPath).GetFiles("backup_player_*.json");
+            Array.Sort(backupFiles, (a, b) => b.CreationTime.CompareTo(a.CreationTime));
+
+            for (int i = maxBackupCount; i < backupFiles.Length; i++)
+                backupFiles[i].Delete();
         }
-        
+
         private SaveData TryLoadFromBackup()
         {
-            try
+            FileInfo[] backupFiles = new DirectoryInfo(BackupPath).GetFiles("backup_player_*.json");
+            Array.Sort(backupFiles, (a, b) => b.CreationTime.CompareTo(a.CreationTime));
+
+            foreach (var file in backupFiles)
             {
-                FileInfo[] backupFiles = GetBackupFiles();
-                
-                if (backupFiles.Length == 0)
-                    return null;
-                
-                Array.Sort(backupFiles, (a, b) => b.CreationTime.CompareTo(a.CreationTime));
-                
-                foreach (FileInfo file in backupFiles)
+                SaveData data = TryLoadFromPath(file.FullName);
+                if (data != null)
                 {
-                    SaveData data = TryLoadFromPath(file.FullName);
-                    if (data != null)
-                    {
-                        Log($"Loaded from backup: {file.Name}");
-                        RestoreBackupAsMainSave(data);
-                        return data;
-                    }
+                    Log($"Restored from backup: {file.Name}");
+                    WriteSaveFile(data);
+                    return data;
                 }
             }
-            catch (Exception e)
-            {
-                LogError($"Backup load failed: {e.Message}");
-            }
-            
+
             return null;
         }
-        
-        private void RestoreBackupAsMainSave(SaveData data)
-        {
-            string json = JsonUtility.ToJson(data, prettyPrintJson);
-            File.WriteAllText(CharacterDataFile, json);
-        }
-        
-        private FileInfo[] GetBackupFiles()
-        {
-            DirectoryInfo backupDir = new DirectoryInfo(BackupPath);
-            return backupDir.GetFiles("backup_player_*.json");
-        }
-        
-        private bool HasBackupFiles()
-        {
-            if (!Directory.Exists(BackupPath))
-                return false;
-            
-            return GetBackupFiles().Length > 0;
-        }
-        
+
+        private bool HasBackupFiles() => Directory.Exists(BackupPath) && new DirectoryInfo(BackupPath).GetFiles("backup_player_*.json").Length > 0;
+
         private void DeleteMainSave()
         {
             if (File.Exists(CharacterDataFile))
                 File.Delete(CharacterDataFile);
         }
-        
+
         private void DeleteAllBackups()
         {
-            FileInfo[] backupFiles = GetBackupFiles();
-            
-            foreach (FileInfo file in backupFiles)
-            {
+            foreach (var file in new DirectoryInfo(BackupPath).GetFiles("backup_player_*.json"))
                 file.Delete();
-            }
         }
-        
-        // ════════════════════════════════════════════════════════════════
-        // PRIVATE - LOGGING & DEBUG
-        // ════════════════════════════════════════════════════════════════
-        
+        #endregion
+
+        #region Logging & Debug
         private void Log(string message)
         {
-            if (enableDebugLogs)
-                Debug.Log($"[SaveManager] {message}");
+            if (enableDebugLogs) Debug.Log($"[SaveManager] {message}");
         }
-        
+
         private void LogWarning(string message)
         {
             Debug.LogWarning($"[SaveManager] {message}");
         }
-        
+
         private void LogError(string message)
         {
             Debug.LogError($"[SaveManager] {message}");
         }
-        
-        #if UNITY_EDITOR
+
+#if UNITY_EDITOR
         private void HandleDebugKeys()
         {
             if (Input.GetKeyDown(KeyCode.F12))
                 OpenSaveFolder();
-            
+
             if (Input.GetKeyDown(KeyCode.F11))
                 NukeSaveData();
         }
-        #endif
-        
+#endif
+
         [ContextMenu("Open Save Folder")]
         public void OpenSaveFolder()
         {
@@ -827,5 +635,6 @@ namespace Ascension.Core
             if (DeleteSave())
                 Debug.Log("[SaveManager] Save data nuked!");
         }
+        #endregion
     }
 }

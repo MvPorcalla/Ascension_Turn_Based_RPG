@@ -1,12 +1,13 @@
 // ════════════════════════════════════════════════════════════════════════
 // Assets/Scripts/Core/GameEvents.cs
+// ✅ FIXED: Added event cleanup method to prevent stale subscriptions
 // Central event hub - all game state changes flow through here
 // UI components subscribe to these events for reactive updates
 // ════════════════════════════════════════════════════════════════════════
 
 using System;
 using UnityEngine;
-using Ascension.Character.Stat;
+using Ascension.Character.Core;
 using Ascension.Inventory.Data;
 using Ascension.Inventory.Enums;
 using Ascension.Equipment.Enums;
@@ -24,6 +25,12 @@ namespace Ascension.Core
         // GAME FLOW EVENTS
         // ════════════════════════════════════════════════════════════════
         
+        /// <summary>Scene finished loading (called by SceneFlowManager)</summary>
+        public static event Action<string> OnSceneLoaded;
+        
+        /// <summary>Scene is about to change</summary>
+        public static event Action<string> OnSceneChanging; // sceneName
+        
         /// <summary>New game started (character created)</summary>
         public static event Action<CharacterStats> OnNewGameStarted;
         
@@ -35,9 +42,6 @@ namespace Ascension.Core
         
         /// <summary>Save deleted</summary>
         public static event Action OnSaveDeleted;
-        
-        /// <summary>Scene is about to change</summary>
-        public static event Action<string> OnSceneChanging; // sceneName
         
         // ════════════════════════════════════════════════════════════════
         // CHARACTER EVENTS
@@ -73,6 +77,9 @@ namespace Ascension.Core
         
         /// <summary>Inventory changed (generic refresh trigger)</summary>
         public static event Action OnInventoryChanged;
+
+        /// <summary>Item slot clicked (for UI slot clicks)</summary>
+        public static event Action<ItemBaseSO, ItemInstance> OnItemSlotClicked;
         
         // ════════════════════════════════════════════════════════════════
         // EQUIPMENT EVENTS
@@ -95,8 +102,94 @@ namespace Ascension.Core
         public static event Action OnSkillLoadoutChanged;
         
         // ════════════════════════════════════════════════════════════════
+        // ✅ NEW: EVENT LIFECYCLE MANAGEMENT
+        // ════════════════════════════════════════════════════════════════
+        
+        /// <summary>
+        /// Clear all event subscriptions
+        /// Call this when:
+        /// - Returning to main menu
+        /// - Restarting game
+        /// - Loading a new save
+        /// Prevents stale event handlers from triggering
+        /// </summary>
+        public static void ClearAllEvents()
+        {
+            // Game flow events
+            OnSceneLoaded = null;
+            OnSceneChanging = null;
+            OnNewGameStarted = null;
+            OnGameSaved = null;
+            OnGameLoaded = null;
+            OnSaveDeleted = null;
+            
+            // Character events
+            OnHealthChanged = null;
+            OnLevelUp = null;
+            OnExperienceGained = null;
+            OnStatsRecalculated = null;
+            OnPlayerNameChanged = null;
+            
+            // Inventory events
+            OnItemAdded = null;
+            OnItemRemoved = null;
+            OnItemMoved = null;
+            OnInventoryChanged = null;
+            
+            // Equipment events
+            OnGearEquipped = null;
+            OnGearUnequipped = null;
+            OnEquipmentChanged = null;
+            
+            // Skill events
+            OnSkillLoadoutChanged = null;
+            
+            Debug.Log("[GameEvents] All events cleared");
+        }
+        
+        /// <summary>
+        /// Get current subscriber count for debugging memory leaks
+        /// </summary>
+        public static void LogSubscriberCounts()
+        {
+            Debug.Log("=== GameEvents Subscriber Counts ===");
+            LogEventCount("OnSceneLoaded", OnSceneLoaded);
+            LogEventCount("OnSceneChanging", OnSceneChanging);
+            LogEventCount("OnNewGameStarted", OnNewGameStarted);
+            LogEventCount("OnGameSaved", OnGameSaved);
+            LogEventCount("OnGameLoaded", OnGameLoaded);
+            LogEventCount("OnHealthChanged", OnHealthChanged);
+            LogEventCount("OnLevelUp", OnLevelUp);
+            LogEventCount("OnStatsRecalculated", OnStatsRecalculated);
+            LogEventCount("OnInventoryChanged", OnInventoryChanged);
+            LogEventCount("OnEquipmentChanged", OnEquipmentChanged);
+            Debug.Log("================================");
+        }
+        
+        private static void LogEventCount(string eventName, Delegate eventDelegate)
+        {
+            int count = eventDelegate?.GetInvocationList()?.Length ?? 0;
+            if (count > 0)
+            {
+                Debug.Log($"  {eventName}: {count} subscriber(s)");
+            }
+        }
+        
+        // ════════════════════════════════════════════════════════════════
         // EVENT TRIGGERS (Call these from managers/commands)
         // ════════════════════════════════════════════════════════════════
+        
+        public static void TriggerSceneLoaded(string sceneName)
+        {
+            OnSceneLoaded?.Invoke(sceneName);
+            Debug.Log($"[GameEvents] Scene loaded: {sceneName}");
+        }
+        
+        public static void TriggerSceneChanging(string sceneName)
+        {
+            OnSceneChanging?.Invoke(sceneName);
+            Debug.Log($"[GameEvents] Scene changing to: {sceneName}");
+        }
         
         public static void TriggerNewGameStarted(CharacterStats stats)
         {
@@ -120,12 +213,6 @@ namespace Ascension.Core
         {
             OnSaveDeleted?.Invoke();
             Debug.Log("[GameEvents] Save deleted");
-        }
-        
-        public static void TriggerSceneChanging(string sceneName)
-        {
-            OnSceneChanging?.Invoke(sceneName);
-            Debug.Log($"[GameEvents] Scene changing to: {sceneName}");
         }
         
         public static void TriggerHealthChanged(float current, float max)

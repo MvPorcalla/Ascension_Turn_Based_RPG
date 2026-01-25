@@ -38,6 +38,14 @@ namespace Ascension.Character.Runtime
         }
 
         /// <summary>
+        /// Get EXP required to reach next level
+        /// </summary>
+        public int GetExpToNextLevel()
+        {
+            return expToNextLevel;
+        }
+
+        /// <summary>
         /// Add EXP with level cap protection
         /// Returns number of levels gained
         /// </summary>

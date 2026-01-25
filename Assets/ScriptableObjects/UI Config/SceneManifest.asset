@@ -45,6 +45,14 @@ MonoBehaviour:
     pauseOnFocusLost: 1
     displayName: 
     musicTrack: 
+  - sceneName: UI_Storage
+    category: 2
+    showPlayerHUD: 1
+    showGlobalMenu: 0
+    allowSaving: 1
+    pauseOnFocusLost: 1
+    displayName: 
+    musicTrack: 
   - sceneName: UI_WorldMap
     category: 2
     showPlayerHUD: 1

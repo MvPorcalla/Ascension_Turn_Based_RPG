@@ -1,16 +1,16 @@
 // ════════════════════════════════════════════
-// Assets\Scripts\Modules\CharacterSystem\UI\PlayerStatsPreviewUI.cs
+// Assets\Scripts\UI\Components\Character\PlayerStatsPreviewUI.cs
+// ✅ FIXED: Removed unused GameSystem namespace
 // Displays player derived stats in the preview panel
 // ════════════════════════════════════════════
 
 using UnityEngine;
 using TMPro;
-using Ascension.GameSystem;
 using Ascension.Data.SO.Item;
-using Ascension.Character.Stat;
+using Ascension.Character.Core;
 using Ascension.Data.SO.Character;
 
-namespace Ascension.UI
+namespace Ascension.UI.Components.Character
 {
     public class PlayerStatsPreviewUI : MonoBehaviour
     {
@@ -40,7 +40,7 @@ namespace Ascension.UI
         {
             ValidateReferences();
             if (debugMode)
-                Debug.Log("[PlayerPreviewUI] Initialized");
+                Debug.Log("[PlayerStatsPreviewUI] Initialized");
         }
         #endregion
 
@@ -49,7 +49,7 @@ namespace Ascension.UI
         {
             if (stats == null)
             {
-                Debug.LogWarning("[PlayerPreviewUI] Cannot update with null stats");
+                Debug.LogWarning("[PlayerStatsPreviewUI] Cannot update with null stats");
                 return;
             }
 
@@ -123,9 +123,9 @@ namespace Ascension.UI
 
         private void ValidateReferences()
         {
-            if (adValueText == null) Debug.LogWarning("[PlayerPreviewUI] AD text not assigned!", this);
-            if (apValueText == null) Debug.LogWarning("[PlayerPreviewUI] AP text not assigned!", this);
-            if (hpValueText == null) Debug.LogWarning("[PlayerPreviewUI] HP text not assigned!", this);
+            if (adValueText == null) Debug.LogWarning("[PlayerStatsPreviewUI] AD text not assigned!", this);
+            if (apValueText == null) Debug.LogWarning("[PlayerStatsPreviewUI] AP text not assigned!", this);
+            if (hpValueText == null) Debug.LogWarning("[PlayerStatsPreviewUI] HP text not assigned!", this);
         }
         #endregion
     }

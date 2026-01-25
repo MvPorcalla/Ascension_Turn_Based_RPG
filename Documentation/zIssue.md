@@ -28,503 +28,276 @@ Rolling bonus stats modifies the SO’s bonusStats list directly. If multiple ga
 
 ---
 
-# 🎯 Task: Add Equipped Item Indicators to Inventory UI
-
-## Context
-I have a mobile-first, portrait-mode 2D turn-based RPG in Unity with separate InventorySystem and EquipmentSystem. Items are stored in inventory, and equipped state is tracked separately in EquipmentManager.
-
-## Current Architecture
-- **InventorySystem**: Tracks item locations (Bag/Pocket/Storage) and quantities
-- **EquipmentSystem**: Tracks which items are equipped via EquipmentSaveData (weaponId, helmetId, etc.)
-- **ItemInstance**: Does NOT have `isEquipped` flag (by design - single source of truth)
-
-## Goal
-Add visual indicators to show which items are currently equipped when viewing the inventory UI.
-
-## Requirements
-
-### 1. Visual Design (Choose One or Combine)
-- **Option A**: Small [E] badge in top-left corner of item slot
-- **Option B**: Golden/colored border around equipped items
-- **Option C**: Both badge + border for extra visibility
-
-================================================================================================================
-
-# Equipment room VIsual UI
-
-┌──────────────────────────────────────────────┐
-│ [Back]          Equipment Room               │
-└──────────────────────────────────────────────┘
-
-┌──────────────────────────┬───────────────────┐
-│ Player Stats (Core)      │ Gear Section      │
-│ ATK  DEF  HP  CRIT       │ [Helm] [Chest]    │
-│ [+ Advanced]             │ [Glov] [Boot ]    │
-│                          │ [Acc ] [Acc ]     │
-└──────────────────────────┴───────────────────┘
-
-┌──────────────────────────────────────────────┐
-│ Loadout (ACTIVE)                             │
-│ Weapon | Skill 1 | Skill 2 | Ultimate        │
-└──────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────┐
-│ Storage (Filtered Pool)                      │
-│ [Weapons] [Gear] [Skills] [Potions?] [Sort]  │
-│ ┌──┐ ┌──┐ ┌──┐ ┌──┐                          │
-│ └──┘ └──┘ └──┘ └──┘   Scrollable Grid        │
-└──────────────────────────────────────────────┘
-
-
-================================================================================================================
-
-TODO: Fix the Accessory Equipment it bugging it should be able to equip 2 but it only equip 1
-
-================================================================================================================
-
-
-ask me question first or script you want to see for full context before proceeding to code
-
-### prompt (only separate abilities)
-
-> Refactor my save logic so that abilities are stored in their own `abilitiesData` section instead of being mixed into inventory items.
-> Keep `inventoryData.items` as a single flat array (do NOT separate by category).
-
-### Expected Ouput
-
-```json
-{
-  "metaData": {
-    "saveVersion": "1.1",
-    "createdTime": "2025-12-15 00:26:50",
-    "lastSaveTime": "2025-12-23 14:10:00",
-    "totalPlayTimeSeconds": 3720.25,
-    "saveCount": 86
-  },
-
-  "characterData": {
-    "playerName": "Medarru",
-    "level": 2,
-    "currentExperience": 120,
-    "currentHealth": 220.0,
-    "currentMana": 50.0,
-    "attributePoints": 5,
-    "strength": 30,
-    "agility": 6,
-    "intelligence": 2,
-    "endurance": 11,
-    "wisdom": 10
-  },
-
-  "inventoryData": {
-    "items": [
-      { "itemId": "weapon_iron_sword", "quantity": 1, "location": 0 },
-      { "itemId": "gear_leather_helmet", "quantity": 1, "location": 0 },
-      { "itemId": "gear_leather_chestplate", "quantity": 1, "location": 0 },
-      { "itemId": "gear_leather_gloves", "quantity": 1, "location": 0 },
-      { "itemId": "gear_leather_boots", "quantity": 1, "location": 0 },
-
-      { "itemId": "gear_accessory_iron_ring", "quantity": 1, "location": 0 },
-      { "itemId": "gear_accessory_iron_bracelet", "quantity": 1, "location": 0 },
-
-      { "itemId": "potion_minor_health_potion", "quantity": 5, "location": 0 },
-      { "itemId": "potion_minor_health_potion", "quantity": 7, "location": 1 },
-      { "itemId": "potion_minor_health_potion", "quantity": 6, "location": 2 },
-
-      { "itemId": "material_iron_ore", "quantity": 12, "location": 0 },
-      { "itemId": "material_wood", "quantity": 25, "location": 0 }
-    ],
-    "maxBagSlots": 12,
-    "maxPocketSlots": 6,
-    "maxStorageSlots": 60
-  },
-
-  "abilitiesData": {
-    "unlocked": [
-      "ability_fireball",
-      "ability_heal"
-    ],
-    "equipped": [
-      "ability_fireball"
-    ]
-  },
-
-  "equipmentData": {
-    "weaponId": "weapon_iron_sword",
-    "helmetId": "gear_leather_helmet",
-    "chestId": "gear_leather_chestplate",
-    "glovesId": "gear_leather_gloves",
-    "bootsId": "gear_leather_boots",
-    "accessory1Id": "gear_accessory_iron_ring",
-    "accessory2Id": "gear_accessory_iron_bracelet"
-  },
-
-  "skillLoadoutData": {
-    "normalSkill1Id": "ability_fireball",
-    "normalSkill2Id": "",
-    "ultimateSkillId": ""
-  }
-}
-```
-
----
-
-============================================================
-
-4. ItemQueryService: Performance Optimization ⚠️
-Current Code:
-csharppublic List<ItemInstance> GetBagItems(List<ItemInstance> allItems)
-{
-    return allItems.Where(item =>
-        item.location == ItemLocation.Bag &&
-        !IsSkill(item.itemID)
-    ).ToList();
-}
-Problem: Every call does a full O(n) scan with string prefix check.
-Optimization (if needed):
-csharp// Option 1: Cache results (invalidate on change)
-private Dictionary<ItemLocation, List<ItemInstance>> _cachedByLocation;
-
-public List<ItemInstance> GetBagItems(List<ItemInstance> allItems)
-{
-    if (_cachedByLocation == null || _isDirty)
-    {
-        RebuildCache(allItems);
-    }
-    return _cachedByLocation[ItemLocation.Bag];
-}
-
-// Option 2: Pre-filter skills once
-private HashSet<string> _skillItemIDs = new HashSet<string>();
-
-private bool IsSkill(string itemID)
-{
-    return _skillItemIDs.Contains(itemID);  // O(1) instead of O(k) where k = prefix length
-}
-But honestly: Your current approach is fine for <1000 items. Only optimize if profiler shows issues.
-
--------------------------------------------------
-
-5. Missing Transaction Support ⚠️
-Scenario: What if you want to:
-
-Remove 5 iron ore
-Remove 2 wood
-Add 1 sword
-
-But step 2 fails because you don't have enough wood?
-Current behavior: Step 1 already removed the iron! Now your inventory is inconsistent.
-Solution: Transaction pattern:
-csharppublic class InventoryTransaction
-{
-    private List<Action> _operations = new List<Action>();
-    private List<Action> _rollbacks = new List<Action>();
-    
-    public InventoryTransaction RemoveItem(string itemID, int quantity)
-    {
-        _operations.Add(() => {
-            var result = inventory.RemoveItem(itemID, quantity);
-            if (!result.Success) throw new Exception(result.Message);
-            
-            // Store rollback action
-            _rollbacks.Add(() => inventory.AddItem(itemID, quantity));
-        });
-        return this;
-    }
-    
-    public InventoryResult Commit()
-    {
-        try
-        {
-            foreach (var op in _operations)
-                op();
-            
-            return InventoryResult.Ok();
-        }
-        catch (Exception ex)
-        {
-            // Rollback all operations
-            for (int i = _rollbacks.Count - 1; i >= 0; i--)
-                _rollbacks[i]();
-            
-            return InventoryResult.Fail(ex.Message);
-        }
-    }
-}
-
-// Usage:
-var transaction = new InventoryTransaction()
-    .RemoveItem("iron_ore", 5)
-    .RemoveItem("wood", 2)
-    .AddItem("sword_iron", 1);
-
-var result = transaction.Commit();
-This is advanced - only add if you have complex crafting/trading systems.
-
-
-
-
-==========================
-
-Add this to your InventoryManager:
-csharp[ContextMenu("Run All Tests")]
-public void RunAllTests()
-{
-    TestAddRemove();
-    TestStacking();
-    TestMoveBetweenLocations();
-    TestCapacityUpgrades();
-    Debug.Log("✅ All inventory tests passed!");
-}
-
-=============================================
-
----
-
 Check Popup and Toast at Assets\Scripts\UI if this is purely UI and no data logic
 
 ---
 
-TODO: Critical
+TODO: when save is corrupted why it go back to avatarcreation? when theree is a rollback backup that it can reference then make it the main save if its working when the main save is corrupted?
 
-this error show when i try to enter playmode
+4️⃣ Bootstrap decides the FIRST scene
+string targetScene = DetermineStartingScene();
 
-Failed to present D3D11 swapchain due to device reset/removed. This error can happen if you draw or dispatch very expensive workload to the GPU, which can cause Windows to detect a GPU Timeout and reset device
 
----
+Decision logic:
 
-when the game is still loading, the gamemenu is alread loaded so if i press the buttons worldmap and it loaded before the mainbase, the main base replace it after the loading  is done for mainbase and if i press the button again its says it already loaded even when the ui is still in the mainbase
+No save → AvatarCreation
 
-also i tried the manifest config i tried setting hte UIO behavior for worldMap for the Show PlayerHUD and show GlobalMenu to False but it still show the HUD and GameMenu why?
+Valid save → MainBase
 
----
-
-TODO:
-
-Did I design this scene flow correctly?
-Please review it for:
-Critical architectural errors Data leaks or lifecycle issues (especially with DontDestroyOnLoad) Redundant steps or unnecessary scene loads Inconsistent patterns or responsibilities Long-term maintainability problems for a solo dev
-I want to know if this flow is solid, or if there are hidden risks that will bite me later.
-Don’t be polite. If this is over-engineered, fragile, or masking bad design, call it out and explain why.
-you can ask me for code you want to see to review to have full picture of the code architecture
-
-Do you agree with this Findings:
-
-Immediate Action Items
-
-High Priority:
-- Remove Bootstrap scene after initialization - managers survive via DontDestroyOnLoad
-- Delete ICommand pattern - you don't need it yet
-- Fix CharacterCreation to pass initial data - don't create player twice
-- Merge scene loading into ONE system - GameManager OR SceneFlowManager, not both
-
-Medium Priority: 
-5. Replace SceneConfigSO arrays with scene manifest 
-6. Use OnEnable/OnDisable for event subscriptions - not Start/OnDestroy 
-7. Add scene validation in editor - build-time errors, not runtime
-
-Low Priority (Future): 
-8. Consider replacing static GameEvents with an injected EventBus if you need filtering/priorities 
-9. Add scene preloading for faster transitions 
-10. Add scene transition animations
-
-Bottom Line
-Your core architecture (ServiceContainer → Managers → GameEvents → UI) is solid.
-Your scene flow is overcomplicated with redundant validation and unclear ownership.
-You have speculative code (ICommand, scene categories) that adds complexity without proven value.
+Corrupted save → AvatarCreation
 
 ---
 
-scene Load behaviour
-
-my active scene when i play is 
-
-what i see when i enter playmode in my Heirarchy
-01_Boostrap
-02_PersistentUI this occupy header and footer
-04_Mainbase.unity -> occupy middle (this gets highlited tho i dont know why even when i enter UI_WorldMap and still active)
-│   └── --- SYSTEMS ---
-│       └── Controller <- script
-├── Canvas
-│   ├── BackgroundLayer
-│   │   └── MainBackground
-│   ├── MainPanelsLayer ← ✅ CORE NAVIGATION ()   <- this still active even when UI_WorldMap is already open
-│       └── MainBasePanel (room selection grid)
-
-# UI Scene
-
-UI_Storage.unity (Load when entering WorldMap)
-└── Canvas
-    └── WorldMapPanel
-[DontDestroy]
-
-
-is this normal behaviour? or is this what it should do?
-
-this is what the debug say
-  [0] [PERSISTENT] 01_Bootstrap: ✓ Loaded
-  [1] [PERSISTENT] 02_UIPersistent: ✓ 
-  [2] [CONTENT] 04_MainBase: ✓ Loaded [ACTIVE]
-  [3] [UI] UI_WorldMap: ✓ Loaded
-
----
-
-**TODO: Critical Issue**
-
-I think that if there is **no avatar yet**, `02_UIPersistent` should **not** be loaded. Instead, it should go to `03_AvatarCreation`, so the only scenes loaded in the hierarchy are:
-
-```
-01_Bootstrap
-03_AvatarCreation
-```
-
-
-Issue i found
-
-TODO: Critical - when player_data.json data half of it got deleted or curropted it dont go back to the previous backup instead it just make a backup of the tempered data
-
-behaviour i play a game then exit i tempered the data like deleting half of the data and instead of going to the old backup with the correct data it makes a backup of the tempered data instead, also if i delete half of the json data like the structure got destroyed and just throw error and warning saying incomplete avaatr creation or something
-
-TODO: Critical – When player_data.json becomes partially deleted or corrupted, the system does not revert to the previous backup. Instead, it creates a backup of the corrupted data.
-
-Observed behavior:
-I play the game, then exit.
-I manually tamper with the data (e.g., delete half of the JSON).
-Instead of restoring the last valid backup, the system overwrites it with the corrupted file.
-
-Additionally, if the JSON structure is broken, it throws errors/warnings like “Incomplete avatar creation” or similar.
-
-
-TODO: issue persistent UI shoulodnot show up on 02_AvatarCreation
-
----
-
-issue found by AI : do you agree with this? you can ask me for scripts dont assume code before giving critism or rafactor
-
-
-2. Missing NULL Check in Bootstrap
-Location: Bootstrap.cs - Line 140
-Problem:
-csharpprivate void NotifySceneFlowManager(string sceneName)
+🟡 Areas for Improvement
+1. Initialization Order Fragility
+Current Issue:
+csharp// What if Equipment needs Inventory, but Inventory needs Character?
+Save.Init();
+Character.Init();
+Inventory.Init();
+Equipment.Init();
+Recommendation:
+Add explicit dependency declarations:
+csharp// NEW: Add to each manager
+public interface IInitializable
 {
-    if (SceneFlowManager.Instance == null)
+    IEnumerable<Type> Dependencies { get; }
+    void Init();
+}
+
+// In EquipmentManager
+public IEnumerable<Type> Dependencies => new[] 
+{ 
+    typeof(CharacterManager), 
+    typeof(InventoryManager) 
+};
+Then in Bootstrap:
+csharpprivate void InitializeManagers()
+{
+    var managers = new IInitializable[] 
+    { 
+        Save, Character, Inventory, Equipment, Skills 
+    };
+    
+    // Topological sort based on Dependencies
+    foreach (var manager in SortByDependencies(managers))
     {
-        LogWarning("SceneFlowManager not available - cannot notify");
-        return; // ❌ Returns but scene loading continues without tracking!
+        manager.Init();
+    }
+}
+2. InventoryCore Constructor Overload
+csharp// TOO MANY constructors - confusing
+public InventoryCore(InventoryCapacity capacityManager = null)
+public InventoryCore(InventoryCapacity, ItemQueryService, ItemStackingService, ItemLocationService)
+Recommendation:
+Use Builder Pattern or single constructor:
+csharppublic InventoryCore(InventoryCapacity capacity)
+{
+    _capacityManager = capacity ?? throw new ArgumentNullException();
+    _queryService = new ItemQueryService();
+    _stackingService = new ItemStackingService();
+    _locationService = new ItemLocationService(_stackingService, _queryService);
+}
+
+// For testing, use dependency injection via properties
+public InventoryCore WithQueryService(ItemQueryService service) 
+{ 
+    _queryService = service; 
+    return this; 
+}
+3. Missing Null Checks in Critical Paths
+csharp// CharacterManager.cs
+public void AddExperience(int amount)
+{
+    if (!HasActivePlayer) return; // ✅ Good
+    
+    bool leveledUp = _currentPlayer.AddExperience(amount, baseStats);
+    // ❌ What if baseStats is null? No check!
+}
+Recommendation:
+csharppublic void AddExperience(int amount)
+{
+    if (!HasActivePlayer)
+    {
+        Debug.LogWarning("[CharacterManager] No active player");
+        return;
     }
     
-    // ... notification logic ...
-}
-Impact:
-
-If SceneFlowManager fails to initialize, Bootstrap will load scenes but SceneFlowManager won't track them
-Subsequent scene transitions via SceneFlowManager will fail silently
-You'll see scenes loaded but SceneFlowManager.CurrentMainScene will be null
-
-3. Race Condition in ServiceContainer
-Location: ServiceContainer.cs - Line 46-61 + Bootstrap.cs - Line 72-87
-Problem:
-csharp// Bootstrap.cs
-private IEnumerator WaitForServiceContainer()
-{
-    while (!ServiceContainer.Instance.IsInitialized)
+    if (baseStats == null)
     {
-        yield return null; // ❌ Infinite loop if initialization fails!
+        Debug.LogError("[CharacterManager] BaseStats not assigned!");
+        return;
     }
-}
-
-// ServiceContainer.cs - Start() can throw exceptions
-private void Start()
-{
-    InitializeAllServices(); // ❌ If this throws, IsInitialized never becomes true
-    _isInitialized = true;   // This line never executes on error
-}
-Impact:
-
-If ANY service fails to initialize (throws exception), Bootstrap will hang forever
-No timeout mechanism
-Game becomes unresponsive in production builds
-
-⚠️ HIGH PRIORITY WARNINGS
-4. GameManager.LoadGame() Called Before InventoryManager is Ready
-Location: Bootstrap.cs - Line 103-116
-Problem:
-csharpprivate string DetermineTargetScene()
-{
-    if (GameManager.Instance.SaveExists())
-    {
-        if (GameManager.Instance.LoadGame()) // ❌ Calls LoadGame too early!
-        {
-            return SCENE_MAIN_BASE;
-        }
-    }
-}
-In GameManager.cs:
-csharppublic bool LoadGame()
-{
-    // This calls SaveManager.LoadGame()
-    // Which calls InventoryManager.LoadInventory()
-    // But InventoryManager might not be fully initialized yet!
-}
-Impact:
-
-LoadGame() is called immediately after WaitForServiceContainer() completes
-While services are "initialized", they may not have subscribers ready
-Example: InventoryManager loads items but UI hasn't subscribed to OnInventoryLoaded yet
-
-5. No Validation That PersistentUICanvas Actually Persisted
-Location: Bootstrap.cs - Line 92-108
-Problem:
-csharpprivate void SetupPersistentUI()
-{
-    if (persistentUICanvas != null)
-    {
-        DontDestroyOnLoad(persistentUICanvas);
-        // ❌ No verification that it actually worked!
-    }
-}
-Impact:
-
-If DontDestroyOnLoad fails silently (rare but possible), UI will disappear on scene change
-No way to detect this issue until you manually test scene transitions
-
-6. MainbasePanelController Has No Safety Checks
-Location: MainbasePanelController.cs - Line 47-69
-Problem:
-csharpprivate void OnStorageRoomClicked()
-{
-    SceneFlowManager.Instance?.OpenStorage(); // ❌ Silent failure if Instance is null
-}
-Impact:
-
-If SceneFlowManager is somehow null, button click does nothing
-No feedback to player
-Hard to debug in production
-
-7. SceneFlowManager Doesn't Validate Scene Names
-Location: SceneFlowManager.cs - Line 194
-When you call OpenUIScene("UI_Storage"), there's no validation that this scene exists in Build Settings until the load fails.
-
-8. No Error Handling in GameManager Event Subscriptions
-Location: GameManager.cs - Line 129-139
-If an event subscriber throws an exception, it will break the entire event chain.
-
-9. Issue: Double Character Creation
-Look at this flow:
-csharp// CharacterCreationManager.cs - Line 260
-GameManager.Instance.StartNewGame(characterName); // ← Creates player #1
-
-// GameManager.cs - StartNewGame()
-public void StartNewGame(string playerName = "Adventurer")
-{
-    _characterManager.CreateNewPlayer(playerName);  // ← Creates with BASE stats
-    sessionPlayTime = 0f;
-    isAvatarCreationComplete = false;  // ❌ Still false!
     
-    GameEvents.TriggerNewGameStarted(CurrentPlayer);
+    bool leveledUp = _currentPlayer.AddExperience(amount, baseStats);
+    // ...
 }
+4. SceneFlowManager Validation Could Be Stronger
+csharppublic void LoadMainScene(string sceneName)
+{
+    // ✅ Good validations
+    if (_isTransitioning) return;
+    if (!sceneManifest.HasScene(sceneName)) return;
+    
+    // ❌ But what if Bootstrap scene gets unloaded accidentally?
+}
+Recommendation:
+Add Bootstrap scene protection:
+csharpprivate void Update()
+{
+    // Safety check - ensure Bootstrap never unloads
+    if (SceneManager.GetSceneByName("Bootstrap").isLoaded == false)
+    {
+        Debug.LogError("CRITICAL: Bootstrap scene unloaded! Reloading...");
+        SceneManager.LoadScene("Bootstrap", LoadSceneMode.Single);
+    }
+}
+5. Event Subscription Leaks
+While you have ClearAllEvents(), you don't call it anywhere:
+csharp// Add to SceneFlowManager
+private IEnumerator LoadMainSceneCoroutine(string sceneName)
+{
+    _isTransitioning = true;
+    
+    // ✅ CRITICAL: Clear stale UI subscriptions before changing scenes
+    if (sceneName == SCENE_AVATAR_CREATION)
+    {
+        GameEvents.ClearAllEvents();
+    }
+    
+    GameEvents.TriggerSceneChanging(sceneName);
+    // ...
+}
+6. SaveManager: Graceful Degradation Might Hide Bugs
+csharp[SerializeField] private bool allowGracefulDegradation = true;
+Risk: Production bugs get masked as "degraded saves"
+Recommendation:
+csharp#if UNITY_EDITOR
+    [SerializeField] private bool allowGracefulDegradation = false; // Strict in editor
+#else
+    [SerializeField] private bool allowGracefulDegradation = true;  // Forgiving in builds
+#endif
 
-// Then CharacterCreationManager.cs - Line 265
-GameManager.Instance.CurrentPlayer.attributes.CopyFrom(tempAttributes); // ← Overrides stats
-The Problem:
-GameManager.StartNewGame() sets isAvatarCreationComplete = false, but your UI already has all the custom data! Why is this a "new game" if the avatar is already created?
+🔴 Critical Issues
+1. Potential Race Condition in Equipment Loading
+csharp// SaveManager.cs - LoadEquipment
+equipmentManager.LoadEquipment(saveData);
+
+if (characterManager != null)
+    characterManager.UpdateStatsFromEquipment(); // ❌ Race condition!
+Problem: If LoadCharacter happens AFTER LoadEquipment, stats are wrong.
+Fix:
+csharpprivate void LoadGame()
+{
+    // ✅ STRICT ORDER
+    LoadCharacter(saveData.characterData);     // 1. Character first
+    LoadInventory(saveData.inventoryData);     // 2. Then inventory
+    LoadEquipment(saveData.equipmentData);     // 3. Then equipment
+    LoadSkillLoadout(saveData.skillLoadoutData); // 4. Finally skills
+    
+    // ✅ SINGLE final recalculation (not per-system)
+    GameBootstrap.Character.RecalculateStats();
+}
+2. CharacterStats: Missing Validation
+csharp[Serializable]
+public class CharacterStats
+{
+    public string playerName; // ❌ Can be null/empty!
+    public CharacterLevelSystem levelSystem = new(); // ✅ Good
+}
+Fix:
+csharppublic string PlayerName
+{
+    get => playerName;
+    set => playerName = string.IsNullOrWhiteSpace(value) 
+        ? "Adventurer" 
+        : value;
+}
+```
+
+---
+
+## 📊 **Architecture Diagram (Current Flow)**
+```
+┌─────────────────┐
+│  GameBootstrap  │ ← Single initialization point ✅
+└────────┬────────┘
+         │
+         ├─→ SaveManager ────────┐
+         ├─→ CharacterManager ───┤
+         ├─→ InventoryManager ───┼─→ Init() in sequence
+         ├─→ EquipmentManager ───┤
+         └─→ SceneFlowManager ───┘
+                 │
+                 ▼
+         ┌───────────────┐
+         │  GameEvents   │ ← Event hub ✅
+         └───────┬───────┘
+                 │
+                 ▼
+         ┌───────────────┐
+         │  UI Systems   │ ← Subscribe to events ✅
+         └───────────────┘
+
+
+
+      ==================================================================================================================================
+
+Internal: deleting an allocation that is older than its permitted lifetime of 4 frames (age = 5)
+
+TODO: critical InventoryGridUI
+
+🔥 MAIN CRASH / PERF ISSUES
+1️⃣ SetActive() on slots (CRITICAL)
+
+Causes full Canvas + Layout rebuilds
+
+Very likely source of D3D11 crashes
+
+Fix: Keep slots active, hide via CanvasGroup (alpha / raycasts)
+
+2️⃣ Full grid refresh on every inventory change (HIGH)
+
+Refreshes all slots for small changes
+
+Triggers repeated layout rebuilds
+
+Fix: Refresh only affected slots, or keep hard debounce (1/frame max)
+
+3️⃣ Lambda allocation per slot per refresh (MEDIUM)
+() => OnItemClicked(item)
+
+
+Allocates memory every refresh
+
+Adds GC pressure
+
+Fix: Bind item inside ItemSlotUI, reuse handler
+
+4️⃣ Debug logs inside refresh loop (MEDIUM)
+
+String allocations + editor stalls
+
+Amplifies crash risk
+
+Fix: Remove or guard with debugUI + #if UNITY_EDITOR
+
+5️⃣ FindAll() allocations (LOW)
+
+Allocates lists
+
+Not a crash cause
+
+Fix later: manual loops if needed
+
+🚨 MOST LIKELY D3D11 CAUSE
+
+If you use:
+
+GridLayoutGroup
+
+ContentSizeFitter
+
+SetActive() in refresh
+
+→ Layout rebuild storm → render thread stall → D3D11 crash

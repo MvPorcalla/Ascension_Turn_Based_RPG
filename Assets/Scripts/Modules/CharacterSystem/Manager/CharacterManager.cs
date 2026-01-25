@@ -1,25 +1,19 @@
 // ════════════════════════════════════════════════════════════════════════
 // Assets/Scripts/CharacterSystem/Manager/CharacterManager.cs
-// ✅ FIXED: Removed duplicate events, now triggers GameEvents instead
+// ✅ REFACTORED: Single attribute allocation system (batch only)
+// Main manager for character lifecycle, stats, and integration with other systems
 // ════════════════════════════════════════════════════════════════════════
 
 using UnityEngine;
-using System;
 using Ascension.Core;
-using Ascension.Data.Save;
 using Ascension.Data.SO.Item;
-using Ascension.Character.Stat;
+using Ascension.Character.Core;
 using Ascension.Data.SO.Character;
-using Ascension.Equipment.Manager;
 
 namespace Ascension.Character.Manager
 {
-    public class CharacterManager : MonoBehaviour, IGameService
+    public class CharacterManager : MonoBehaviour
     {
-        #region Singleton
-        public static CharacterManager Instance { get; private set; }
-        #endregion
-
         #region Serialized Fields
         [Header("References")]
         [SerializeField] private CharacterBaseStatsSO baseStats;
@@ -36,45 +30,23 @@ namespace Ascension.Character.Manager
         public bool HasActivePlayer => _isInitialized && _currentPlayer != null;
         #endregion
 
-        #region Events (Keep ONLY for GameManager integration)
+        #region Initialization
         /// <summary>
-        /// ⚠️ IMPORTANT: This event is ONLY for GameManager to forward to GameEvents
-        /// UI should subscribe to GameEvents.OnGameLoaded instead
+        /// ✅ Called by GameBootstrap during initialization
         /// </summary>
-        public event Action<CharacterStats> OnPlayerLoaded;
-        #endregion
-
-        #region Unity Callbacks
-        private void Awake()
-        {
-            InitializeSingleton();
-        }
-        #endregion
-
-        #region IGameService Implementation
-        public void Initialize()
-        {
-            Debug.Log("[CharacterManager] Initializing...");
-            
-            ValidateBaseStats();
-            
-            Debug.Log("[CharacterManager] Ready");
-        }
-
-        private void ValidateBaseStats()
+        public void Init()
         {
             if (baseStats == null)
             {
                 Debug.LogError("[CharacterManager] CharacterBaseStatsSO not assigned!");
+                return;
             }
-            else
-            {
-                Debug.Log($"[CharacterManager] Base stats loaded: {baseStats.name}");
-            }
+
+            Debug.Log($"[CharacterManager] Initialized with base stats: {baseStats.name}");
         }
         #endregion
 
-        #region Public Methods - Player Initialization
+        #region Public Methods - Player Lifecycle
         public void CreateNewPlayer(string playerName)
         {
             _currentPlayer = new CharacterStats();
@@ -85,10 +57,7 @@ namespace Ascension.Character.Manager
 
             Debug.Log($"[CharacterManager] Created new player: {playerName}");
             
-            // ✅ Fire local event for GameManager integration
-            OnPlayerLoaded?.Invoke(_currentPlayer);
-            
-            // ✅ Trigger GameEvents for UI consumption
+            GameEvents.TriggerNewGameStarted(_currentPlayer);
             GameEvents.TriggerStatsRecalculated(_currentPlayer);
         }
 
@@ -107,10 +76,7 @@ namespace Ascension.Character.Manager
 
             Debug.Log($"[CharacterManager] Loaded player: {_currentPlayer.playerName}");
             
-            // ✅ Fire local event for GameManager integration
-            OnPlayerLoaded?.Invoke(_currentPlayer);
-            
-            // ✅ Trigger GameEvents for UI consumption
+            GameEvents.TriggerGameLoaded(_currentPlayer);
             GameEvents.TriggerStatsRecalculated(_currentPlayer);
             
             UpdateStatsFromEquipment();
@@ -129,7 +95,7 @@ namespace Ascension.Character.Manager
         {
             if (!HasActivePlayer) return;
             
-            var equipmentManager = ServiceContainer.Instance?.Get<EquipmentManager>();
+            var equipmentManager = GameBootstrap.Equipment;
             
             if (equipmentManager != null)
             {
@@ -137,8 +103,6 @@ namespace Ascension.Character.Manager
                 _currentPlayer.ApplyItemStats(equipStats, baseStats);
                 
                 Debug.Log("[CharacterManager] Stats updated from equipment");
-                
-                // ✅ Trigger GameEvents instead of local event
                 GameEvents.TriggerStatsRecalculated(_currentPlayer);
             }
             else
@@ -147,60 +111,22 @@ namespace Ascension.Character.Manager
             }
         }
 
-        public bool EquipWeaponFromInventory(string itemID)
-        {
-            if (!HasActivePlayer) return false;
-            
-            Debug.LogWarning("[CharacterManager] EquipWeaponFromInventory not implemented yet");
-            return false;
-        }
-
-        public void UnequipWeaponFromInventory()
+        public void EquipWeapon(WeaponSO weapon)
         {
             if (!HasActivePlayer) return;
-            
-            Debug.LogWarning("[CharacterManager] UnequipWeaponFromInventory not implemented yet");
-        }
-        #endregion
-
-        #region Public Methods - Player Actions
-
-        public bool ApplyAttributePoints(CharacterAttributes newAttributes, int pointsSpent)
-        {
-            if (!HasActivePlayer) return false;
-
-            if (_currentPlayer.UnallocatedPoints < pointsSpent)
-            {
-                Debug.LogWarning("[CharacterManager] Not enough unallocated points!");
-                return false;
-            }
-
-            _currentPlayer.attributes.CopyFrom(newAttributes);
-            _currentPlayer.levelSystem.unallocatedPoints -= pointsSpent;
-            
-            RecalculateStats();
-            
-            Debug.Log($"[CharacterManager] Applied {pointsSpent} attribute points");
-            return true;
-        }
-
-        public void AddExperience(int amount)
-        {
-            if (!HasActivePlayer) return;
-
-            bool leveledUp = _currentPlayer.AddExperience(amount, baseStats);
-
-            // ✅ Trigger GameEvents instead of local events
-            GameEvents.TriggerExperienceGained(amount, _currentPlayer.CurrentEXP);
-
-            if (leveledUp)
-            {
-                HandleLevelUp();
-            }
-
+            _currentPlayer.EquipWeapon(weapon, baseStats);
             GameEvents.TriggerStatsRecalculated(_currentPlayer);
         }
 
+        public void UnequipWeapon()
+        {
+            if (!HasActivePlayer) return;
+            _currentPlayer.UnequipWeapon(baseStats);
+            GameEvents.TriggerStatsRecalculated(_currentPlayer);
+        }
+        #endregion
+
+        #region Combat & Health
         public void Heal(float amount)
         {
             if (!HasActivePlayer) return;
@@ -209,21 +135,6 @@ namespace Ascension.Character.Manager
             _currentPlayer.combatRuntime.Heal(amount, _currentPlayer.MaxHP);
             
             Debug.Log($"[CharacterManager] Healed {amount} HP ({oldHP:F0} → {_currentPlayer.CurrentHP:F0})");
-            
-            // ✅ Trigger GameEvents instead of local event
-            GameEvents.TriggerHealthChanged(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
-        }
-
-        public void ApplyHeal(float amount)
-        {
-            if (!HasActivePlayer) return;
-            
-            float oldHP = _currentPlayer.CurrentHP;
-            _currentPlayer.combatRuntime.Heal(amount, _currentPlayer.MaxHP);
-            
-            Debug.Log($"[CharacterManager] Applied heal {amount} HP ({oldHP:F0} → {_currentPlayer.CurrentHP:F0})");
-            
-            // ✅ Trigger GameEvents instead of local event
             GameEvents.TriggerHealthChanged(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
         }
 
@@ -235,8 +146,6 @@ namespace Ascension.Character.Manager
             _currentPlayer.combatRuntime.TakeDamage(amount, _currentPlayer.MaxHP);
             
             Debug.Log($"[CharacterManager] Took {amount} damage ({oldHP:F0} → {_currentPlayer.CurrentHP:F0})");
-            
-            // ✅ Trigger GameEvents instead of local event
             GameEvents.TriggerHealthChanged(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
 
             if (_currentPlayer.CurrentHP <= 0)
@@ -248,73 +157,140 @@ namespace Ascension.Character.Manager
         public void FullHeal()
         {
             if (!HasActivePlayer) return;
-
             _currentPlayer.combatRuntime.currentHP = _currentPlayer.MaxHP;
             Debug.Log("[CharacterManager] Full heal applied");
-            
-            // ✅ Trigger GameEvents instead of local event
             GameEvents.TriggerHealthChanged(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
-        }
-
-        public void EquipWeapon(WeaponSO weapon)
-        {
-            if (!HasActivePlayer) return;
-
-            _currentPlayer.EquipWeapon(weapon, baseStats);
-            
-            // ✅ Trigger GameEvents instead of local event
-            GameEvents.TriggerStatsRecalculated(_currentPlayer);
-        }
-
-        public void UnequipWeapon()
-        {
-            if (!HasActivePlayer) return;
-
-            _currentPlayer.UnequipWeapon(baseStats);
-            
-            // ✅ Trigger GameEvents instead of local event
-            GameEvents.TriggerStatsRecalculated(_currentPlayer);
-        }
-
-        public void SetGuildRank(string rank)
-        {
-            if (!HasActivePlayer) return;
-
-            _currentPlayer.SetGuildRank(rank);
-            
-            // ✅ Trigger GameEvents instead of local event
-            GameEvents.TriggerStatsRecalculated(_currentPlayer);
-        }
-
-        public bool AllocateAttributePoint(string attributeName)
-        {
-            if (!HasActivePlayer) return false;
-
-            if (_currentPlayer.UnallocatedPoints <= 0)
-            {
-                Debug.LogWarning("[CharacterManager] No unallocated points available!");
-                return false;
-            }
-
-            _currentPlayer.ModifyAttribute(attributeName, 1, baseStats);
-            _currentPlayer.levelSystem.unallocatedPoints--;
-            
-            Debug.Log($"[CharacterManager] Allocated point to {attributeName}");
-            
-            // ✅ Trigger GameEvents instead of local event
-            GameEvents.TriggerStatsRecalculated(_currentPlayer);
-            return true;
         }
         #endregion
 
-        #region Public Methods - Helper Methods
-        public void RecalculateStats()
+        #region Experience & Leveling
+        /// <summary>
+        /// Add experience points to the player
+        /// Handles level-up logic and triggers appropriate events
+        /// </summary>
+        public void AddExperience(int amount)
         {
             if (!HasActivePlayer) return;
 
-            _currentPlayer.RecalculateStats(baseStats, fullHeal: false);
+            bool leveledUp = _currentPlayer.AddExperience(amount, baseStats);
+
+            GameEvents.TriggerExperienceGained(amount, _currentPlayer.CurrentExp);
+
+            if (leveledUp)
+            {
+                HandleLevelUp();
+            }
+
+            GameEvents.TriggerStatsRecalculated(_currentPlayer);
+        }
+
+        private void HandleLevelUp()
+        {
+            Debug.Log($"[CharacterManager] Level up! Now level {_currentPlayer.Level}");
+            GameEvents.TriggerLevelUp(_currentPlayer.Level);
+            GameEvents.TriggerHealthChanged(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
+        }
+        #endregion
+
+        #region Attribute Allocation
+        /// <summary>
+        /// ✅ SINGLE SYSTEM: Apply attribute points (batch allocation)
+        /// Used by LevelUpPanelUI for plan-then-confirm allocation
+        /// Handles validation, application, stat recalculation, and persistence
+        /// </summary>
+        /// <param name="newAttributes">The new attribute distribution</param>
+        /// <param name="pointsSpent">Number of points being allocated</param>
+        /// <returns>True if successful, false if validation failed</returns>
+        public bool ApplyAttributePoints(CharacterAttributes newAttributes, int pointsSpent)
+        {
+            if (!HasActivePlayer)
+            {
+                Debug.LogError("[CharacterManager] No active player!");
+                return false;
+            }
+
+            // Validation: Check if enough points available
+            if (_currentPlayer.AttributePoints < pointsSpent)
+            {
+                Debug.LogWarning($"[CharacterManager] Not enough points! Need {pointsSpent}, have {_currentPlayer.AttributePoints}");
+                return false;
+            }
+
+            // Validation: Ensure points were actually spent
+            if (pointsSpent <= 0)
+            {
+                Debug.LogWarning("[CharacterManager] No points to allocate!");
+                return false;
+            }
+
+            // Apply new attributes
+            _currentPlayer.attributes.CopyFrom(newAttributes);
+            _currentPlayer.levelSystem.unallocatedPoints -= pointsSpent;
             
-            // ✅ Trigger GameEvents instead of local event
+            // Recalculate derived stats
+            RecalculateStats();
+            
+            // Persist changes
+            SavePlayerState();
+            
+            Debug.Log($"[CharacterManager] Applied {pointsSpent} attribute points");
+            return true;
+        }
+
+        /// <summary>
+        /// Recalculate all derived stats and trigger update event
+        /// </summary>
+        public void RecalculateStats()
+        {
+            if (!HasActivePlayer) return;
+            
+            _currentPlayer.RecalculateStats(baseStats, fullHeal: false);
+            GameEvents.TriggerStatsRecalculated(_currentPlayer);
+        }
+
+        /// <summary>
+        /// Save current player state to disk
+        /// Called after important state changes (attribute allocation, etc.)
+        /// </summary>
+        private void SavePlayerState()
+        {
+            GameBootstrap.Save?.SaveGame(_currentPlayer, 0f);
+        }
+        #endregion
+
+        #region Future: External Attribute Bonuses
+        // ═══════════════════════════════════════════════════════════════
+        // ✅ FUTURE: If you need external systems to grant attribute bonuses
+        // (quest rewards, consumable items, etc.), add this method:
+        // ═══════════════════════════════════════════════════════════════
+        
+        /// <summary>
+        /// ✅ FUTURE: Grant permanent attribute bonus from external source
+        /// Use this for quest rewards, consumable items, etc.
+        /// Does NOT consume unallocated points
+        /// </summary>
+        /*
+        public void GrantAttributeBonus(AttributeType attributeType, int amount)
+        {
+            if (!HasActivePlayer) return;
+
+            int currentValue = _currentPlayer.attributes.GetAttribute(attributeType);
+            _currentPlayer.attributes.SetAttribute(attributeType, currentValue + amount);
+            
+            RecalculateStats();
+            SavePlayerState();
+            
+            Debug.Log($"[CharacterManager] Granted +{amount} {attributeType} bonus");
+        }
+        */
+        
+        #endregion
+
+        #region Misc
+        public void SetGuildRank(string rank)
+        {
+            if (!HasActivePlayer) return;
+            _currentPlayer.SetGuildRank(rank);
             GameEvents.TriggerStatsRecalculated(_currentPlayer);
         }
 
@@ -325,27 +301,6 @@ namespace Ascension.Character.Manager
         #endregion
 
         #region Private Methods
-        private void InitializeSingleton()
-        {
-            if (Instance == null)
-            {
-                Instance = this;
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
-        }
-
-        private void HandleLevelUp()
-        {
-            Debug.Log($"[CharacterManager] Level up! Now level {_currentPlayer.Level}");
-            
-            // ✅ Trigger GameEvents instead of local events
-            GameEvents.TriggerLevelUp(_currentPlayer.Level);
-            GameEvents.TriggerHealthChanged(_currentPlayer.CurrentHP, _currentPlayer.MaxHP);
-        }
-
         private void HandlePlayerDeath()
         {
             Debug.Log("[CharacterManager] Player has died!");
@@ -366,10 +321,15 @@ namespace Ascension.Character.Manager
             Debug.Log("=== PLAYER STATS ===");
             Debug.Log($"Name: {_currentPlayer.playerName}");
             Debug.Log($"Level: {_currentPlayer.Level}");
+            Debug.Log($"Unallocated Points: {_currentPlayer.AttributePoints}");
             Debug.Log($"HP: {_currentPlayer.CurrentHP}/{_currentPlayer.MaxHP}");
+            Debug.Log($"STR: {_currentPlayer.attributes.STR}");
+            Debug.Log($"INT: {_currentPlayer.attributes.INT}");
+            Debug.Log($"AGI: {_currentPlayer.attributes.AGI}");
+            Debug.Log($"END: {_currentPlayer.attributes.END}");
+            Debug.Log($"WIS: {_currentPlayer.attributes.WIS}");
             Debug.Log($"AD: {_currentPlayer.AD}");
             Debug.Log($"AP: {_currentPlayer.AP}");
-            Debug.Log($"Attack Speed: {_currentPlayer.AttackSpeed}");
         }
 
         [ContextMenu("Debug: Add 100 EXP")]
@@ -383,6 +343,26 @@ namespace Ascension.Character.Manager
 
         [ContextMenu("Debug: Full Heal")]
         private void DebugFullHeal() => FullHeal();
+        
+        [ContextMenu("Debug: Level Up")]
+        private void DebugLevelUp()
+        {
+            if (HasActivePlayer)
+            {
+                int expNeeded = _currentPlayer.levelSystem.GetExpToNextLevel();
+                AddExperience(expNeeded);
+            }
+        }
+        
+        [ContextMenu("Debug: Grant 5 Attribute Points")]
+        private void DebugGrantPoints()
+        {
+            if (HasActivePlayer)
+            {
+                _currentPlayer.levelSystem.unallocatedPoints += 5;
+                Debug.Log($"[CharacterManager] Granted 5 points. Total: {_currentPlayer.AttributePoints}");
+            }
+        }
         #endregion
     }
 }

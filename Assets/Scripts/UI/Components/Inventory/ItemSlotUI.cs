@@ -1,7 +1,6 @@
 // ──────────────────────────────────────────────────
 // Assets\Scripts\Modules\InventorySystem\UI\ItemSlotUI.cs
-// UI component for displaying an item slot in inventory/storage/equipment
-// Uses dirty-flag pattern for optimized UI updates
+// ✅ REFACTORED: CanvasGroup visibility, reusable click handler, no allocations
 // ──────────────────────────────────────────────────
 
 using UnityEngine;
@@ -13,6 +12,7 @@ using Ascension.Inventory.Data;
 
 namespace Ascension.UI.Components.Inventory
 {
+    [RequireComponent(typeof(CanvasGroup))]
     public class ItemSlotUI : MonoBehaviour
     {
         [Header("UI Components")]
@@ -36,52 +36,74 @@ namespace Ascension.UI.Components.Inventory
         [SerializeField] private bool useGlowEffect = false;
         [SerializeField] private float glowIntensity = 1.3f;
 
+        // ✅ NEW: CanvasGroup for visibility (no SetActive)
+        private CanvasGroup canvasGroup;
+
         private ItemInstance itemInstance;
         private ItemBaseSO itemData;
-        private Action currentOnClick;
+        
+        // ✅ NEW: Store item ID to avoid lambda allocations
+        private string cachedItemID;
 
-        private static Equipment.Manager.EquipmentManager cachedEquipMgr;
-
-        // ───────── Dirty Flag ─────────
+        // Dirty Flag
         private bool isDirty;
+
+        #region Initialization
+
+        private void Awake()
+        {
+            canvasGroup = GetComponent<CanvasGroup>();
+            if (canvasGroup == null)
+            {
+                canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            }
+
+            // ✅ NEW: Register reusable click handler (no lambda allocation)
+            if (button != null)
+            {
+                button.onClick.AddListener(OnButtonClicked);
+            }
+        }
+
+        #endregion
 
         #region Public API
 
         /// <summary>
-        /// Initial setup (called once when slot is assigned)
+        /// ✅ OPTIMIZED: Setup slot with item data
         /// </summary>
         public void Setup(ItemBaseSO data, ItemInstance instance, Action onClick)
         {
             itemData = data;
             itemInstance = instance;
-            currentOnClick = onClick;
+            cachedItemID = instance?.itemID;
 
             MarkDirty();
         }
 
         /// <summary>
-        /// Fast update without recreation
+        /// ✅ OPTIMIZED: Fast update without recreation
         /// </summary>
         public void UpdateItem(ItemBaseSO data, ItemInstance instance, Action onClick)
         {
-            if (itemData == data && itemInstance == instance && currentOnClick == onClick)
+            if (itemData == data && itemInstance == instance)
                 return;
 
             itemData = data;
             itemInstance = instance;
-            currentOnClick = onClick;
+            cachedItemID = instance?.itemID;
 
             MarkDirty();
         }
 
         /// <summary>
-        /// Force slot to empty state immediately
+        /// ✅ OPTIMIZED: Hide slot without SetActive (uses CanvasGroup)
         /// </summary>
         public void ShowEmpty()
         {
             itemData = null;
             itemInstance = null;
-            currentOnClick = null;
+            cachedItemID = null;
             isDirty = false;
 
             if (itemIcon != null)
@@ -108,8 +130,22 @@ namespace Ascension.UI.Components.Inventory
             if (button != null)
             {
                 button.interactable = false;
-                button.onClick.RemoveAllListeners();
             }
+
+            // ✅ NEW: Hide via CanvasGroup instead of SetActive
+            SetVisible(false);
+        }
+
+        /// <summary>
+        /// ✅ NEW: Control visibility without layout rebuild
+        /// </summary>
+        public void SetVisible(bool visible)
+        {
+            if (canvasGroup == null) return;
+
+            canvasGroup.alpha = visible ? 1f : 0f;
+            canvasGroup.interactable = visible;
+            canvasGroup.blocksRaycasts = visible;
         }
 
         public bool IsEmpty() => itemData == null;
@@ -143,6 +179,9 @@ namespace Ascension.UI.Components.Inventory
                 ShowEmpty();
                 return;
             }
+
+            // ✅ NEW: Show slot when it has data
+            SetVisible(true);
 
             UpdateIcon();
             UpdateRarityBackground();
@@ -203,19 +242,13 @@ namespace Ascension.UI.Components.Inventory
         {
             if (equippedIndicator == null) return;
 
-            // ✅ OPTIMIZED: Cache instance lookup
-            if (cachedEquipMgr == null)
-            {
-                cachedEquipMgr = Equipment.Manager.EquipmentManager.Instance;
-            }
-
             bool isEquipped = false;
-            if (itemInstance != null && cachedEquipMgr != null)
+            
+            if (itemInstance != null && Core.GameBootstrap.Equipment != null)
             {
-                isEquipped = cachedEquipMgr.IsItemEquipped(itemInstance.itemID);
+                isEquipped = Core.GameBootstrap.Equipment.IsItemEquipped(itemInstance.itemID);
             }
 
-            // ✅ OPTIMIZED: Only call SetActive if state changed
             if (equippedIndicator.activeSelf != isEquipped)
             {
                 equippedIndicator.SetActive(isEquipped);
@@ -225,14 +258,7 @@ namespace Ascension.UI.Components.Inventory
         private void UpdateButton()
         {
             if (button == null) return;
-
             button.interactable = itemData != null;
-            button.onClick.RemoveAllListeners();
-
-            if (currentOnClick != null)
-            {
-                button.onClick.AddListener(() => currentOnClick.Invoke());
-            }
         }
 
         private Color GetRarityColor(Rarity rarity)
@@ -250,12 +276,31 @@ namespace Ascension.UI.Components.Inventory
 
         #endregion
 
-        #region Debug
+        #region Click Handler (No Lambda Allocation)
 
-        public void ShowTooltip()
+        /// <summary>
+        /// ✅ NEW: Reusable click handler - no lambda allocations
+        /// Uses GameEvents to trigger popup with cached item ID
+        /// </summary>
+        private void OnButtonClicked()
         {
-            if (itemData == null) return;
-            Debug.Log($"[ItemSlotUI] Tooltip: {itemData.GetInfoText()}");
+            if (string.IsNullOrEmpty(cachedItemID) || itemData == null)
+                return;
+
+            // ✅ Trigger event with item data
+            Core.GameEvents.OnItemSlotClicked?.Invoke(itemData, itemInstance);
+        }
+
+        #endregion
+
+        #region Cleanup
+
+        private void OnDestroy()
+        {
+            if (button != null)
+            {
+                button.onClick.RemoveListener(OnButtonClicked);
+            }
         }
 
         #endregion
